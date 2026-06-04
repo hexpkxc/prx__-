@@ -13,7 +13,7 @@ try { tg = window.Telegram.WebApp; tg.expand(); } catch (e) { console.warn("Tele
     const platform = (tg && tg.platform) ? tg.platform : "unknown";
     const allowedPlatforms = ["android", "ios"];
     
-    const allowedDomain = "username.github.io"; 
+    const allowedDomain = "hexpkxc.github.io"; 
     const currentDomain = window.location.hostname;
     const isLocal = currentDomain === "localhost" || currentDomain === "127.0.0.1" || currentDomain === "";
 
