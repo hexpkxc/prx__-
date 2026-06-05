@@ -153,12 +153,13 @@ const loadedFonts = {};
 const shapeCache = {}; 
 
 let state = {
+    layerOrder: ['bg', 'bg2', 't4', 't3', 't2', 't1'], // <-- Inisiasi Urutan Z-Index default
     bg: { active: true, shape: "", x: -59, y: 31, w: 630, h: 450, colorType: "gradient", color: "#161417", color2: "#0000ff", color3: "#201833", rotate: 0, outlineOnly: false, strokeW: 8 },
-    bg2: { active: false, shape: "", x: 156, y: 50, w: 200, h: 200, colorType: "original", color: "#FFD700", color2: "#FFA500", color3: "#FF4500", rotate: 0, outlineOnly: false, strokeW: 8 },
+    bg2: { active: false, mergeToBg1: false, shape: "", x: 156, y: 50, w: 200, h: 200, colorType: "original", color: "#FFD700", color2: "#FFA500", color3: "#FF4500", rotate: 0, outlineOnly: false, strokeW: 8 },
     t1: { active: true, text: "HEX", font: "Plaster", size: 231, x: 256, y: 280, curve: 0, depth3d: 30, angle3d: 45, color3d: "#1f2937", fillType: "gradient", fill: "#6b3200", fill2: "#ff1b00", fill3: "#692800", stroke: "#000000", strokeW: 8, fillNone: false, strokeNone: false, rotate: 0, effect: "shadow" },
-    t2: { active: false, text: "TERBATAS!", font: "Luckiest Guy", size: 60, x: 256, y: 340, curve: 0, depth3d: 20, angle3d: 45, color3d: "#1f2937", fillType: "solid", fill: "#FFEB3B", fill2: "#FF8800", fill3: "#FF0000", stroke: "#000000", strokeW: 4, fillNone: false, strokeNone: false, rotate: 0, effect: "none" },
-    t3: { active: false, text: "SPESIAL!", font: "Bangers", size: 50, x: 256, y: 400, curve: 0, depth3d: 20, angle3d: 45, color3d: "#1f2937", fillType: "solid", fill: "#00FF00", fill2: "#0088FF", fill3: "#0000FF", stroke: "#000000", strokeW: 4, fillNone: false, strokeNone: false, rotate: 0, effect: "none" },
-    t4: { active: false, text: "EKSTRA!", font: "Bangers", size: 50, x: 256, y: 460, curve: 0, depth3d: 20, angle3d: 45, color3d: "#1f2937", fillType: "solid", fill: "#FF00FF", fill2: "#0088FF", fill3: "#0000FF", stroke: "#000000", strokeW: 4, fillNone: false, strokeNone: false, rotate: 0, effect: "none" }
+    t2: { active: false, mergeToT1: false, text: "TERBATAS!", font: "Luckiest Guy", size: 60, x: 256, y: 340, curve: 0, depth3d: 20, angle3d: 45, color3d: "#1f2937", fillType: "solid", fill: "#FFEB3B", fill2: "#FF8800", fill3: "#FF0000", stroke: "#000000", strokeW: 4, fillNone: false, strokeNone: false, rotate: 0, effect: "none" },
+    t3: { active: false, mergeToT1: false, text: "SPESIAL!", font: "Bangers", size: 50, x: 256, y: 400, curve: 0, depth3d: 20, angle3d: 45, color3d: "#1f2937", fillType: "solid", fill: "#00FF00", fill2: "#0088FF", fill3: "#0000FF", stroke: "#000000", strokeW: 4, fillNone: false, strokeNone: false, rotate: 0, effect: "none" },
+    t4: { active: false, mergeToT1: false, text: "EKSTRA!", font: "Bangers", size: 50, x: 256, y: 460, curve: 0, depth3d: 20, angle3d: 45, color3d: "#1f2937", fillType: "solid", fill: "#FF00FF", fill2: "#0088FF", fill3: "#0000FF", stroke: "#000000", strokeW: 4, fillNone: false, strokeNone: false, rotate: 0, effect: "none" }
 };
 
 let historyStack = [], currentHistoryIndex = -1, selectedObject = null, isRendering = false, renderQueued = false;
@@ -186,6 +187,19 @@ async function ensureLottieLoaded() {
 
 async function init() {
     canvas = document.getElementById('svg-canvas'); 
+    
+    // --- DOM INJECTION UNTUK TOMBOL Z-INDEX (AGAR INDEX.HTML TIDAK PERLU DIUBAH) ---
+    const selectedInfo = document.getElementById('selected-info');
+    if (selectedInfo && selectedInfo.parentNode && !document.getElementById('btn-layer-up')) {
+        const layerControls = document.createElement('div');
+        layerControls.className = "flex gap-1 ml-auto mr-2";
+        layerControls.innerHTML = `
+            <button onclick="moveLayer('down')" class="text-[10px] font-bold text-gray-700 bg-white hover:bg-gray-50 px-2 py-1 rounded shadow-sm border border-gray-200 transition-colors disabled:opacity-40 flex items-center" id="btn-layer-down" disabled><i class="fas fa-layer-group mr-1"></i> <i class="fas fa-arrow-down"></i></button>
+            <button onclick="moveLayer('up')" class="text-[10px] font-bold text-gray-700 bg-white hover:bg-gray-50 px-2 py-1 rounded shadow-sm border border-gray-200 transition-colors disabled:opacity-40 flex items-center" id="btn-layer-up" disabled><i class="fas fa-layer-group mr-1"></i> <i class="fas fa-arrow-up"></i></button>
+        `;
+        selectedInfo.parentNode.insertBefore(layerControls, selectedInfo.nextSibling);
+    }
+    // --------------------------------------------------------------------------------
     
     const selects = [
         document.getElementById('t1-font'), 
@@ -786,29 +800,72 @@ async function renderCanvas() {
         defsContent += '</defs>\n';
 
         let svgContent = defsContent;
+        
+        // --- LOGIKA NESTING BACKGROUND & TEXT YANG DISUSUN ULANG BERDASARKAN ARRAY Z-INDEX ---
+        let layerContents = {};
+
+        // 1. BG Utama
+        let bgLayerContent = "";
         if (state.bg.active) {
             const isSelected = selectedObject === 'bg';
             const bgFill = state.bg.colorType === 'gradient' ? 'url(#bg-grad)' : state.bg.color;
-            svgContent += `
-            <g id="layer_bg" class="clickable" data-id="bg" transform="rotate(${state.bg.rotate}, ${state.bg.x + state.bg.w/2}, ${state.bg.y + state.bg.h/2})">
+            bgLayerContent += `
+            <g class="clickable" data-id="bg" transform="rotate(${state.bg.rotate}, ${state.bg.x + state.bg.w/2}, ${state.bg.y + state.bg.h/2})">
                 ${getBgShape(state.bg, bgFill)}
                 ${isSelected ? `<rect x="${state.bg.x-4}" y="${state.bg.y-4}" width="${state.bg.w+8}" height="${state.bg.h+8}" class="focus-ring" />` : ''}
             </g>`;
         }
-        if (state.bg2.active) {
+        
+        if (state.bg2.active && state.bg2.mergeToBg1) {
             const isSelected = selectedObject === 'bg2';
             const bg2Fill = state.bg2.colorType === 'gradient' ? 'url(#bg2-grad)' : state.bg2.color;
-            svgContent += `
-            <g id="layer_bg2" class="clickable" data-id="bg2" transform="rotate(${state.bg2.rotate}, ${state.bg2.x + state.bg2.w/2}, ${state.bg2.y + state.bg2.h/2})">
+            bgLayerContent += `
+            <g class="clickable" data-id="bg2" transform="rotate(${state.bg2.rotate}, ${state.bg2.x + state.bg2.w/2}, ${state.bg2.y + state.bg2.h/2})">
                 ${getBgShape(state.bg2, bg2Fill)}
                 ${isSelected ? `<rect x="${state.bg2.x-4}" y="${state.bg2.y-4}" width="${state.bg2.w+8}" height="${state.bg2.h+8}" class="focus-ring" />` : ''}
             </g>`;
         }
+        if (bgLayerContent) layerContents['bg'] = `<g id="layer_bg">${bgLayerContent}</g>`;
+
+        // 2. BG2 Mandiri (Tidak Digabung)
+        if (state.bg2.active && !state.bg2.mergeToBg1) {
+            const isSelected = selectedObject === 'bg2';
+            const bg2Fill = state.bg2.colorType === 'gradient' ? 'url(#bg2-grad)' : state.bg2.color;
+            layerContents['bg2'] = `
+            <g id="layer_bg2">
+                <g class="clickable" data-id="bg2" transform="rotate(${state.bg2.rotate}, ${state.bg2.x + state.bg2.w/2}, ${state.bg2.y + state.bg2.h/2})">
+                    ${getBgShape(state.bg2, bg2Fill)}
+                    ${isSelected ? `<rect x="${state.bg2.x-4}" y="${state.bg2.y-4}" width="${state.bg2.w+8}" height="${state.bg2.h+8}" class="focus-ring" />` : ''}
+                </g>
+            </g>`;
+        }
         
-        if (state.t1.active && state.t1.text.trim() !== "") svgContent += generateTextGroup(state.t1, 't1');
-        if (state.t2.active && state.t2.text.trim() !== "") svgContent += generateTextGroup(state.t2, 't2');
-        if (state.t3.active && state.t3.text.trim() !== "") svgContent += generateTextGroup(state.t3, 't3');
-        if (state.t4.active && state.t4.text.trim() !== "") svgContent += generateTextGroup(state.t4, 't4');
+        // 3. Teks 1 (Induk)
+        let t1LayerContent = "";
+        if (state.t1.active && state.t1.text.trim() !== "") t1LayerContent += generateTextGroup(state.t1, 't1');
+        if (state.t2.active && state.t2.text.trim() !== "" && state.t2.mergeToT1) t1LayerContent += generateTextGroup(state.t2, 't2');
+        if (state.t3.active && state.t3.text.trim() !== "" && state.t3.mergeToT1) t1LayerContent += generateTextGroup(state.t3, 't3');
+        if (state.t4.active && state.t4.text.trim() !== "" && state.t4.mergeToT1) t1LayerContent += generateTextGroup(state.t4, 't4');
+        if (t1LayerContent) layerContents['t1'] = `<g id="layer_t1">${t1LayerContent}</g>`;
+
+        // 4. Teks Mandiri
+        if (state.t2.active && state.t2.text.trim() !== "" && !state.t2.mergeToT1) {
+            layerContents['t2'] = `<g id="layer_t2">${generateTextGroup(state.t2, 't2')}</g>`;
+        }
+        if (state.t3.active && state.t3.text.trim() !== "" && !state.t3.mergeToT1) {
+            layerContents['t3'] = `<g id="layer_t3">${generateTextGroup(state.t3, 't3')}</g>`;
+        }
+        if (state.t4.active && state.t4.text.trim() !== "" && !state.t4.mergeToT1) {
+            layerContents['t4'] = `<g id="layer_t4">${generateTextGroup(state.t4, 't4')}</g>`;
+        }
+        
+        // Menerapkan Algoritma Pelukis berdasarkan state.layerOrder
+        const currentOrder = state.layerOrder || ['bg', 'bg2', 't4', 't3', 't2', 't1'];
+        currentOrder.forEach(layerId => {
+            if (layerContents[layerId]) {
+                svgContent += layerContents[layerId];
+            }
+        });
         
         canvas.innerHTML = svgContent;
         
@@ -876,12 +933,43 @@ function generateTextGroup(tState, idTag) {
     renderedPaths += makePath(baseFill, baseStroke, baseStrokeW);
     
     return `
-    <g id="layer_${idTag}" transform="translate(${tState.x}, ${tState.y}) rotate(${tState.rotate})" class="clickable" data-id="${idTag}">
+    <g transform="translate(${tState.x}, ${tState.y}) rotate(${tState.rotate})" class="clickable" data-id="${idTag}">
         <rect x="${-w/2 - 10}" y="${-h/2 - (h*0.2) - 10}" width="${w + 20}" height="${h*1.4 + 20}" fill="transparent" />
         ${isSelected ? `<rect x="${-w/2 - 10}" y="${-h/2 - (h*0.2) - 10}" width="${w + 20}" height="${h*1.4 + 20}" class="focus-ring" />` : ''}
         ${renderedPaths}
     </g>`;
 }
+
+// --- FUNGSI BARU UNTUK MERUBAH POSISI Z-INDEX ---
+function moveLayer(direction) {
+    if (!selectedObject) return;
+    
+    // Cari Induk Utamanya jika layer tersebut sedang dalam mode gabungan (Merge)
+    let targetId = selectedObject;
+    if (targetId === 'bg2' && state.bg2.mergeToBg1) targetId = 'bg';
+    if (['t2', 't3', 't4'].includes(targetId) && state[targetId].mergeToT1) targetId = 't1';
+    
+    if (!state.layerOrder) state.layerOrder = ['bg', 'bg2', 't4', 't3', 't2', 't1'];
+    
+    const idx = state.layerOrder.indexOf(targetId);
+    if (idx === -1) return;
+    
+    if (direction === 'up' && idx < state.layerOrder.length - 1) {
+        // Pindah ke indeks yang lebih tinggi = dilukis belakangan (Di Depan/Atas)
+        const temp = state.layerOrder[idx + 1];
+        state.layerOrder[idx + 1] = state.layerOrder[idx];
+        state.layerOrder[idx] = temp;
+    } else if (direction === 'down' && idx > 0) {
+        // Pindah ke indeks yang lebih rendah = dilukis duluan (Di Belakang/Bawah)
+        const temp = state.layerOrder[idx - 1];
+        state.layerOrder[idx - 1] = state.layerOrder[idx];
+        state.layerOrder[idx] = temp;
+    }
+    
+    renderCanvas();
+    scheduleHistorySave();
+}
+// ------------------------------------------------
 
 function selectObject(id) { 
     selectedObject = id; let name = "Pilih objek"; 
@@ -896,7 +984,14 @@ function selectObject(id) {
 
 function moveSelected(dx, dy) { if (!selectedObject) return; state[selectedObject].x = parseFloat(state[selectedObject].x) + dx; state[selectedObject].y = parseFloat(state[selectedObject].y) + dy; renderCanvas(); scheduleHistorySave(); }
 function rotateSelected(deg) { if (!selectedObject) return; state[selectedObject].rotate = parseFloat(state[selectedObject].rotate || 0) + deg; renderCanvas(); scheduleHistorySave(); }
-function updateDPadButtons() { const hasSel = selectedObject !== null; ['btn-up','btn-down','btn-left','btn-right','btn-rot-l','btn-rot-r'].forEach(id => { document.getElementById(id).disabled = !hasSel; }); }
+
+function updateDPadButtons() { 
+    const hasSel = selectedObject !== null; 
+    ['btn-up','btn-down','btn-left','btn-right','btn-rot-l','btn-rot-r', 'btn-layer-up', 'btn-layer-down'].forEach(id => { 
+        const el = document.getElementById(id);
+        if(el) el.disabled = !hasSel; 
+    }); 
+}
 
 function setupEventListeners() {
     canvas.addEventListener('click', (e) => { const target = e.target.closest('.clickable'); if (target) { selectObject(target.getAttribute('data-id')); } else { selectObject(null); } });
@@ -970,6 +1065,10 @@ function setupEventListeners() {
         bindInput(`${id}-colorType`, `${id}.colorType`); 
         bindInput(`${id}-outlineOnly`, `${id}.outlineOnly`); bindInput(`${id}-strokeW`, `${id}.strokeW`, true); 
         
+        if(id === 'bg2') {
+            bindInput(`bg2-merge`, `bg2.mergeToBg1`);
+        }
+        
         const typeEl = document.getElementById(`${id}-colorType`);
         if(typeEl) {
             typeEl.addEventListener('change', (e) => {
@@ -1006,6 +1105,10 @@ function setupEventListeners() {
         bindInput(`${p}-stroke-none`, `${p}.strokeNone`); bindInput(`${p}-strokeW`, `${p}.strokeW`, true); 
         bindInput(`${p}-effect`, `${p}.effect`);
         
+        if(p !== 't1') {
+            bindInput(`${p}-merge`, `${p}.mergeToT1`);
+        }
+        
         const typeEl = document.getElementById(`${p}-fillType`);
         if(typeEl) {
             typeEl.addEventListener('change', (e) => {
@@ -1025,6 +1128,11 @@ function updateUIFromState() {
         if(controls) {
             controls.style.opacity = state[id].active ? '1' : '0.5';
             controls.style.pointerEvents = state[id].active ? 'auto' : 'none';
+        }
+        
+        if (id === 'bg2') {
+             const mergeEl = document.getElementById(`bg2-merge`);
+             if(mergeEl) mergeEl.checked = state.bg2.mergeToBg1 || false;
         }
         
         const shapeSelect = document.getElementById(`${id}-shape`);
@@ -1060,6 +1168,11 @@ function updateUIFromState() {
         if(controls) {
             controls.style.opacity = state[id].active ? '1' : '0.5';
             controls.style.pointerEvents = state[id].active ? 'auto' : 'none';
+        }
+        
+        if (id !== 't1') {
+             const mergeEl = document.getElementById(`${id}-merge`);
+             if(mergeEl) mergeEl.checked = state[id].mergeToT1 || false;
         }
 
         document.getElementById(`${id}-text`).value = state[id].text; document.getElementById(`${id}-font`).value = state[id].font; 
