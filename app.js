@@ -286,7 +286,7 @@ async function loadShapeData(shapeId) {
     const loader = document.getElementById('loader');
     const loaderText = document.getElementById('loader-text');
     if(loader && loaderText) {
-        loaderText.innerText = "Memuat Shape JSON...";
+        loaderText.innerText = "Memuat Shape...";
         loader.classList.remove('hidden');
     }
     
