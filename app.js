@@ -151,9 +151,10 @@ const FONT_LIST = {
 
 const loadedFonts = {};
 const shapeCache = {}; 
+let availableShapes = {}; // <-- Variabel baru penyimpan cache shape aktif
 
 let state = {
-    layerOrder: ['bg', 'bg2', 't4', 't3', 't2', 't1'], // <-- Inisiasi Urutan Z-Index default
+    layerOrder: ['bg', 'bg2', 't4', 't3', 't2', 't1'],
     bg: { active: true, shape: "", x: -59, y: 31, w: 630, h: 450, colorType: "gradient", color: "#161417", color2: "#0000ff", color3: "#201833", rotate: 0, outlineOnly: false, strokeW: 8 },
     bg2: { active: false, mergeToBg1: false, shape: "", x: 156, y: 50, w: 200, h: 200, colorType: "original", color: "#FFD700", color2: "#FFA500", color3: "#FF4500", rotate: 0, outlineOnly: false, strokeW: 8 },
     t1: { active: true, text: "HEX", font: "Plaster", size: 231, x: 256, y: 280, curve: 0, depth3d: 30, angle3d: 45, color3d: "#1f2937", fillType: "gradient", fill: "#6b3200", fill2: "#ff1b00", fill3: "#692800", stroke: "#000000", strokeW: 8, fillNone: false, strokeNone: false, rotate: 0, effect: "shadow" },
@@ -185,10 +186,23 @@ async function ensureLottieLoaded() {
     });
 }
 
+// --- FUNGSI BARU: MENGHINDARI CRASH JIKA SHAPE DI SERVER DIHAPUS ---
+function validateShapes() {
+    if (Object.keys(availableShapes).length > 0) {
+        if (state.bg.shape && !availableShapes[state.bg.shape]) {
+            console.warn(`Shape ${state.bg.shape} sudah dihapus dari server, mereset layar utama...`);
+            state.bg.shape = "";
+        }
+        if (state.bg2.shape && !availableShapes[state.bg2.shape]) {
+            console.warn(`Shape ${state.bg2.shape} sudah dihapus dari server, mereset ornamen...`);
+            state.bg2.shape = "";
+        }
+    }
+}
+
 async function init() {
     canvas = document.getElementById('svg-canvas'); 
     
-    // --- DOM INJECTION UNTUK TOMBOL Z-INDEX (AGAR INDEX.HTML TIDAK PERLU DIUBAH) ---
     const selectedInfo = document.getElementById('selected-info');
     if (selectedInfo && selectedInfo.parentNode && !document.getElementById('btn-layer-up')) {
         const layerControls = document.createElement('div');
@@ -199,7 +213,6 @@ async function init() {
         `;
         selectedInfo.parentNode.insertBefore(layerControls, selectedInfo.nextSibling);
     }
-    // --------------------------------------------------------------------------------
     
     const selects = [
         document.getElementById('t1-font'), 
@@ -242,10 +255,12 @@ async function init() {
                     console.log("Last state loaded dari CloudStorage");
                 } catch (e) { console.error("Gagal parse last_state", e); }
             }
+            validateShapes(); // Validasi agar tidak crash jika shape hilang
             await preloadActiveShapes();
             finishInit();
         });
     } else {
+        validateShapes(); // Validasi 
         await preloadActiveShapes();
         finishInit();
     }
@@ -260,12 +275,16 @@ function finishInit() {
 async function fetchShapeList() {
     try {
         const baseUrl = NGROK_API_URL.replace('/api/upload', '');
-        const res = await fetch(`${baseUrl}/api/shapes`, {
-            headers: { "ngrok-skip-browser-warning": "true" }
+        const ts = new Date().getTime(); // CACHE-BUSTING: Hapus ingatan usang WebApp
+        const res = await fetch(`${baseUrl}/api/shapes?t=${ts}`, {
+            headers: { 
+                "ngrok-skip-browser-warning": "true",
+                "Cache-Control": "no-cache"
+            }
         });
         if(res.ok) {
-            const shapes = await res.json();
-            populateShapeSelects(shapes);
+            availableShapes = await res.json();
+            populateShapeSelects(availableShapes);
         }
     } catch(e) {
         console.warn("Gagal mengambil daftar shape dari bot:", e);
@@ -306,8 +325,12 @@ async function loadShapeData(shapeId) {
     
     try {
         const baseUrl = NGROK_API_URL.replace('/api/upload', '');
-        const res = await fetch(`${baseUrl}/api/shapes/${shapeId}`, {
-            headers: { "ngrok-skip-browser-warning": "true" }
+        const ts = new Date().getTime(); // CACHE-BUSTING
+        const res = await fetch(`${baseUrl}/api/shapes/${shapeId}?t=${ts}`, {
+            headers: { 
+                "ngrok-skip-browser-warning": "true",
+                "Cache-Control": "no-cache"
+            }
         });
         
         if(res.ok) {
@@ -387,7 +410,8 @@ async function preloadActiveShapes() {
 
 async function loadLottiePreview(animId) {
     const baseUrl = NGROK_API_URL.replace('/api/upload', '');
-    const tgsUrl = `${baseUrl}/api/preview/${animId}`;
+    const ts = new Date().getTime(); // CACHE-BUSTING
+    const tgsUrl = `${baseUrl}/api/preview/${animId}?t=${ts}`;
     
     const loadScript = (src) => new Promise((resolve, reject) => {
         const script = document.createElement('script');
@@ -801,10 +825,8 @@ async function renderCanvas() {
 
         let svgContent = defsContent;
         
-        // --- LOGIKA NESTING BACKGROUND & TEXT YANG DISUSUN ULANG BERDASARKAN ARRAY Z-INDEX ---
         let layerContents = {};
 
-        // 1. BG Utama
         let bgLayerContent = "";
         if (state.bg.active) {
             const isSelected = selectedObject === 'bg';
@@ -827,7 +849,6 @@ async function renderCanvas() {
         }
         if (bgLayerContent) layerContents['bg'] = `<g id="layer_bg">${bgLayerContent}</g>`;
 
-        // 2. BG2 Mandiri (Tidak Digabung)
         if (state.bg2.active && !state.bg2.mergeToBg1) {
             const isSelected = selectedObject === 'bg2';
             const bg2Fill = state.bg2.colorType === 'gradient' ? 'url(#bg2-grad)' : state.bg2.color;
@@ -840,7 +861,6 @@ async function renderCanvas() {
             </g>`;
         }
         
-        // 3. Teks 1 (Induk)
         let t1LayerContent = "";
         if (state.t1.active && state.t1.text.trim() !== "") t1LayerContent += generateTextGroup(state.t1, 't1');
         if (state.t2.active && state.t2.text.trim() !== "" && state.t2.mergeToT1) t1LayerContent += generateTextGroup(state.t2, 't2');
@@ -848,7 +868,6 @@ async function renderCanvas() {
         if (state.t4.active && state.t4.text.trim() !== "" && state.t4.mergeToT1) t1LayerContent += generateTextGroup(state.t4, 't4');
         if (t1LayerContent) layerContents['t1'] = `<g id="layer_t1">${t1LayerContent}</g>`;
 
-        // 4. Teks Mandiri
         if (state.t2.active && state.t2.text.trim() !== "" && !state.t2.mergeToT1) {
             layerContents['t2'] = `<g id="layer_t2">${generateTextGroup(state.t2, 't2')}</g>`;
         }
@@ -859,7 +878,6 @@ async function renderCanvas() {
             layerContents['t4'] = `<g id="layer_t4">${generateTextGroup(state.t4, 't4')}</g>`;
         }
         
-        // Menerapkan Algoritma Pelukis berdasarkan state.layerOrder
         const currentOrder = state.layerOrder || ['bg', 'bg2', 't4', 't3', 't2', 't1'];
         currentOrder.forEach(layerId => {
             if (layerContents[layerId]) {
@@ -940,11 +958,9 @@ function generateTextGroup(tState, idTag) {
     </g>`;
 }
 
-// --- FUNGSI BARU UNTUK MERUBAH POSISI Z-INDEX ---
 function moveLayer(direction) {
     if (!selectedObject) return;
     
-    // Cari Induk Utamanya jika layer tersebut sedang dalam mode gabungan (Merge)
     let targetId = selectedObject;
     if (targetId === 'bg2' && state.bg2.mergeToBg1) targetId = 'bg';
     if (['t2', 't3', 't4'].includes(targetId) && state[targetId].mergeToT1) targetId = 't1';
@@ -955,12 +971,10 @@ function moveLayer(direction) {
     if (idx === -1) return;
     
     if (direction === 'up' && idx < state.layerOrder.length - 1) {
-        // Pindah ke indeks yang lebih tinggi = dilukis belakangan (Di Depan/Atas)
         const temp = state.layerOrder[idx + 1];
         state.layerOrder[idx + 1] = state.layerOrder[idx];
         state.layerOrder[idx] = temp;
     } else if (direction === 'down' && idx > 0) {
-        // Pindah ke indeks yang lebih rendah = dilukis duluan (Di Belakang/Bawah)
         const temp = state.layerOrder[idx - 1];
         state.layerOrder[idx - 1] = state.layerOrder[idx];
         state.layerOrder[idx] = temp;
@@ -969,7 +983,6 @@ function moveLayer(direction) {
     renderCanvas();
     scheduleHistorySave();
 }
-// ------------------------------------------------
 
 function selectObject(id) { 
     selectedObject = id; let name = "Pilih objek"; 
@@ -1350,6 +1363,8 @@ function loadTemplate(key) {
         try {
             const loadedState = JSON.parse(value);
             state = { ...state, ...loadedState }; 
+            
+            validateShapes(); // Validasi anti crash
             updateUIFromState();
             
             await preloadActiveShapes();
