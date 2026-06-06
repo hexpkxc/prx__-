@@ -583,8 +583,8 @@ async function loadFont(fontName) {
 
 // MENGURANGI PRESISI DESIMAL KORDINAT (KOMPRESI SIZE PADA TINGKAT RENDERER)
 function warpPathData(path, curveValue, bbox) {
-    // toPathData(2) akan mengurangi ukuran text yang sangat panjang
-    if (curveValue === 0 || !curveValue) return path.toPathData(2);
+    // toPathData(1) akan mengurangi ukuran text yang sangat panjang
+    if (curveValue === 0 || !curveValue) return path.toPathData(1);
     const width = bbox.x2 - bbox.x1;
     const cx = (bbox.x1 + bbox.x2) / 2;
     const cy = bbox.y2; 
@@ -607,17 +607,17 @@ function warpPathData(path, curveValue, bbox) {
 
         if (cmd.type === 'M' || cmd.type === 'L') {
             const pt = transformPoint(cmd.x, cmd.y);
-            // toFixed(2) mengurangi karakter kordinat desimal
-            newPathStr += `${cmd.type} ${pt.x.toFixed(2)} ${pt.y.toFixed(2)} `;
+            // toFixed(1) mengurangi karakter kordinat desimal
+            newPathStr += `${cmd.type} ${pt.x.toFixed(1)} ${pt.y.toFixed(1)} `;
         } else if (cmd.type === 'Q') {
             const p1 = transformPoint(cmd.x1, cmd.y1);
             const p = transformPoint(cmd.x, cmd.y);
-            newPathStr += `Q ${p1.x.toFixed(2)} ${p1.y.toFixed(2)} ${p.x.toFixed(2)} ${p.y.toFixed(2)} `;
+            newPathStr += `Q ${p1.x.toFixed(1)} ${p1.y.toFixed(1)} ${p.x.toFixed(1)} ${p.y.toFixed(1)} `;
         } else if (cmd.type === 'C') {
             const p1 = transformPoint(cmd.x1, cmd.y1);
             const p2 = transformPoint(cmd.x2, cmd.y2);
             const p = transformPoint(cmd.x, cmd.y);
-            newPathStr += `C ${p1.x.toFixed(2)} ${p1.y.toFixed(2)} ${p2.x.toFixed(2)} ${p2.y.toFixed(2)} ${p.x.toFixed(2)} ${p.y.toFixed(2)} `;
+            newPathStr += `C ${p1.x.toFixed(1)} ${p1.y.toFixed(1)} ${p2.x.toFixed(1)} ${p2.y.toFixed(1)} ${p.x.toFixed(1)} ${p.y.toFixed(1)} `;
         }
     });
     return newPathStr.trim();
@@ -908,7 +908,6 @@ async function renderCanvas() {
     }
 }
 
-// DIKEMBALIKAN MENGGUNAKAN <path> BIASA AGAR 100% KOMPATIBEL DENGAN SEMUA JENIS SERVER
 function generateTextGroup(tState, idTag) {
     const font = loadedFonts[tState.font]; if (!font) return '';
     const path = font.getPath(tState.text, 0, 0, parseInt(tState.size));
@@ -925,16 +924,17 @@ function generateTextGroup(tState, idTag) {
     
     const isSelected = selectedObject === idTag;
     
-    const makePath = (fColor, sColor, swValue, dx=0, dy=0) => {
-        return `<path d="${warpedPathStr}" transform="translate(${offsetX + dx}, ${offsetY + dy})" fill="${fColor}" stroke="${sColor}" stroke-width="${swValue}" stroke-linejoin="round" />`;
+    // MENGGUNAKAN <use> UNTUK MENGHEMAT UKURAN TEKS PADA EFEK 3D (Implementasi Poin 2)
+    const makeUse = (fColor, sColor, swValue, dx=0, dy=0) => {
+        return `<use href="#base-${idTag}" xlink:href="#base-${idTag}" transform="translate(${offsetX + dx}, ${offsetY + dy})" fill="${fColor}" stroke="${sColor}" stroke-width="${swValue}" stroke-linejoin="round" />`;
     };
 
-    let renderedPaths = '';
+    let renderedPaths = `<defs><path id="base-${idTag}" d="${warpedPathStr}" /></defs>`;
 
     if (tState.effect === 'shadow') {
-        renderedPaths += makePath('rgba(0,0,0,0.4)', 'none', 0, 8, 8);
+        renderedPaths += makeUse('rgba(0,0,0,0.4)', 'none', 0, 8, 8);
     } else if (tState.effect === 'border') {
-        renderedPaths += makePath(baseFill, '#FFFFFF', baseStrokeW + 16); 
+        renderedPaths += makeUse(baseFill, '#FFFFFF', baseStrokeW + 16); 
     } else if (tState.effect === 'extrude') {
         const depth = parseInt(tState.depth3d) || 20;
         const angle = (parseInt(tState.angle3d) || 45) * (Math.PI / 180);
@@ -947,11 +947,11 @@ function generateTextGroup(tState, idTag) {
         let stepSize = Math.max(1, depth / 30); 
         
         for (let i = depth; i >= 1; i -= stepSize) {
-            renderedPaths += makePath(extColor, extColor, extStrokeW, dxStep * i, dyStep * i);
+            renderedPaths += makeUse(extColor, extColor, extStrokeW, dxStep * i, dyStep * i);
         }
     }
 
-    renderedPaths += makePath(baseFill, baseStroke, baseStrokeW);
+    renderedPaths += makeUse(baseFill, baseStroke, baseStrokeW);
     
     return `
     <g transform="translate(${tState.x}, ${tState.y}) rotate(${tState.rotate})" class="clickable" data-id="${idTag}">
@@ -1252,16 +1252,46 @@ async function sendToBot() {
             });
         }
 
-        // TAMBAHKAN BARIS INI UNTUK MINIFY SVG SEBELUM DIKIRIM (HEMAT UKURAN TEKS)
+        document.getElementById('loader').classList.remove('hidden'); 
+        document.getElementById('loader-text').innerText = "Sedang memproses & mengompresi...";
+
+        // Pastikan Pako.js tersedia untuk kompresi (Implementasi Poin 1)
+        if (!window.pako) {
+             await new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = "https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js";
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+
         const minifiedSvg = currentSvgCode.replace(/\s+/g, ' ').replace(/>\s+</g, '><').trim();
 
+        // Mengompresi string SVG menjadi payload Deflate -> Base64
+        const uint8Array = new TextEncoder().encode(minifiedSvg);
+        const compressed = window.pako.deflate(uint8Array);
+        
+        let binary = '';
+        const len = compressed.byteLength;
+        for (let i = 0; i < len; i++) {
+            binary += String.fromCharCode(compressed[i]);
+        }
+        const base64CompressedSvg = window.btoa(binary);
+
         const initData = tg.initData;
-        document.getElementById('loader').classList.remove('hidden'); document.getElementById('loader-text').innerText = "Sedang mengirim...";
+        document.getElementById('loader-text').innerText = "Sedang mengirim ke Server...";
+        
         const response = await fetch(NGROK_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ init_data: initData, svg_data: minifiedSvg })
+            body: JSON.stringify({ 
+                init_data: initData, 
+                svg_data: base64CompressedSvg, 
+                is_compressed: true 
+            })
         });
+        
         if (response.ok) {
             if (tg && typeof tg.close === 'function') {
                 tg.showAlert("Desain berhasil dikirim! Silakan kembali ke chat Bot untuk melihat hasilnya.", function() { tg.close(); });
