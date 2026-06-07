@@ -1315,16 +1315,20 @@ function saveCurrentAsTemplate() {
     let templateName = prompt("Masukkan nama untuk template ini (maks 20 huruf):", "Desain " + new Date().getHours() + ":" + new Date().getMinutes());
     if (!templateName || templateName.trim() === "") return;
     
-    templateName = templateName.substring(0, 20).replace(/[^a-zA-Z0-9 ]/g, "");
-    const key = `tpl_${Date.now()}_${templateName}`;
+    // FIX BUG: Ganti spasi dengan underscore (_) dan buang karakter dilarang lainnya
+    // Supaya bisa disimpan di Cloud Storage Telegram yang tidak mengizinkan spasi pada *key*
+    templateName = templateName.substring(0, 20).replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_-]/g, "");
     
+    const key = `tpl_${Date.now()}_${templateName}`;
     const dataToSave = JSON.stringify(state);
     
     tg.CloudStorage.setItem(key, dataToSave, (err, success) => {
         if (err) {
             alert("Gagal menyimpan template.");
         } else {
-            alert(`Template "${templateName}" berhasil disimpan!`);
+            // Tampilkan kembali menjadi spasi (khusus untuk pop-up berhasil saja)
+            let displayName = templateName.replace(/_/g, " ");
+            alert(`Template "${displayName}" berhasil disimpan!`);
         }
     });
 }
