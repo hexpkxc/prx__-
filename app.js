@@ -201,6 +201,170 @@ function validateShapes() {
 
 async function init() {
     canvas = document.getElementById('svg-canvas'); 
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // =========================================================
+    // INJEKSI BARU: HANDLER MODE OTOMATIS (WEBAPP SILUMAN) - DIPERBAIKI
+    // =========================================================
+    const isAutoMode = urlParams.get('auto_text') !== null;
+    const animId = urlParams.get('anim');
+
+    if (isAutoMode) {
+        // 1. Sembunyikan SEMUA elemen UI utama bawaan dengan aman
+        document.body.style.overflow = 'auto'; 
+        const allChildren = document.body.children;
+        for (let i = 0; i < allChildren.length; i++) {
+            if (allChildren[i].tagName !== 'SCRIPT' && allChildren[i].id !== 'loader') {
+                allChildren[i].style.display = 'none';
+            }
+        }
+
+        // 2. Buat container khusus Siluman (Overlay penuh, aman dari hidden global)
+        const silumanContainer = document.createElement('div');
+        silumanContainer.id = 'siluman-container';
+        silumanContainer.className = 'fixed inset-0 bg-gray-50 dark:bg-gray-900 z-50 flex flex-col items-center justify-center p-4 overflow-y-auto';
+        document.body.appendChild(silumanContainer);
+
+        // Tampilkan loader awal
+        silumanContainer.innerHTML = `
+            <div class="text-center">
+                <i class="fas fa-circle-notch fa-spin text-4xl text-blue-500 mb-4"></i>
+                <p class="text-gray-700 dark:text-gray-300 font-bold" id="siluman-loader-text">Menghubungkan ke Server...</p>
+            </div>
+        `;
+
+        // 3. Ambil daftar shape untuk rendering nanti
+        await fetchShapeList();
+
+        // 4. Tarik App State (Template) dari Bot API
+        if (animId && animId !== "None" && animId !== "undefined") {
+            const ldr = document.getElementById('siluman-loader-text');
+            if (ldr) ldr.innerText = "Mengunduh Template Owner...";
+            
+            try {
+                const baseUrl = NGROK_API_URL.replace('/api/upload', '');
+                const ts = new Date().getTime();
+                const res = await fetch(`${baseUrl}/api/template/${animId}?t=${ts}`, {
+                    headers: { "ngrok-skip-browser-warning": "true", "Cache-Control": "no-cache" }
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.status === "success" && data.state) {
+                        state = { ...state, ...data.state };
+                    }
+                }
+            } catch (e) {
+                console.warn("Gagal menarik template dari server.", e);
+            }
+        }
+
+        // 5. Deteksi layer teks mana saja yang aktif dalam template ini
+        const activeTextLayers = [];
+        const textLayerKeys = ['t1', 't2', 't3', 't4'];
+        for (let key of textLayerKeys) {
+            if (state[key].active && state[key].text && state[key].text.trim() !== '') {
+                activeTextLayers.push(key);
+            }
+        }
+
+        // Jika karena suatu hal tidak ada layer aktif, paksa t1 agar form tidak kosong
+        if (activeTextLayers.length === 0) activeTextLayers.push('t1');
+
+        // 6. Buat Form Dinamis Multi-Layer di dalam Siluman Container
+        silumanContainer.innerHTML = ''; // Hapus loader
+        
+        const formCard = document.createElement('div');
+        formCard.className = 'w-full max-w-md bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700';
+        
+        const formTitle = document.createElement('h2');
+        formTitle.className = 'text-xl font-black mb-6 text-gray-800 dark:text-white text-center tracking-wide';
+        formTitle.innerHTML = '<i class="fas fa-magic text-blue-500 mr-2"></i> Input Teks Animasi';
+        formCard.appendChild(formTitle);
+
+        const layerLabels = { t1: 'Teks Utama', t2: 'Teks Kedua', t3: 'Teks Ketiga', t4: 'Teks Keempat' };
+        const inputValues = {};
+
+        for (let layer of activeTextLayers) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'mb-4';
+
+            const label = document.createElement('label');
+            label.className = 'block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2';
+            label.innerText = layerLabels[layer] || layer.toUpperCase();
+            wrapper.appendChild(label);
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.placeholder = `Ketik ${label.innerText.toLowerCase()}...`;
+            // Kosongkan agar user mulai dari awal
+            input.value = ''; 
+            input.className = 'w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white transition-all';
+            
+            wrapper.appendChild(input);
+            formCard.appendChild(wrapper);
+            inputValues[layer] = input;
+        }
+
+        // Tombol Proses
+        const submitBtn = document.createElement('button');
+        submitBtn.className = 'mt-6 w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg transform transition active:scale-95 flex items-center justify-center';
+        submitBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> Proses & Kirim ke Bot';
+        
+        submitBtn.onclick = async () => {
+            let allFilled = true;
+            for (let layer of activeTextLayers) {
+                const val = inputValues[layer].value.trim();
+                if (val === '') {
+                    allFilled = false;
+                    inputValues[layer].classList.add('border-red-500', 'ring-1', 'ring-red-500');
+                } else {
+                    inputValues[layer].classList.remove('border-red-500', 'ring-1', 'ring-red-500');
+                    state[layer].text = val;
+                }
+            }
+
+            if (!allFilled) {
+                if (tg && typeof tg.showAlert === 'function') tg.showAlert('Harap isi semua kolom teks!');
+                else alert('Harap isi semua kolom teks!');
+                return;
+            }
+
+            // Ganti UI form dengan loader perakitan (jangan dihapus div-nya agar background tetap ada)
+            formCard.innerHTML = `
+                <div class="text-center py-8">
+                    <i class="fas fa-rocket fa-bounce text-5xl text-blue-500 mb-6"></i>
+                    <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-2">Merakit Animasi...</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Mohon tunggu, desain sedang diproses dan dikirim ke server.</p>
+                </div>
+            `;
+
+            validateShapes();
+            await preloadActiveShapes();
+            await renderCanvas();
+            
+            // Mengirim ke bot. Gunakan isSilent=false agar muncul popup Berhasil/Gagal sebelum nutup
+            await sendToBot(false, true); 
+        };
+        formCard.appendChild(submitBtn);
+
+        // Tombol Batal
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'mt-3 w-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-3 px-4 rounded-xl shadow-sm transition-colors flex items-center justify-center';
+        cancelBtn.innerHTML = '<i class="fas fa-times mr-2"></i> Batal';
+        cancelBtn.onclick = () => {
+            if (tg && typeof tg.close === 'function') tg.close();
+        };
+        formCard.appendChild(cancelBtn);
+
+        silumanContainer.appendChild(formCard);
+        
+        // Hentikan inisialisasi normal karena ini mode otomatis
+        return; 
+    }
+    // =========================================================
+    
+    // LOGIKA NORMAL WEBAPP (Editor Biasa) DILANJUTKAN DI BAWAH INI
     
     const selectedInfo = document.getElementById('selected-info');
     if (selectedInfo && selectedInfo.parentNode && !document.getElementById('btn-layer-up')) {
@@ -234,193 +398,6 @@ async function init() {
     if(document.getElementById('t3-font')) document.getElementById('t3-font').value = state.t3.font;
     if(document.getElementById('t4-font')) document.getElementById('t4-font').value = state.t4.font;
     
-    const urlParams = new URLSearchParams(window.location.search);
-    
-    // =========================================================
-    // INJEKSI BARU: HANDLER MODE OTOMATIS (WEBAPP SILUMAN) - MULTI INPUT
-    // =========================================================
-    const autoText = urlParams.get('auto_text');
-    const animId = urlParams.get('anim');
-
-    if (autoText) {
-        // 1. Sembunyikan UI utama agar terlihat seperti proses background
-        const appContent = document.querySelectorAll('.app-content');
-        appContent.forEach(el => el.style.display = 'none');
-
-        // 2. Tampilkan Loader
-        const loader = document.getElementById('loader');
-        const loaderText = document.getElementById('loader-text');
-        if(loader) loader.classList.remove('hidden');
-        if(loaderText) loaderText.innerText = "Mengunduh Template Owner...";
-
-        // 3. Ambil daftar shape terlebih dahulu untuk persiapan
-        await fetchShapeList();
-
-        // 4. Tarik App State (Template) dari Bot API
-        if (animId && animId !== "None" && animId !== "undefined") {
-            try {
-                const baseUrl = NGROK_API_URL.replace('/api/upload', '');
-                const ts = new Date().getTime();
-                const res = await fetch(`${baseUrl}/api/template/${animId}?t=${ts}`, {
-                    headers: {
-                        "ngrok-skip-browser-warning": "true",
-                        "Cache-Control": "no-cache"
-                    }
-                });
-
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.status === "success" && data.state) {
-                        state = { ...state, ...data.state };
-                    }
-                }
-            } catch (e) {
-                console.warn("Gagal menarik template dari server.", e);
-            }
-        }
-
-        // 5. Deteksi layer teks aktif (t1, t2, t3, t4) yang memiliki teks tidak kosong di template
-        const activeTextLayers = [];
-        const textLayerKeys = ['t1', 't2', 't3', 't4'];
-        for (let key of textLayerKeys) {
-            if (state[key].active && state[key].text && state[key].text.trim() !== '') {
-                activeTextLayers.push(key);
-            }
-        }
-
-        // Jika hanya satu layer teks aktif, gunakan logika sebelumnya (satu input)
-        if (activeTextLayers.length === 1) {
-            // Logika lama: injeksi teks ke t1, lalu render langsung
-            const textStr = decodeURIComponent(autoText);
-            state.t1.active = true;
-            state.t1.text = textStr;
-
-            const textLen = textStr.length;
-            if (textLen > 4 && textLen <= 7 && state.t1.size > 140) {
-                state.t1.size = 140;
-            } else if (textLen > 7 && state.t1.size > 100) {
-                state.t1.size = 100;
-            }
-
-            if(loaderText) loaderText.innerText = "Merakit Vektor Teks Premium...";
-            validateShapes();
-            await preloadActiveShapes();
-            await renderCanvas();
-            await sendToBot(true, true);
-            return;
-        }
-
-        // ========== MULTI-LAYER INPUT ==========
-        // Jika lebih dari satu layer teks aktif, tampilkan form input
-        if (loader) loader.classList.add('hidden');
-
-        // Sembunyikan semua elemen app
-        document.querySelectorAll('.app-content').forEach(el => el.style.display = 'none');
-
-        // Buat form multi-input
-        const container = document.getElementById('canvas-container');
-        container.innerHTML = '';
-        container.className = 'flex flex-col items-center justify-center min-h-[400px] p-4';
-
-        const formTitle = document.createElement('h2');
-        formTitle.className = 'text-xl font-bold mb-4 text-gray-800 dark:text-white';
-        formTitle.innerText = 'Masukkan Teks untuk Setiap Layer';
-        container.appendChild(formTitle);
-
-        const form = document.createElement('div');
-        form.className = 'w-full max-w-md space-y-4';
-
-        // Untuk setiap layer aktif, buat input field
-        const layerLabels = {
-            t1: 'Teks Utama',
-            t2: 'Teks Kedua',
-            t3: 'Teks Ketiga',
-            t4: 'Teks Keempat'
-        };
-
-        const inputValues = {};
-
-        for (let layer of activeTextLayers) {
-            const label = document.createElement('label');
-            label.className = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
-            label.innerText = layerLabels[layer] || layer.toUpperCase();
-            form.appendChild(label);
-
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.placeholder = 'Masukkan teks...';
-            input.className = 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white';
-            input.id = `input-${layer}`;
-            input.dataset.layer = layer;
-            form.appendChild(input);
-
-            inputValues[layer] = input;
-
-            // Tambahkan sedikit jarak
-            form.appendChild(document.createElement('br'));
-        }
-
-        // Tombol submit
-        const submitBtn = document.createElement('button');
-        submitBtn.className = 'mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-colors';
-        submitBtn.innerText = '🚀 Proses & Kirim';
-        submitBtn.onclick = async () => {
-            // Kumpulkan semua teks
-            const texts = {};
-            let allFilled = true;
-            for (let layer of activeTextLayers) {
-                const val = inputValues[layer].value.trim();
-                if (val === '') {
-                    allFilled = false;
-                    inputValues[layer].classList.add('border-red-500');
-                } else {
-                    inputValues[layer].classList.remove('border-red-500');
-                    texts[layer] = val;
-                }
-            }
-
-            if (!allFilled) {
-                alert('Harap isi semua kolom teks!');
-                return;
-            }
-
-            // Update state dengan teks dari user
-            for (let layer of activeTextLayers) {
-                state[layer].text = texts[layer];
-            }
-
-            // Tampilkan loader
-            const loader = document.getElementById('loader');
-            const loaderText = document.getElementById('loader-text');
-            if(loader) loader.classList.remove('hidden');
-            if(loaderText) loaderText.innerText = "Merakit Vektor Teks Premium...";
-
-            // Render canvas dengan teks baru
-            validateShapes();
-            await preloadActiveShapes();
-            await renderCanvas();
-
-            // Kirim ke bot
-            await sendToBot(true, true);
-        };
-        form.appendChild(submitBtn);
-
-        // Tombol batal
-        const cancelBtn = document.createElement('button');
-        cancelBtn.className = 'mt-2 w-full bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded transition-colors';
-        cancelBtn.innerText = '❌ Batal';
-        cancelBtn.onclick = () => {
-            if (tg && typeof tg.close === 'function') tg.close();
-        };
-        form.appendChild(cancelBtn);
-
-        container.appendChild(form);
-
-        // Setelah form ditampilkan, hentikan eksekusi (tidak perlu render otomatis)
-        return;
-        // =========================================================
-    }
-
     if (animId && animId !== "None" && animId !== "undefined") {
         loadLottiePreview(animId);
     }
@@ -502,7 +479,7 @@ async function loadShapeData(shapeId) {
     
     const loader = document.getElementById('loader');
     const loaderText = document.getElementById('loader-text');
-    if(loader && loaderText) {
+    if(loader && loaderText && !document.getElementById('siluman-container')) {
         loaderText.innerText = "Memuat Shape...";
         loader.classList.remove('hidden');
     }
@@ -583,7 +560,7 @@ async function loadShapeData(shapeId) {
     } catch(e) {
         console.error("Gagal load shape data:", e);
     } finally {
-        if(loader) loader.classList.add('hidden');
+        if(loader && !document.getElementById('siluman-container')) loader.classList.add('hidden');
     }
 }
 
@@ -748,15 +725,19 @@ function scheduleHistorySave() { clearTimeout(window.historyTimeout); window.his
 
 async function loadFont(fontName) {
     if (loadedFonts[fontName]) return loadedFonts[fontName];
+    
+    // Jangan ubah loader jika sedang di mode siluman
     const loader = document.getElementById('loader');
     const loaderText = document.getElementById('loader-text');
-    if(loader && loaderText) {
+    const isSiluman = document.getElementById('siluman-container') !== null;
+    
+    if(loader && loaderText && !isSiluman) {
         loaderText.innerText = `Mengunduh Font: ${fontName}...`;
         loader.classList.remove('hidden');
     }
     return new Promise((resolve, reject) => { 
         opentype.load(FONT_LIST[fontName], function(err, font) { 
-            if(loader) loader.classList.add('hidden');
+            if(loader && !isSiluman) loader.classList.add('hidden');
             if (err) { 
                 console.warn(`Gagal mengunduh font "${fontName}".`);
                 reject(new Error("FontLoadError")); 
@@ -1071,15 +1052,17 @@ async function renderCanvas() {
             }
         });
         
-        canvas.innerHTML = svgContent;
-        
-        const tempSvg = canvas.cloneNode(true);
-        tempSvg.querySelectorAll('.focus-ring, rect[fill="transparent"]').forEach(el => el.remove());
-        tempSvg.removeAttribute('id');
-        tempSvg.removeAttribute('class');
-        currentSvgCode = new XMLSerializer().serializeToString(tempSvg);
-        
-        updateDPadButtons();
+        if(canvas) {
+            canvas.innerHTML = svgContent;
+            
+            const tempSvg = canvas.cloneNode(true);
+            tempSvg.querySelectorAll('.focus-ring, rect[fill="transparent"]').forEach(el => el.remove());
+            tempSvg.removeAttribute('id');
+            tempSvg.removeAttribute('class');
+            currentSvgCode = new XMLSerializer().serializeToString(tempSvg);
+            
+            updateDPadButtons();
+        }
     } catch(e) { 
         console.error("Render Error:", e); 
         if (e.message === "FontLoadError" && safeState) {
@@ -1178,7 +1161,9 @@ function selectObject(id) {
     if (id === 't2') name = "Teks Tengah"; 
     if (id === 't3') name = "Teks Bawah"; 
     if (id === 't4') name = "Teks 4 (Ekstra)"; 
-    document.getElementById('selected-info').innerText = name; renderCanvas(); 
+    const el = document.getElementById('selected-info');
+    if(el) el.innerText = name; 
+    renderCanvas(); 
 }
 
 function moveSelected(dx, dy) { if (!selectedObject) return; state[selectedObject].x = parseFloat(state[selectedObject].x) + dx; state[selectedObject].y = parseFloat(state[selectedObject].y) + dy; renderCanvas(); scheduleHistorySave(); }
@@ -1193,37 +1178,40 @@ function updateDPadButtons() {
 }
 
 function setupEventListeners() {
+    if(!canvas) return;
     canvas.addEventListener('click', (e) => { const target = e.target.closest('.clickable'); if (target) { selectObject(target.getAttribute('data-id')); } else { selectObject(null); } });
 
     const dragHandle = document.getElementById('canvas-drag-handle');
     const canvasContainer = document.getElementById('canvas-container');
-    let isDraggingCanvas = false; let startY = 0; let startWidth = 0;
+    if(dragHandle && canvasContainer) {
+        let isDraggingCanvas = false; let startY = 0; let startWidth = 0;
 
-    const startDrag = (e) => {
-        isDraggingCanvas = true;
-        startY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
-        startWidth = canvasContainer.getBoundingClientRect().width;
-    };
+        const startDrag = (e) => {
+            isDraggingCanvas = true;
+            startY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+            startWidth = canvasContainer.getBoundingClientRect().width;
+        };
 
-    const moveDrag = (e) => {
-        if (!isDraggingCanvas) return;
-        if (e.cancelable) e.preventDefault(); 
-        const currentY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
-        const deltaY = currentY - startY;
-        let newWidth = startWidth + deltaY;
-        const maxW = Math.min(window.innerWidth - 16, 384); 
-        const minW = 150; 
-        if (newWidth > maxW) newWidth = maxW;
-        if (newWidth < minW) newWidth = minW;
-        canvasContainer.style.maxWidth = newWidth + 'px';
-        canvasContainer.style.width = newWidth + 'px';
-    };
+        const moveDrag = (e) => {
+            if (!isDraggingCanvas) return;
+            if (e.cancelable) e.preventDefault(); 
+            const currentY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+            const deltaY = currentY - startY;
+            let newWidth = startWidth + deltaY;
+            const maxW = Math.min(window.innerWidth - 16, 384); 
+            const minW = 150; 
+            if (newWidth > maxW) newWidth = maxW;
+            if (newWidth < minW) newWidth = minW;
+            canvasContainer.style.maxWidth = newWidth + 'px';
+            canvasContainer.style.width = newWidth + 'px';
+        };
 
-    const endDrag = () => { isDraggingCanvas = false; };
+        const endDrag = () => { isDraggingCanvas = false; };
 
-    dragHandle.addEventListener('mousedown', startDrag); dragHandle.addEventListener('touchstart', startDrag, { passive: false });
-    window.addEventListener('mousemove', moveDrag); window.addEventListener('touchmove', moveDrag, { passive: false });
-    window.addEventListener('mouseup', endDrag); window.addEventListener('touchend', endDrag);
+        dragHandle.addEventListener('mousedown', startDrag); dragHandle.addEventListener('touchstart', startDrag, { passive: false });
+        window.addEventListener('mousemove', moveDrag); window.addEventListener('touchmove', moveDrag, { passive: false });
+        window.addEventListener('mouseup', endDrag); window.addEventListener('touchend', endDrag);
+    }
 
     const bindInput = (id, statePath, isNum = false) => {
         const el = document.getElementById(id); if(!el) return;
@@ -1254,8 +1242,11 @@ function setupEventListeners() {
         if(activeCheckbox) {
             activeCheckbox.addEventListener('change', (e) => {
                 state[id].active = e.target.checked; 
-                document.getElementById(`${id}-controls`).style.opacity = e.target.checked ? '1' : '0.5'; 
-                document.getElementById(`${id}-controls`).style.pointerEvents = e.target.checked ? 'auto' : 'none'; 
+                const controls = document.getElementById(`${id}-controls`);
+                if(controls) {
+                    controls.style.opacity = e.target.checked ? '1' : '0.5'; 
+                    controls.style.pointerEvents = e.target.checked ? 'auto' : 'none'; 
+                }
                 renderCanvas(); scheduleHistorySave(); 
             });
         }
@@ -1264,9 +1255,7 @@ function setupEventListeners() {
         bindInput(`${id}-colorType`, `${id}.colorType`); 
         bindInput(`${id}-outlineOnly`, `${id}.outlineOnly`); bindInput(`${id}-strokeW`, `${id}.strokeW`, true); 
         
-        if(id === 'bg2') {
-            bindInput(`bg2-merge`, `bg2.mergeToBg1`);
-        }
+        if(id === 'bg2') bindInput(`bg2-merge`, `bg2.mergeToBg1`);
         
         const typeEl = document.getElementById(`${id}-colorType`);
         if(typeEl) {
@@ -1304,9 +1293,7 @@ function setupEventListeners() {
         bindInput(`${p}-stroke-none`, `${p}.strokeNone`); bindInput(`${p}-strokeW`, `${p}.strokeW`, true); 
         bindInput(`${p}-effect`, `${p}.effect`);
         
-        if(p !== 't1') {
-            bindInput(`${p}-merge`, `${p}.mergeToT1`);
-        }
+        if(p !== 't1') bindInput(`${p}-merge`, `${p}.mergeToT1`);
         
         const typeEl = document.getElementById(`${p}-fillType`);
         if(typeEl) {
@@ -1322,6 +1309,7 @@ function setupEventListeners() {
 
 function updateUIFromState() {
     ['bg', 'bg2'].forEach(id => {
+        if(!document.getElementById(`${id}-active`)) return;
         document.getElementById(`${id}-active`).checked = state[id].active; 
         const controls = document.getElementById(`${id}-controls`);
         if(controls) {
@@ -1402,13 +1390,17 @@ function updateUIFromState() {
 
 function toggleSection(id) { 
     const sec = document.getElementById(id), icon = document.getElementById('icon-' + id); 
-    sec.classList.toggle('hidden'); icon.classList.toggle('rotate-180'); 
+    if(sec && icon) {
+        sec.classList.toggle('hidden'); icon.classList.toggle('rotate-180'); 
+    }
 }
 
 function switchInduk(tab) {
     const btnEditor = document.getElementById('btn-induk-editor');
     const btnDpad = document.getElementById('btn-induk-dpad');
     const dpadContent = document.getElementById('induk-dpad-content');
+
+    if(!btnEditor || !btnDpad || !dpadContent) return;
 
     if (tab === 'editor') {
         btnEditor.className = "flex-1 py-1.5 text-[11px] font-bold bg-white shadow-sm rounded text-blue-600 transition transition-colors";
@@ -1421,18 +1413,20 @@ function switchInduk(tab) {
     }
 }
 
-// =========================================================
-// MODIFIKASI: DUKUNGAN PENGIRIMAN SILUMAN (IS_SILENT & IS_AUTO)
-// TERMASUK INJEKSI APP_STATE UNTUK DISIMPAN BOT 
-// =========================================================
 async function sendToBot(isSilent = false, isAuto = false) {
     if(!currentSvgCode || currentSvgCode.trim() === "") {
-        if(!isSilent) alert("Desain masih kosong!");
+        if(!isSilent) {
+            if (tg && typeof tg.showAlert === 'function') tg.showAlert("Desain masih kosong!");
+            else alert("Desain masih kosong!");
+        }
         return;
     }
     try {
         if (!tg || !tg.initData) {
-            if(!isSilent) alert("Data otentikasi Telegram tidak ditemukan. Pastikan membuka WebApp ini melalui tombol Menu di Telegram.");
+            if(!isSilent) {
+                if (tg && typeof tg.showAlert === 'function') tg.showAlert("Data otentikasi Telegram tidak ditemukan. Pastikan membuka WebApp ini dari bot Telegram.");
+                else alert("Data otentikasi Telegram tidak ditemukan.");
+            }
             return;
         }
 
@@ -1444,8 +1438,10 @@ async function sendToBot(isSilent = false, isAuto = false) {
 
         const loader = document.getElementById('loader');
         const loaderText = document.getElementById('loader-text');
-        if(loader) loader.classList.remove('hidden'); 
-        if(loaderText) loaderText.innerText = "Sedang memproses & mengompresi...";
+        if(loader && !document.getElementById('siluman-container')) {
+            loader.classList.remove('hidden'); 
+            if(loaderText) loaderText.innerText = "Memproses & Mengirim...";
+        }
 
         if (!window.pako) {
              await new Promise((resolve, reject) => {
@@ -1458,19 +1454,15 @@ async function sendToBot(isSilent = false, isAuto = false) {
         }
 
         const minifiedSvg = currentSvgCode.replace(/\s+/g, ' ').replace(/>\s+</g, '><').trim();
-
         const uint8Array = new TextEncoder().encode(minifiedSvg);
         const compressed = window.pako.deflate(uint8Array);
         
         let binary = '';
         const len = compressed.byteLength;
-        for (let i = 0; i < len; i++) {
-            binary += String.fromCharCode(compressed[i]);
-        }
+        for (let i = 0; i < len; i++) binary += String.fromCharCode(compressed[i]);
         const base64CompressedSvg = window.btoa(binary);
 
         const initData = tg.initData;
-        if(loaderText) loaderText.innerText = "Sedang mengirim ke Server...";
         
         const response = await fetch(NGROK_API_URL, {
             method: 'POST',
@@ -1480,7 +1472,7 @@ async function sendToBot(isSilent = false, isAuto = false) {
                 svg_data: base64CompressedSvg, 
                 is_compressed: true,
                 is_auto: isAuto, 
-                app_state: state // <--- APP STATE INI YANG NANTI DISIMPAN KE DB OLEH BOT
+                app_state: state
             })
         });
         
@@ -1488,19 +1480,42 @@ async function sendToBot(isSilent = false, isAuto = false) {
             if (isSilent) {
                 if (tg && typeof tg.close === 'function') tg.close();
             } else {
-                if (tg && typeof tg.close === 'function') {
-                    tg.showAlert("Desain berhasil dikirim! Silakan kembali ke chat Bot untuk melihat hasilnya.", function() { tg.close(); });
-                } else { alert("Desain berhasil dikirim! Silakan kembali ke chat Bot untuk melihat hasilnya."); }
+                if (tg && typeof tg.showAlert === 'function') {
+                    tg.showAlert("Proses berhasil! Silakan cek Bot untuk melihat pratinjau animasi Anda.", function() { tg.close(); });
+                } else { 
+                    alert("Desain berhasil dikirim! Silakan kembali ke chat Bot."); 
+                    if (tg && typeof tg.close === 'function') tg.close();
+                }
             }
         } else {
             const errData = await response.json();
-            if(!isSilent) alert("Gagal mengirim: " + (errData.error || "Server Error"));
+            const errStr = "Gagal mengirim: " + (errData.error || "Server Error");
+            if(!isSilent) {
+                if(tg && typeof tg.showAlert === 'function') tg.showAlert(errStr);
+                else alert(errStr);
+            }
         }
     } catch(err) {
-        if(!isSilent) alert("Gagal menghubungi server backend Ngrok. Detail: " + err.message);
+        const errStr = "Gagal menghubungi server Ngrok. Pastikan bot & ngrok berjalan. Detail: " + err.message;
+        if(!isSilent) {
+            if(tg && typeof tg.showAlert === 'function') tg.showAlert(errStr);
+            else alert(errStr);
+        }
     } finally {
         const loader = document.getElementById('loader');
-        if(loader) loader.classList.add('hidden');
+        if(loader && !document.getElementById('siluman-container')) loader.classList.add('hidden');
+        
+        // Hapus paksa loader siluman jika error (supaya user bisa nekan tombol lagi)
+        const silumanContainer = document.getElementById('siluman-container');
+        if (silumanContainer && silumanContainer.innerHTML.includes('Merakit Animasi')) {
+            // Restore form
+            silumanContainer.querySelector('div.text-center.py-8').innerHTML = `
+                <i class="fas fa-exclamation-triangle text-5xl text-red-500 mb-4"></i>
+                <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-2">Terjadi Kesalahan</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Silakan tutup aplikasi ini lalu coba lagi, atau laporkan ke Owner.</p>
+                <button onclick="tg.close()" class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-white font-bold py-2 px-4 rounded-xl w-full">Tutup</button>
+            `;
+        }
     }
 }
 
