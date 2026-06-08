@@ -204,7 +204,7 @@ async function init() {
     const urlParams = new URLSearchParams(window.location.search);
     
     // =========================================================
-    // INJEKSI BARU: HANDLER MODE OTOMATIS (WEBAPP SILUMAN) - DIPERBAIKI
+    // INJEKSI BARU: HANDLER MODE OTOMATIS + SMART LAYOUTING
     // =========================================================
     const isAutoMode = urlParams.get('auto_text') !== null;
     const animId = urlParams.get('anim');
@@ -219,7 +219,7 @@ async function init() {
             }
         }
 
-        // 2. Buat container khusus Siluman (Overlay penuh, aman dari hidden global)
+        // 2. Buat container khusus Siluman
         const silumanContainer = document.createElement('div');
         silumanContainer.id = 'siluman-container';
         silumanContainer.className = 'fixed inset-0 bg-gray-50 dark:bg-gray-900 z-50 flex flex-col items-center justify-center p-4 overflow-y-auto';
@@ -233,7 +233,7 @@ async function init() {
             </div>
         `;
 
-        // 3. Ambil daftar shape untuk rendering nanti
+        // 3. Ambil daftar shape
         await fetchShapeList();
 
         // 4. Tarik App State (Template) dari Bot API
@@ -259,7 +259,7 @@ async function init() {
             }
         }
 
-        // 5. Deteksi layer teks mana saja yang aktif dalam template ini
+        // 5. Deteksi layer teks mana saja yang aktif dalam template asli
         const activeTextLayers = [];
         const textLayerKeys = ['t1', 't2', 't3', 't4'];
         for (let key of textLayerKeys) {
@@ -268,42 +268,84 @@ async function init() {
             }
         }
 
-        // Jika karena suatu hal tidak ada layer aktif, paksa t1 agar form tidak kosong
         if (activeTextLayers.length === 0) activeTextLayers.push('t1');
 
-        // 6. Buat Form Dinamis Multi-Layer di dalam Siluman Container
+        // 6. Buat Form Dinamis Multi-Layer dengan Checklist
         silumanContainer.innerHTML = ''; // Hapus loader
         
         const formCard = document.createElement('div');
         formCard.className = 'w-full max-w-md bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700';
         
         const formTitle = document.createElement('h2');
-        formTitle.className = 'text-xl font-black mb-6 text-gray-800 dark:text-white text-center tracking-wide';
+        formTitle.className = 'text-xl font-black mb-2 text-gray-800 dark:text-white text-center tracking-wide';
         formTitle.innerHTML = '<i class="fas fa-magic text-blue-500 mr-2"></i> Input Teks Animasi';
         formCard.appendChild(formTitle);
+        
+        // Deskripsi Form
+        const formDesc = document.createElement('p');
+        formDesc.className = 'text-sm text-gray-500 dark:text-gray-400 text-center mb-6';
+        formDesc.innerText = activeTextLayers.length > 1 ? "Centang layer teks yang ingin Anda gunakan. Posisi akan menyesuaikan secara otomatis." : "Masukkan teks untuk animasi Anda.";
+        formCard.appendChild(formDesc);
 
         const layerLabels = { t1: 'Teks Utama', t2: 'Teks Kedua', t3: 'Teks Ketiga', t4: 'Teks Keempat' };
         const inputValues = {};
+        const checkboxValues = {};
 
         for (let layer of activeTextLayers) {
             const wrapper = document.createElement('div');
-            wrapper.className = 'mb-4';
+            wrapper.className = 'mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 transition-all';
+            
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'flex items-center justify-between mb-2';
 
             const label = document.createElement('label');
-            label.className = 'block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2';
-            label.innerText = layerLabels[layer] || layer.toUpperCase();
-            wrapper.appendChild(label);
+            label.className = 'font-bold text-sm text-gray-800 dark:text-gray-200 flex items-center cursor-pointer';
+            
+            // Komponen Checkbox (Toggle Nyala/Mati Layer)
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = true;
+            checkbox.className = 'mr-2 w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-500';
+            
+            if (activeTextLayers.length === 1) {
+                checkbox.disabled = true;
+                checkbox.classList.add('opacity-50', 'cursor-not-allowed');
+            }
 
+            const labelText = document.createElement('span');
+            labelText.innerText = layerLabels[layer] || layer.toUpperCase();
+            
+            label.appendChild(checkbox);
+            label.appendChild(labelText);
+            headerDiv.appendChild(label);
+            wrapper.appendChild(headerDiv);
+
+            // Kolom Input
             const input = document.createElement('input');
             input.type = 'text';
-            input.placeholder = `Ketik ${label.innerText.toLowerCase()}...`;
-            // Kosongkan agar user mulai dari awal
+            input.placeholder = `Ketik ${labelText.innerText.toLowerCase()}...`;
             input.value = ''; 
-            input.className = 'w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white transition-all';
+            input.className = 'w-full px-4 py-2 border border-gray-300 dark:border-gray-500 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 dark:text-white transition-all';
             
             wrapper.appendChild(input);
             formCard.appendChild(wrapper);
+            
             inputValues[layer] = input;
+            checkboxValues[layer] = checkbox;
+
+            // Event saat checklist diubah
+            checkbox.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    input.disabled = false;
+                    input.classList.remove('opacity-50', 'bg-gray-100', 'dark:bg-gray-900');
+                    wrapper.classList.remove('opacity-60');
+                } else {
+                    input.disabled = true;
+                    input.classList.add('opacity-50', 'bg-gray-100', 'dark:bg-gray-900');
+                    wrapper.classList.add('opacity-60');
+                    input.classList.remove('border-red-500', 'ring-1', 'ring-red-500');
+                }
+            });
         }
 
         // Tombol Proses
@@ -313,24 +355,75 @@ async function init() {
         
         submitBtn.onclick = async () => {
             let allFilled = true;
+            const userSelectedLayers = [];
+
+            // Evaluasi inputan user dan checklist
             for (let layer of activeTextLayers) {
-                const val = inputValues[layer].value.trim();
-                if (val === '') {
-                    allFilled = false;
-                    inputValues[layer].classList.add('border-red-500', 'ring-1', 'ring-red-500');
+                const isChecked = checkboxValues[layer].checked;
+                if (isChecked) {
+                    const val = inputValues[layer].value.trim();
+                    if (val === '') {
+                        allFilled = false;
+                        inputValues[layer].classList.add('border-red-500', 'ring-1', 'ring-red-500');
+                    } else {
+                        inputValues[layer].classList.remove('border-red-500', 'ring-1', 'ring-red-500');
+                        state[layer].text = val;
+                        state[layer].active = true;
+                        userSelectedLayers.push(layer);
+                    }
                 } else {
-                    inputValues[layer].classList.remove('border-red-500', 'ring-1', 'ring-red-500');
-                    state[layer].text = val;
+                    state[layer].active = false;
                 }
             }
 
-            if (!allFilled) {
-                if (tg && typeof tg.showAlert === 'function') tg.showAlert('Harap isi semua kolom teks!');
-                else alert('Harap isi semua kolom teks!');
+            if (userSelectedLayers.length === 0) {
+                if (tg && typeof tg.showAlert === 'function') tg.showAlert('Harap biarkan minimal 1 layer teks tercentang!');
+                else alert('Harap biarkan minimal 1 layer teks tercentang!');
                 return;
             }
 
-            // Ganti UI form dengan loader perakitan (jangan dihapus div-nya agar background tetap ada)
+            if (!allFilled) {
+                if (tg && typeof tg.showAlert === 'function') tg.showAlert('Harap isi kolom teks yang telah dicentang!');
+                else alert('Harap isi kolom teks yang telah dicentang!');
+                return;
+            }
+
+            // ===============================================
+            // LOGIKA SMART LAYOUTING (PENYESUAIAN POSISI)
+            // ===============================================
+            if (userSelectedLayers.length < activeTextLayers.length) {
+                const count = userSelectedLayers.length;
+                
+                if (count === 1) {
+                    // Jika hanya tersisa 1 layer, paksa ke tengah dan atur ukurannya
+                    const l = userSelectedLayers[0];
+                    const textLen = state[l].text.length;
+                    if (textLen <= 4) { state[l].size = 200; state[l].y = 320; }
+                    else if (textLen <= 7) { state[l].size = 140; state[l].y = 300; }
+                    else { state[l].size = 100; state[l].y = 280; }
+                    state[l].x = 256; 
+                } 
+                else if (count === 2) {
+                    // Jika tersisa 2 layer, seimbangkan posisinya di atas dan bawah tengah
+                    const l1 = userSelectedLayers[0];
+                    const l2 = userSelectedLayers[1];
+                    state[l1].y = 220; state[l1].x = 256;
+                    state[l2].y = 360; state[l2].x = 256;
+                    if (state[l1].size < 100) state[l1].size = 100;
+                    if (state[l2].size < 80) state[l2].size = 80;
+                } 
+                else if (count === 3) {
+                    // Jika tersisa 3 layer, susun vertikal merata
+                    const l1 = userSelectedLayers[0];
+                    const l2 = userSelectedLayers[1];
+                    const l3 = userSelectedLayers[2];
+                    state[l1].y = 180; state[l1].x = 256;
+                    state[l2].y = 300; state[l2].x = 256;
+                    state[l3].y = 420; state[l3].x = 256;
+                }
+            }
+
+            // Ganti UI form dengan animasi loading
             formCard.innerHTML = `
                 <div class="text-center py-8">
                     <i class="fas fa-rocket fa-bounce text-5xl text-blue-500 mb-6"></i>
@@ -343,7 +436,6 @@ async function init() {
             await preloadActiveShapes();
             await renderCanvas();
             
-            // Mengirim ke bot. Gunakan isSilent=false agar muncul popup Berhasil/Gagal sebelum nutup
             await sendToBot(false, true); 
         };
         formCard.appendChild(submitBtn);
@@ -359,7 +451,6 @@ async function init() {
 
         silumanContainer.appendChild(formCard);
         
-        // Hentikan inisialisasi normal karena ini mode otomatis
         return; 
     }
     // =========================================================
