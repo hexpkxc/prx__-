@@ -235,7 +235,81 @@ async function init() {
     if(document.getElementById('t4-font')) document.getElementById('t4-font').value = state.t4.font;
     
     const urlParams = new URLSearchParams(window.location.search);
+    
+    // =========================================================
+    // INJEKSI BARU: HANDLER MODE OTOMATIS (WEBAPP SILUMAN)
+    // =========================================================
+    const autoText = urlParams.get('auto_text');
     const animId = urlParams.get('anim');
+
+    if (autoText) {
+        // 1. Sembunyikan UI utama agar terlihat seperti proses background
+        const appContent = document.querySelectorAll('.app-content');
+        appContent.forEach(el => el.style.display = 'none');
+
+        // 2. Tampilkan Loader
+        const loader = document.getElementById('loader');
+        const loaderText = document.getElementById('loader-text');
+        if(loader) loader.classList.remove('hidden');
+        if(loaderText) loaderText.innerText = "Mengunduh Template Owner...";
+
+        // 3. Ambil daftar shape terlebih dahulu untuk persiapan
+        await fetchShapeList();
+
+        // 4. Tarik App State (Template) dari Bot API
+        if (animId && animId !== "None" && animId !== "undefined") {
+            try {
+                const baseUrl = NGROK_API_URL.replace('/api/upload', '');
+                const ts = new Date().getTime();
+                const res = await fetch(`${baseUrl}/api/template/${animId}?t=${ts}`, {
+                    headers: {
+                        "ngrok-skip-browser-warning": "true",
+                        "Cache-Control": "no-cache"
+                    }
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.status === "success" && data.state) {
+                        state = { ...state, ...data.state };
+                    }
+                }
+            } catch (e) {
+                console.warn("Gagal menarik template dari server.", e);
+            }
+        }
+
+        // 5. Injeksi Kata dari User ke Teks Utama (T1)
+        const textStr = decodeURIComponent(autoText);
+        state.t1.active = true;
+        state.t1.text = textStr;
+
+        // Sedikit algoritma pengaman agar teks yang terlalu panjang tidak keluar batas
+        // (Tetap menggunakan font & efek template)
+        const textLen = textStr.length;
+        if (textLen > 4 && textLen <= 7 && state.t1.size > 140) {
+            state.t1.size = 140;
+        } else if (textLen > 7 && state.t1.size > 100) {
+            state.t1.size = 100;
+        }
+
+        if(loaderText) loaderText.innerText = "Merakit Vektor Teks Premium...";
+
+        // 6. Muat resource (Bentuk/Shape) jika template memilikinya
+        validateShapes();
+        await preloadActiveShapes();
+
+        // 7. Render Vektor dengan semua efek (Curve, 3D Extrude, Warna)
+        await renderCanvas();
+
+        // 8. Kirim ke Server API Python secara siluman
+        await sendToBot(true, true);
+
+        // Berhenti di sini, hentikan proses init UI normal
+        return;
+    }
+    // =========================================================
+
     if (animId && animId !== "None" && animId !== "undefined") {
         loadLottiePreview(animId);
     }
@@ -565,13 +639,15 @@ async function loadFont(fontName) {
     if (loadedFonts[fontName]) return loadedFonts[fontName];
     const loader = document.getElementById('loader');
     const loaderText = document.getElementById('loader-text');
-    loaderText.innerText = `Mengunduh Font: ${fontName}...`;
-    loader.classList.remove('hidden');
+    if(loader && loaderText) {
+        loaderText.innerText = `Mengunduh Font: ${fontName}...`;
+        loader.classList.remove('hidden');
+    }
     return new Promise((resolve, reject) => { 
         opentype.load(FONT_LIST[fontName], function(err, font) { 
-            loader.classList.add('hidden');
+            if(loader) loader.classList.add('hidden');
             if (err) { 
-                alert(`Gagal mengunduh font "${fontName}". Koneksi mungkin bermasalah. Mengembalikan ke font sebelumnya.`);
+                console.warn(`Gagal mengunduh font "${fontName}".`);
                 reject(new Error("FontLoadError")); 
             } else { 
                 loadedFonts[fontName] = font; 
@@ -581,9 +657,7 @@ async function loadFont(fontName) {
     });
 }
 
-// MENGURANGI PRESISI DESIMAL KORDINAT (KOMPRESI SIZE PADA TINGKAT RENDERER)
 function warpPathData(path, curveValue, bbox) {
-    // toPathData(1) akan mengurangi ukuran text yang sangat panjang
     if (curveValue === 0 || !curveValue) return path.toPathData(1);
     const width = bbox.x2 - bbox.x1;
     const cx = (bbox.x1 + bbox.x2) / 2;
@@ -607,7 +681,6 @@ function warpPathData(path, curveValue, bbox) {
 
         if (cmd.type === 'M' || cmd.type === 'L') {
             const pt = transformPoint(cmd.x, cmd.y);
-            // toFixed(1) mengurangi karakter kordinat desimal
             newPathStr += `${cmd.type} ${pt.x.toFixed(1)} ${pt.y.toFixed(1)} `;
         } else if (cmd.type === 'Q') {
             const p1 = transformPoint(cmd.x1, cmd.y1);
@@ -924,7 +997,6 @@ function generateTextGroup(tState, idTag) {
     
     const isSelected = selectedObject === idTag;
     
-    // MENGGUNAKAN <use> UNTUK MENGHEMAT UKURAN TEKS PADA EFEK 3D (Implementasi Poin 2)
     const makeUse = (fColor, sColor, swValue, dx=0, dy=0) => {
         return `<use href="#base-${idTag}" xlink:href="#base-${idTag}" transform="translate(${offsetX + dx}, ${offsetY + dy})" fill="${fColor}" stroke="${sColor}" stroke-width="${swValue}" stroke-linejoin="round" />`;
     };
@@ -1238,24 +1310,32 @@ function switchInduk(tab) {
     }
 }
 
-async function sendToBot() {
-    if(!currentSvgCode || currentSvgCode.trim() === "") return alert("Desain masih kosong!");
+// =========================================================
+// MODIFIKASI: DUKUNGAN PENGIRIMAN SILUMAN (IS_SILENT & IS_AUTO)
+// TERMASUK INJEKSI APP_STATE UNTUK DISIMPAN BOT 
+// =========================================================
+async function sendToBot(isSilent = false, isAuto = false) {
+    if(!currentSvgCode || currentSvgCode.trim() === "") {
+        if(!isSilent) alert("Desain masih kosong!");
+        return;
+    }
     try {
         if (!tg || !tg.initData) {
-            alert("Data otentikasi Telegram tidak ditemukan. Pastikan membuka WebApp ini melalui tombol Menu di Telegram.");
+            if(!isSilent) alert("Data otentikasi Telegram tidak ditemukan. Pastikan membuka WebApp ini melalui tombol Menu di Telegram.");
             return;
         }
 
-        if (tg.CloudStorage) {
+        if (tg.CloudStorage && !isAuto) {
             tg.CloudStorage.setItem('last_state', JSON.stringify(state), (err, success) => {
                 if(err) console.warn("Gagal menyimpan last state", err);
             });
         }
 
-        document.getElementById('loader').classList.remove('hidden'); 
-        document.getElementById('loader-text').innerText = "Sedang memproses & mengompresi...";
+        const loader = document.getElementById('loader');
+        const loaderText = document.getElementById('loader-text');
+        if(loader) loader.classList.remove('hidden'); 
+        if(loaderText) loaderText.innerText = "Sedang memproses & mengompresi...";
 
-        // Pastikan Pako.js tersedia untuk kompresi (Implementasi Poin 1)
         if (!window.pako) {
              await new Promise((resolve, reject) => {
                 const script = document.createElement('script');
@@ -1268,7 +1348,6 @@ async function sendToBot() {
 
         const minifiedSvg = currentSvgCode.replace(/\s+/g, ' ').replace(/>\s+</g, '><').trim();
 
-        // Mengompresi string SVG menjadi payload Deflate -> Base64
         const uint8Array = new TextEncoder().encode(minifiedSvg);
         const compressed = window.pako.deflate(uint8Array);
         
@@ -1280,7 +1359,7 @@ async function sendToBot() {
         const base64CompressedSvg = window.btoa(binary);
 
         const initData = tg.initData;
-        document.getElementById('loader-text').innerText = "Sedang mengirim ke Server...";
+        if(loaderText) loaderText.innerText = "Sedang mengirim ke Server...";
         
         const response = await fetch(NGROK_API_URL, {
             method: 'POST',
@@ -1288,22 +1367,29 @@ async function sendToBot() {
             body: JSON.stringify({ 
                 init_data: initData, 
                 svg_data: base64CompressedSvg, 
-                is_compressed: true 
+                is_compressed: true,
+                is_auto: isAuto, 
+                app_state: state // <--- APP STATE INI YANG NANTI DISIMPAN KE DB OLEH BOT
             })
         });
         
         if (response.ok) {
-            if (tg && typeof tg.close === 'function') {
-                tg.showAlert("Desain berhasil dikirim! Silakan kembali ke chat Bot untuk melihat hasilnya.", function() { tg.close(); });
-            } else { alert("Desain berhasil dikirim! Silakan kembali ke chat Bot untuk melihat hasilnya."); }
+            if (isSilent) {
+                if (tg && typeof tg.close === 'function') tg.close();
+            } else {
+                if (tg && typeof tg.close === 'function') {
+                    tg.showAlert("Desain berhasil dikirim! Silakan kembali ke chat Bot untuk melihat hasilnya.", function() { tg.close(); });
+                } else { alert("Desain berhasil dikirim! Silakan kembali ke chat Bot untuk melihat hasilnya."); }
+            }
         } else {
             const errData = await response.json();
-            alert("Gagal mengirim: " + (errData.error || "Server Error"));
+            if(!isSilent) alert("Gagal mengirim: " + (errData.error || "Server Error"));
         }
     } catch(err) {
-        alert("Gagal menghubungi server backend Ngrok. Detail: " + err.message);
+        if(!isSilent) alert("Gagal menghubungi server backend Ngrok. Detail: " + err.message);
     } finally {
-        document.getElementById('loader').classList.add('hidden');
+        const loader = document.getElementById('loader');
+        if(loader) loader.classList.add('hidden');
     }
 }
 
@@ -1315,8 +1401,6 @@ function saveCurrentAsTemplate() {
     let templateName = prompt("Masukkan nama untuk template ini (maks 20 huruf):", "Desain " + new Date().getHours() + ":" + new Date().getMinutes());
     if (!templateName || templateName.trim() === "") return;
     
-    // FIX BUG: Ganti spasi dengan underscore (_) dan buang karakter dilarang lainnya
-    // Supaya bisa disimpan di Cloud Storage Telegram yang tidak mengizinkan spasi pada *key*
     templateName = templateName.substring(0, 20).replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_-]/g, "");
     
     const key = `tpl_${Date.now()}_${templateName}`;
@@ -1326,7 +1410,6 @@ function saveCurrentAsTemplate() {
         if (err) {
             alert("Gagal menyimpan template.");
         } else {
-            // Tampilkan kembali menjadi spasi (khusus untuk pop-up berhasil saja)
             let displayName = templateName.replace(/_/g, " ");
             alert(`Template "${displayName}" berhasil disimpan!`);
         }
@@ -1404,7 +1487,7 @@ function loadTemplate(key) {
             const loadedState = JSON.parse(value);
             state = { ...state, ...loadedState }; 
             
-            validateShapes(); // Validasi anti crash
+            validateShapes();
             updateUIFromState();
             
             await preloadActiveShapes();
