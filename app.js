@@ -237,7 +237,7 @@ async function init() {
     const urlParams = new URLSearchParams(window.location.search);
     
     // =========================================================
-    // INJEKSI BARU: HANDLER MODE OTOMATIS (WEBAPP SILUMAN)
+    // INJEKSI BARU: HANDLER MODE OTOMATIS (WEBAPP SILUMAN) - MULTI INPUT
     // =========================================================
     const autoText = urlParams.get('auto_text');
     const animId = urlParams.get('anim');
@@ -279,36 +279,147 @@ async function init() {
             }
         }
 
-        // 5. Injeksi Kata dari User ke Teks Utama (T1)
-        const textStr = decodeURIComponent(autoText);
-        state.t1.active = true;
-        state.t1.text = textStr;
-
-        // Sedikit algoritma pengaman agar teks yang terlalu panjang tidak keluar batas
-        // (Tetap menggunakan font & efek template)
-        const textLen = textStr.length;
-        if (textLen > 4 && textLen <= 7 && state.t1.size > 140) {
-            state.t1.size = 140;
-        } else if (textLen > 7 && state.t1.size > 100) {
-            state.t1.size = 100;
+        // 5. Deteksi layer teks aktif (t1, t2, t3, t4) yang memiliki teks tidak kosong di template
+        const activeTextLayers = [];
+        const textLayerKeys = ['t1', 't2', 't3', 't4'];
+        for (let key of textLayerKeys) {
+            if (state[key].active && state[key].text && state[key].text.trim() !== '') {
+                activeTextLayers.push(key);
+            }
         }
 
-        if(loaderText) loaderText.innerText = "Merakit Vektor Teks Premium...";
+        // Jika hanya satu layer teks aktif, gunakan logika sebelumnya (satu input)
+        if (activeTextLayers.length === 1) {
+            // Logika lama: injeksi teks ke t1, lalu render langsung
+            const textStr = decodeURIComponent(autoText);
+            state.t1.active = true;
+            state.t1.text = textStr;
 
-        // 6. Muat resource (Bentuk/Shape) jika template memilikinya
-        validateShapes();
-        await preloadActiveShapes();
+            const textLen = textStr.length;
+            if (textLen > 4 && textLen <= 7 && state.t1.size > 140) {
+                state.t1.size = 140;
+            } else if (textLen > 7 && state.t1.size > 100) {
+                state.t1.size = 100;
+            }
 
-        // 7. Render Vektor dengan semua efek (Curve, 3D Extrude, Warna)
-        await renderCanvas();
+            if(loaderText) loaderText.innerText = "Merakit Vektor Teks Premium...";
+            validateShapes();
+            await preloadActiveShapes();
+            await renderCanvas();
+            await sendToBot(true, true);
+            return;
+        }
 
-        // 8. Kirim ke Server API Python secara siluman
-        await sendToBot(true, true);
+        // ========== MULTI-LAYER INPUT ==========
+        // Jika lebih dari satu layer teks aktif, tampilkan form input
+        if (loader) loader.classList.add('hidden');
 
-        // Berhenti di sini, hentikan proses init UI normal
+        // Sembunyikan semua elemen app
+        document.querySelectorAll('.app-content').forEach(el => el.style.display = 'none');
+
+        // Buat form multi-input
+        const container = document.getElementById('canvas-container');
+        container.innerHTML = '';
+        container.className = 'flex flex-col items-center justify-center min-h-[400px] p-4';
+
+        const formTitle = document.createElement('h2');
+        formTitle.className = 'text-xl font-bold mb-4 text-gray-800 dark:text-white';
+        formTitle.innerText = 'Masukkan Teks untuk Setiap Layer';
+        container.appendChild(formTitle);
+
+        const form = document.createElement('div');
+        form.className = 'w-full max-w-md space-y-4';
+
+        // Untuk setiap layer aktif, buat input field
+        const layerLabels = {
+            t1: 'Teks Utama',
+            t2: 'Teks Kedua',
+            t3: 'Teks Ketiga',
+            t4: 'Teks Keempat'
+        };
+
+        const inputValues = {};
+
+        for (let layer of activeTextLayers) {
+            const label = document.createElement('label');
+            label.className = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
+            label.innerText = layerLabels[layer] || layer.toUpperCase();
+            form.appendChild(label);
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.placeholder = 'Masukkan teks...';
+            input.className = 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white';
+            input.id = `input-${layer}`;
+            input.dataset.layer = layer;
+            form.appendChild(input);
+
+            inputValues[layer] = input;
+
+            // Tambahkan sedikit jarak
+            form.appendChild(document.createElement('br'));
+        }
+
+        // Tombol submit
+        const submitBtn = document.createElement('button');
+        submitBtn.className = 'mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-colors';
+        submitBtn.innerText = '🚀 Proses & Kirim';
+        submitBtn.onclick = async () => {
+            // Kumpulkan semua teks
+            const texts = {};
+            let allFilled = true;
+            for (let layer of activeTextLayers) {
+                const val = inputValues[layer].value.trim();
+                if (val === '') {
+                    allFilled = false;
+                    inputValues[layer].classList.add('border-red-500');
+                } else {
+                    inputValues[layer].classList.remove('border-red-500');
+                    texts[layer] = val;
+                }
+            }
+
+            if (!allFilled) {
+                alert('Harap isi semua kolom teks!');
+                return;
+            }
+
+            // Update state dengan teks dari user
+            for (let layer of activeTextLayers) {
+                state[layer].text = texts[layer];
+            }
+
+            // Tampilkan loader
+            const loader = document.getElementById('loader');
+            const loaderText = document.getElementById('loader-text');
+            if(loader) loader.classList.remove('hidden');
+            if(loaderText) loaderText.innerText = "Merakit Vektor Teks Premium...";
+
+            // Render canvas dengan teks baru
+            validateShapes();
+            await preloadActiveShapes();
+            await renderCanvas();
+
+            // Kirim ke bot
+            await sendToBot(true, true);
+        };
+        form.appendChild(submitBtn);
+
+        // Tombol batal
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'mt-2 w-full bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded transition-colors';
+        cancelBtn.innerText = '❌ Batal';
+        cancelBtn.onclick = () => {
+            if (tg && typeof tg.close === 'function') tg.close();
+        };
+        form.appendChild(cancelBtn);
+
+        container.appendChild(form);
+
+        // Setelah form ditampilkan, hentikan eksekusi (tidak perlu render otomatis)
         return;
+        // =========================================================
     }
-    // =========================================================
 
     if (animId && animId !== "None" && animId !== "undefined") {
         loadLottiePreview(animId);
