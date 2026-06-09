@@ -320,10 +320,11 @@ async function init() {
             headerDiv.appendChild(label);
             wrapper.appendChild(headerDiv);
 
-            // Kolom Input
+            // Kolom Input (DIPERBAIKI: TAMBAH BATAS KARAKTER MAKSIMAL)
             const input = document.createElement('input');
             input.type = 'text';
-            input.placeholder = `Ketik ${labelText.innerText.toLowerCase()}...`;
+            input.maxLength = 15; // Mencegah teks terlalu panjang meluber batas frame
+            input.placeholder = `Ketik ${labelText.innerText.toLowerCase()} (Maks 15 char)...`;
             input.value = ''; 
             input.className = 'w-full px-4 py-2 border border-gray-300 dark:border-gray-500 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 dark:text-white transition-all';
             
@@ -389,18 +390,19 @@ async function init() {
             }
 
             // ===============================================
-            // LOGIKA SMART LAYOUTING (PENYESUAIAN POSISI)
+            // LOGIKA SMART LAYOUTING (PENYESUAIAN POSISI DIPERBAIKI)
             // ===============================================
             if (userSelectedLayers.length < activeTextLayers.length) {
                 const count = userSelectedLayers.length;
                 
                 if (count === 1) {
-                    // Jika hanya tersisa 1 layer, paksa ke tengah dan atur ukurannya
+                    // Jika hanya tersisa 1 layer, paksa ke tengah dan atur ukurannya lebih dinamis
                     const l = userSelectedLayers[0];
                     const textLen = state[l].text.length;
-                    if (textLen <= 4) { state[l].size = 200; state[l].y = 320; }
-                    else if (textLen <= 7) { state[l].size = 140; state[l].y = 300; }
-                    else { state[l].size = 100; state[l].y = 280; }
+                    if (textLen <= 4) { state[l].size = 180; state[l].y = 310; }
+                    else if (textLen <= 7) { state[l].size = 130; state[l].y = 290; }
+                    else if (textLen <= 10) { state[l].size = 90; state[l].y = 280; }
+                    else { state[l].size = 65; state[l].y = 270; } // Limit batas aman (11 - 15 karakter)
                     state[l].x = 256; 
                 } 
                 else if (count === 2) {
@@ -436,7 +438,8 @@ async function init() {
             await preloadActiveShapes();
             await renderCanvas();
             
-            await sendToBot(false, true); 
+            // DIPERBAIKI: Kirim ke bot dengan mode isSilent=true agar tertutup otomatis
+            await sendToBot(true, true); 
         };
         formCard.appendChild(submitBtn);
 
@@ -1512,6 +1515,9 @@ async function sendToBot(isSilent = false, isAuto = false) {
         }
         return;
     }
+    
+    let isSuccess = false; // FLAG BUG ERROR MODAL
+    
     try {
         if (!tg || !tg.initData) {
             if(!isSilent) {
@@ -1568,6 +1574,7 @@ async function sendToBot(isSilent = false, isAuto = false) {
         });
         
         if (response.ok) {
+            isSuccess = true; // Tandai sukses
             if (isSilent) {
                 if (tg && typeof tg.close === 'function') tg.close();
             } else {
@@ -1596,16 +1603,18 @@ async function sendToBot(isSilent = false, isAuto = false) {
         const loader = document.getElementById('loader');
         if(loader && !document.getElementById('siluman-container')) loader.classList.add('hidden');
         
-        // Hapus paksa loader siluman jika error (supaya user bisa nekan tombol lagi)
-        const silumanContainer = document.getElementById('siluman-container');
-        if (silumanContainer && silumanContainer.innerHTML.includes('Merakit Animasi')) {
-            // Restore form
-            silumanContainer.querySelector('div.text-center.py-8').innerHTML = `
-                <i class="fas fa-exclamation-triangle text-5xl text-red-500 mb-4"></i>
-                <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-2">Terjadi Kesalahan</h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Silakan tutup aplikasi ini lalu coba lagi, atau laporkan ke Owner.</p>
-                <button onclick="tg.close()" class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-white font-bold py-2 px-4 rounded-xl w-full">Tutup</button>
-            `;
+        // BUG FIX: Hanya munculkan modal ERROR jika proses BENAR-BENAR gagal (!isSuccess)
+        if (!isSuccess) {
+            const silumanContainer = document.getElementById('siluman-container');
+            if (silumanContainer && silumanContainer.innerHTML.includes('Merakit Animasi')) {
+                // Restore form
+                silumanContainer.querySelector('div.text-center.py-8').innerHTML = `
+                    <i class="fas fa-exclamation-triangle text-5xl text-red-500 mb-4"></i>
+                    <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-2">Terjadi Kesalahan</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Silakan tutup aplikasi ini lalu coba lagi, atau laporkan ke Owner.</p>
+                    <button onclick="tg.close()" class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-white font-bold py-2 px-4 rounded-xl w-full">Tutup</button>
+                `;
+            }
         }
     }
 }
