@@ -109,6 +109,9 @@ const loadedFonts = {};
 const shapeCache = {}; 
 let availableShapes = {}; 
 
+let activeFontLayer = null;
+let isFontListRendered = false;
+
 let state = {
     layerOrder: ['bg', 'bg2', 't4', 't3', 't2', 't1'],
     bg: { active: true, shape: "", x: -59, y: 31, w: 630, h: 450, colorType: "gradient", color: "#161417", color2: "#0000ff", color3: "#201833", rotate: 0, outlineOnly: false, strokeW: 8 },
@@ -153,6 +156,24 @@ function validateShapes() {
             state.bg2.shape = "";
         }
     }
+}
+
+function injectFontStyles() {
+    let styleContent = '';
+    for (let fontName in FONT_LIST) {
+        styleContent += `
+            @font-face {
+                font-family: '${fontName}';
+                src: url('${FONT_LIST[fontName]}') format('woff');
+                font-weight: normal;
+                font-style: normal;
+                font-display: swap;
+            }
+        `;
+    }
+    const styleElement = document.createElement('style');
+    styleElement.innerHTML = styleContent;
+    document.head.appendChild(styleElement);
 }
 
 async function init() {
@@ -276,10 +297,10 @@ async function init() {
             headerDiv.appendChild(label);
             wrapper.appendChild(headerDiv);
 
-            // Kolom Input (DIPERBAIKI: TAMBAH BATAS KARAKTER MAKSIMAL)
+            // Kolom Input
             const input = document.createElement('input');
             input.type = 'text';
-            input.maxLength = 15; // Mencegah teks terlalu panjang meluber batas frame
+            input.maxLength = 15;
             input.placeholder = `Ketik ${labelText.innerText.toLowerCase()} (Maks 15 char)...`;
             input.value = ''; 
             input.className = 'w-full px-4 py-2 border border-gray-300 dark:border-gray-500 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 dark:text-white transition-all';
@@ -394,7 +415,6 @@ async function init() {
             await preloadActiveShapes();
             await renderCanvas();
             
-            // DIPERBAIKI: Kirim ke bot dengan mode isSilent=true agar tertutup otomatis
             await sendToBot(true, true); 
         };
         formCard.appendChild(submitBtn);
@@ -414,7 +434,7 @@ async function init() {
     }
     // =========================================================
     
-    // LOGIKA NORMAL WEBAPP (Editor Biasa) DILANJUTKAN DI BAWAH INI
+    // LOGIKA NORMAL WEBAPP (Editor Biasa)
     
     const selectedInfo = document.getElementById('selected-info');
     if (selectedInfo && selectedInfo.parentNode && !document.getElementById('btn-layer-up')) {
@@ -427,26 +447,13 @@ async function init() {
         selectedInfo.parentNode.insertBefore(layerControls, selectedInfo.nextSibling);
     }
     
-    const selects = [
-        document.getElementById('t1-font'), 
-        document.getElementById('t2-font'), 
-        document.getElementById('t3-font'),
-        document.getElementById('t4-font')
-    ];
+    // Inject Font Styles for UI Preview
+    injectFontStyles();
     
-    selects.forEach(select => {
-        if (!select) return;
-        for (let fontName in FONT_LIST) {
-            let opt = document.createElement('option');
-            opt.value = fontName; opt.innerHTML = fontName;
-            select.appendChild(opt);
-        }
-    });
-    
-    if(document.getElementById('t1-font')) document.getElementById('t1-font').value = state.t1.font; 
-    if(document.getElementById('t2-font')) document.getElementById('t2-font').value = state.t2.font;
-    if(document.getElementById('t3-font')) document.getElementById('t3-font').value = state.t3.font;
-    if(document.getElementById('t4-font')) document.getElementById('t4-font').value = state.t4.font;
+    const searchInput = document.getElementById('font-search-input');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => filterFontList(e.target.value));
+    }
     
     if (animId && animId !== "None" && animId !== "undefined") {
         loadLottiePreview(animId);
@@ -758,6 +765,111 @@ function closeColorPicker() {
     modal.classList.add('hidden'); modal.classList.remove('flex');
     activeColorStatePath = null; activeColorBtnElement = null;
 }
+
+// -----------------------------------------
+// SISTEM FONT PICKER MODAL (BARU)
+// -----------------------------------------
+function openFontModal(layerId) {
+    activeFontLayer = layerId;
+    const modal = document.getElementById('font-picker-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    
+    if (!isFontListRendered) {
+        renderFontList();
+        isFontListRendered = true;
+    } else {
+        highlightSelectedFont();
+    }
+    
+    const searchInput = document.getElementById('font-search-input');
+    if(searchInput) {
+        searchInput.value = '';
+        filterFontList('');
+    }
+}
+
+function closeFontModal() {
+    const modal = document.getElementById('font-picker-modal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    activeFontLayer = null;
+}
+
+function renderFontList() {
+    const container = document.getElementById('font-list-container');
+    container.innerHTML = '';
+    
+    for (let fontName in FONT_LIST) {
+        const btn = document.createElement('button');
+        btn.className = `font-item w-full text-left px-4 py-3 border-b border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-gray-800 transition flex justify-between items-center`;
+        btn.dataset.fontName = fontName;
+        btn.onclick = () => selectFont(fontName);
+        
+        btn.innerHTML = `
+            <div class="flex flex-col">
+                <span class="text-xs text-gray-500 dark:text-gray-400 mb-1 font-sans">${fontName}</span>
+                <span class="text-xl text-gray-800 dark:text-white" style="font-family: '${fontName}', sans-serif;">Hex Editor Teks</span>
+            </div>
+            <i class="fas fa-check text-blue-500 opacity-0 check-icon"></i>
+        `;
+        container.appendChild(btn);
+    }
+    highlightSelectedFont();
+}
+
+function filterFontList(query) {
+    const lowerQuery = query.toLowerCase();
+    const items = document.querySelectorAll('.font-item');
+    items.forEach(item => {
+        const fontName = item.dataset.fontName.toLowerCase();
+        if (fontName.includes(lowerQuery)) {
+            item.style.display = 'flex';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+function highlightSelectedFont() {
+    if (!activeFontLayer) return;
+    const currentFont = state[activeFontLayer].font;
+    const items = document.querySelectorAll('.font-item');
+    items.forEach(item => {
+        const checkIcon = item.querySelector('.check-icon');
+        if (item.dataset.fontName === currentFont) {
+            checkIcon.classList.remove('opacity-0');
+            item.classList.add('bg-blue-50', 'dark:bg-gray-800');
+        } else {
+            checkIcon.classList.add('opacity-0');
+            item.classList.remove('bg-blue-50', 'dark:bg-gray-800');
+        }
+    });
+}
+
+async function selectFont(fontName) {
+    if (!activeFontLayer) return;
+    state[activeFontLayer].font = fontName;
+    
+    const displaySpan = document.getElementById(`${activeFontLayer}-font-display`);
+    if (displaySpan) {
+        displaySpan.innerText = fontName;
+        displaySpan.style.fontFamily = `'${fontName}', sans-serif`;
+    }
+    
+    const hiddenSelect = document.getElementById(`${activeFontLayer}-font`);
+    if (hiddenSelect) {
+        hiddenSelect.value = fontName;
+    }
+    
+    closeFontModal();
+    
+    // Tunggu font diload oleh opentype sebelum render canvas
+    await loadFont(fontName);
+    renderCanvas();
+    scheduleHistorySave();
+}
+// -----------------------------------------
 
 function cloneState(obj) { return JSON.parse(JSON.stringify(obj)); }
 
@@ -1336,7 +1448,9 @@ function setupEventListeners() {
                 renderCanvas(); scheduleHistorySave();
             });
         }
-        bindInput(`${p}-text`, `${p}.text`); bindInput(`${p}-font`, `${p}.font`); bindInput(`${p}-size`, `${p}.size`, true); 
+        bindInput(`${p}-text`, `${p}.text`); 
+        // Note: Tidak perlu mem-bind tX-font select lagi karena kita pakai custom button selectFont()
+        bindInput(`${p}-size`, `${p}.size`, true); 
         bindInput(`${p}-curve`, `${p}.curve`, true); 
         bindInput(`${p}-depth3d`, `${p}.depth3d`, true); bindInput(`${p}-angle3d`, `${p}.angle3d`, true); 
         bindInput(`${p}-fillType`, `${p}.fillType`); bindInput(`${p}-fill-none`, `${p}.fillNone`); 
@@ -1412,7 +1526,17 @@ function updateUIFromState() {
              if(mergeEl) mergeEl.checked = state[id].mergeToT1 || false;
         }
 
-        document.getElementById(`${id}-text`).value = state[id].text; document.getElementById(`${id}-font`).value = state[id].font; 
+        document.getElementById(`${id}-text`).value = state[id].text; 
+        
+        // Update Font UI Components
+        const hiddenSelect = document.getElementById(`${id}-font`);
+        if(hiddenSelect) hiddenSelect.value = state[id].font;
+        const fontDisplayBtn = document.getElementById(`${id}-font-display`);
+        if(fontDisplayBtn) {
+            fontDisplayBtn.innerText = state[id].font;
+            fontDisplayBtn.style.fontFamily = `'${state[id].font}', sans-serif`;
+        }
+        
         document.getElementById(`${id}-size`).value = state[id].size; document.getElementById(`${id}-size-val`).innerText = state[id].size; 
         
         document.getElementById(`${id}-curve`).value = state[id].curve || 0; 
@@ -1472,7 +1596,7 @@ async function sendToBot(isSilent = false, isAuto = false) {
         return;
     }
     
-    let isSuccess = false; // FLAG BUG ERROR MODAL
+    let isSuccess = false; 
     
     try {
         if (!tg || !tg.initData) {
@@ -1530,7 +1654,7 @@ async function sendToBot(isSilent = false, isAuto = false) {
         });
         
         if (response.ok) {
-            isSuccess = true; // Tandai sukses
+            isSuccess = true; 
             if (isSilent) {
                 if (tg && typeof tg.close === 'function') tg.close();
             } else {
@@ -1559,11 +1683,9 @@ async function sendToBot(isSilent = false, isAuto = false) {
         const loader = document.getElementById('loader');
         if(loader && !document.getElementById('siluman-container')) loader.classList.add('hidden');
         
-        // BUG FIX: Hanya munculkan modal ERROR jika proses BENAR-BENAR gagal (!isSuccess)
         if (!isSuccess) {
             const silumanContainer = document.getElementById('siluman-container');
             if (silumanContainer && silumanContainer.innerHTML.includes('Merakit Animasi')) {
-                // Restore form
                 silumanContainer.querySelector('div.text-center.py-8').innerHTML = `
                     <i class="fas fa-exclamation-triangle text-5xl text-red-500 mb-4"></i>
                     <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-2">Terjadi Kesalahan</h3>
