@@ -181,7 +181,7 @@ async function init() {
     const urlParams = new URLSearchParams(window.location.search);
     
     // =========================================================
-    // INJEKSI BARU: HANDLER MODE OTOMATIS + SMART LAYOUTING
+    // INJEKSI BARU: HANDLER MODE OTOMATIS (LIVE PREVIEW)
     // =========================================================
     const isAutoMode = urlParams.get('auto_text') !== null;
     const animId = urlParams.get('anim');
@@ -199,12 +199,12 @@ async function init() {
         // 2. Buat container khusus Siluman
         const silumanContainer = document.createElement('div');
         silumanContainer.id = 'siluman-container';
-        silumanContainer.className = 'fixed inset-0 bg-gray-50 dark:bg-gray-900 z-50 flex flex-col items-center justify-center p-4 overflow-y-auto';
+        silumanContainer.className = 'fixed inset-0 bg-gray-50 dark:bg-gray-900 z-50 flex flex-col items-center justify-start sm:justify-center p-4 overflow-y-auto';
         document.body.appendChild(silumanContainer);
 
         // Tampilkan loader awal
         silumanContainer.innerHTML = `
-            <div class="text-center">
+            <div class="text-center mt-20 sm:mt-0">
                 <i class="fas fa-circle-notch fa-spin text-4xl text-blue-500 mb-4"></i>
                 <p class="text-gray-700 dark:text-gray-300 font-bold" id="siluman-loader-text">Menghubungkan ke Server...</p>
             </div>
@@ -213,7 +213,7 @@ async function init() {
         // 3. Ambil daftar shape
         await fetchShapeList();
 
-        // 4. Tarik App State (Template) dari Bot API
+        // 4. Tarik App State (Template Owner) dari Bot API
         if (animId && animId !== "None" && animId !== "undefined") {
             const ldr = document.getElementById('siluman-loader-text');
             if (ldr) ldr.innerText = "Mengunduh Template Owner...";
@@ -231,6 +231,9 @@ async function init() {
                         state = { ...state, ...data.state };
                     }
                 }
+                
+                // Load animasi lottie (jika template menggunakan lottie di background)
+                await loadLottiePreview(animId);
             } catch (e) {
                 console.warn("Gagal menarik template dari server.", e);
             }
@@ -247,26 +250,95 @@ async function init() {
 
         if (activeTextLayers.length === 0) activeTextLayers.push('t1');
 
+        // Pastikan font dan shape template asli dimuat dulu sebelum Live Preview dirender
+        validateShapes();
+        await preloadActiveShapes();
+
         // 6. Buat Form Dinamis Multi-Layer dengan Checklist
         silumanContainer.innerHTML = ''; // Hapus loader
         
         const formCard = document.createElement('div');
-        formCard.className = 'w-full max-w-md bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700';
+        formCard.className = 'w-full max-w-md bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 mt-6 sm:mt-0';
         
         const formTitle = document.createElement('h2');
         formTitle.className = 'text-xl font-black mb-2 text-gray-800 dark:text-white text-center tracking-wide';
         formTitle.innerHTML = '<i class="fas fa-magic text-blue-500 mr-2"></i> Input Teks Animasi';
         formCard.appendChild(formTitle);
         
-        // Deskripsi Form
         const formDesc = document.createElement('p');
         formDesc.className = 'text-sm text-gray-500 dark:text-gray-400 text-center mb-6';
-        formDesc.innerText = activeTextLayers.length > 1 ? "Centang layer teks yang ingin Anda gunakan. Posisi akan menyesuaikan secara otomatis." : "Masukkan teks untuk animasi Anda.";
+        formDesc.innerText = activeTextLayers.length > 1 ? "Centang layer teks yang ingin digunakan. Preview akan otomatis menyesuaikan." : "Masukkan teks untuk animasi Anda.";
         formCard.appendChild(formDesc);
+
+        // --- PINDAHKAN KANVAS KE DALAM FORM SEBAGAI LIVE PREVIEW ---
+        const canvasContainer = document.getElementById('canvas-container');
+        if(canvasContainer) {
+            // Tampilkan kembali karena sebelumnya disembunyikan
+            canvasContainer.style.display = 'block'; 
+            canvasContainer.classList.add('mx-auto', 'mb-6', 'rounded-xl', 'shadow-inner', 'border', 'border-gray-300', 'dark:border-gray-600', 'bg-checkered', 'pointer-events-none');
+            
+            // Sembunyikan informasi D-Pad yang tidak diperlukan di mode otomatis
+            const dpadInfo = document.getElementById('selected-info');
+            if (dpadInfo && dpadInfo.parentElement) dpadInfo.parentElement.style.display = 'none';
+            
+            formCard.appendChild(canvasContainer);
+            
+            // Render desain JSON pertama kali agar tampil
+            await renderCanvas();
+        }
+        // -----------------------------------------------------------
 
         const layerLabels = { t1: 'Teks Utama', t2: 'Teks Kedua', t3: 'Teks Ketiga', t4: 'Teks Keempat' };
         const inputValues = {};
         const checkboxValues = {};
+
+        // Fungsi Smart Layouting Real-Time
+        const updateLayoutAndRender = async () => {
+            const userSelectedLayers = [];
+            for (let layer of activeTextLayers) {
+                if (checkboxValues[layer].checked) {
+                    state[layer].active = true;
+                    // Spasi digunakan agar tidak error saat render jika kotak teks dikosongkan
+                    state[layer].text = inputValues[layer].value.trim() || " "; 
+                    userSelectedLayers.push(layer);
+                } else {
+                    state[layer].active = false;
+                }
+            }
+
+            // Logika smart layouting posisi (Rata Tengah)
+            if (userSelectedLayers.length > 0 && userSelectedLayers.length < activeTextLayers.length) {
+                const count = userSelectedLayers.length;
+                if (count === 1) {
+                    const l = userSelectedLayers[0];
+                    const textLen = state[l].text.length;
+                    if (textLen <= 4) { state[l].size = 180; state[l].y = 310; }
+                    else if (textLen <= 7) { state[l].size = 130; state[l].y = 290; }
+                    else if (textLen <= 10) { state[l].size = 90; state[l].y = 280; }
+                    else { state[l].size = 65; state[l].y = 270; } 
+                    state[l].x = 256; 
+                } 
+                else if (count === 2) {
+                    const l1 = userSelectedLayers[0];
+                    const l2 = userSelectedLayers[1];
+                    state[l1].y = 220; state[l1].x = 256;
+                    state[l2].y = 360; state[l2].x = 256;
+                    if (state[l1].size < 100) state[l1].size = 100;
+                    if (state[l2].size < 80) state[l2].size = 80;
+                } 
+                else if (count === 3) {
+                    const l1 = userSelectedLayers[0];
+                    const l2 = userSelectedLayers[1];
+                    const l3 = userSelectedLayers[2];
+                    state[l1].y = 180; state[l1].x = 256;
+                    state[l2].y = 300; state[l2].x = 256;
+                    state[l3].y = 420; state[l3].x = 256;
+                }
+            }
+            
+            // Render ulang kanvas (Live Update)
+            await renderCanvas();
+        };
 
         for (let layer of activeTextLayers) {
             const wrapper = document.createElement('div');
@@ -278,7 +350,6 @@ async function init() {
             const label = document.createElement('label');
             label.className = 'font-bold text-sm text-gray-800 dark:text-gray-200 flex items-center cursor-pointer';
             
-            // Komponen Checkbox (Toggle Nyala/Mati Layer)
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
             checkbox.checked = true;
@@ -297,12 +368,11 @@ async function init() {
             headerDiv.appendChild(label);
             wrapper.appendChild(headerDiv);
 
-            // Kolom Input
             const input = document.createElement('input');
             input.type = 'text';
             input.maxLength = 15;
             input.placeholder = `Ketik ${labelText.innerText.toLowerCase()} (Maks 15 char)...`;
-            input.value = ''; 
+            input.value = state[layer].text || ''; 
             input.className = 'w-full px-4 py-2 border border-gray-300 dark:border-gray-500 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 dark:text-white transition-all';
             
             wrapper.appendChild(input);
@@ -311,7 +381,7 @@ async function init() {
             inputValues[layer] = input;
             checkboxValues[layer] = checkbox;
 
-            // Event saat checklist diubah
+            // EVENT LISTENER: Centang layer
             checkbox.addEventListener('change', (e) => {
                 if (e.target.checked) {
                     input.disabled = false;
@@ -323,6 +393,13 @@ async function init() {
                     wrapper.classList.add('opacity-60');
                     input.classList.remove('border-red-500', 'ring-1', 'ring-red-500');
                 }
+                updateLayoutAndRender(); // Update Live Preview
+            });
+
+            // EVENT LISTENER: Ketikan Input Teks
+            input.addEventListener('input', () => {
+                input.classList.remove('border-red-500', 'ring-1', 'ring-red-500');
+                updateLayoutAndRender(); // Update Live Preview
             });
         }
 
@@ -333,28 +410,20 @@ async function init() {
         
         submitBtn.onclick = async () => {
             let allFilled = true;
-            const userSelectedLayers = [];
+            let hasChecked = false;
 
-            // Evaluasi inputan user dan checklist
             for (let layer of activeTextLayers) {
-                const isChecked = checkboxValues[layer].checked;
-                if (isChecked) {
+                if (checkboxValues[layer].checked) {
+                    hasChecked = true;
                     const val = inputValues[layer].value.trim();
                     if (val === '') {
                         allFilled = false;
                         inputValues[layer].classList.add('border-red-500', 'ring-1', 'ring-red-500');
-                    } else {
-                        inputValues[layer].classList.remove('border-red-500', 'ring-1', 'ring-red-500');
-                        state[layer].text = val;
-                        state[layer].active = true;
-                        userSelectedLayers.push(layer);
                     }
-                } else {
-                    state[layer].active = false;
                 }
             }
 
-            if (userSelectedLayers.length === 0) {
+            if (!hasChecked) {
                 if (tg && typeof tg.showAlert === 'function') tg.showAlert('Harap biarkan minimal 1 layer teks tercentang!');
                 else alert('Harap biarkan minimal 1 layer teks tercentang!');
                 return;
@@ -366,55 +435,11 @@ async function init() {
                 return;
             }
 
-            // ===============================================
-            // LOGIKA SMART LAYOUTING (PENYESUAIAN POSISI DIPERBAIKI)
-            // ===============================================
-            if (userSelectedLayers.length < activeTextLayers.length) {
-                const count = userSelectedLayers.length;
-                
-                if (count === 1) {
-                    // Jika hanya tersisa 1 layer, paksa ke tengah dan atur ukurannya lebih dinamis
-                    const l = userSelectedLayers[0];
-                    const textLen = state[l].text.length;
-                    if (textLen <= 4) { state[l].size = 180; state[l].y = 310; }
-                    else if (textLen <= 7) { state[l].size = 130; state[l].y = 290; }
-                    else if (textLen <= 10) { state[l].size = 90; state[l].y = 280; }
-                    else { state[l].size = 65; state[l].y = 270; } // Limit batas aman (11 - 15 karakter)
-                    state[l].x = 256; 
-                } 
-                else if (count === 2) {
-                    // Jika tersisa 2 layer, seimbangkan posisinya di atas dan bawah tengah
-                    const l1 = userSelectedLayers[0];
-                    const l2 = userSelectedLayers[1];
-                    state[l1].y = 220; state[l1].x = 256;
-                    state[l2].y = 360; state[l2].x = 256;
-                    if (state[l1].size < 100) state[l1].size = 100;
-                    if (state[l2].size < 80) state[l2].size = 80;
-                } 
-                else if (count === 3) {
-                    // Jika tersisa 3 layer, susun vertikal merata
-                    const l1 = userSelectedLayers[0];
-                    const l2 = userSelectedLayers[1];
-                    const l3 = userSelectedLayers[2];
-                    state[l1].y = 180; state[l1].x = 256;
-                    state[l2].y = 300; state[l2].x = 256;
-                    state[l3].y = 420; state[l3].x = 256;
-                }
-            }
+            submitBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-2"></i> Mengirim...';
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
 
-            // Ganti UI form dengan animasi loading
-            formCard.innerHTML = `
-                <div class="text-center py-8">
-                    <i class="fas fa-rocket fa-bounce text-5xl text-blue-500 mb-6"></i>
-                    <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-2">Merakit Animasi...</h3>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Mohon tunggu, desain sedang diproses dan dikirim ke server.</p>
-                </div>
-            `;
-
-            validateShapes();
-            await preloadActiveShapes();
-            await renderCanvas();
-            
+            await updateLayoutAndRender();
             await sendToBot(true, true); 
         };
         formCard.appendChild(submitBtn);
