@@ -276,13 +276,13 @@ async function init() {
         formTitle.innerHTML = '<i class="fas fa-magic text-blue-500 mr-2"></i> Mode Otomatis';
         formCard.appendChild(formTitle);
 
-        // KANVAS STATIS (STICKY SAAT DI-SCROLL)
+        // KANVAS STATIS (STICKY SAAT DI-SCROLL). Diganti menjadi bg-white/dark:bg-gray-800 agar teks yg discroll tidak tembus.
         const canvasContainer = document.getElementById('canvas-container');
         const existingLottie = document.getElementById('lottie-bg');
         if(existingLottie) existingLottie.remove(); 
         
         canvasContainer.style.display = 'block'; 
-        canvasContainer.classList.add('mx-auto', 'mb-5', 'rounded-xl', 'shadow-xl', 'border', 'border-gray-300', 'dark:border-gray-600', 'bg-checkered', 'pointer-events-none', 'sticky', 'top-2', 'z-40');
+        canvasContainer.classList.add('mx-auto', 'mb-5', 'rounded-xl', 'shadow-xl', 'border', 'border-gray-300', 'dark:border-gray-600', 'bg-white', 'dark:bg-gray-800', 'pointer-events-none', 'sticky', 'top-2', 'z-40');
         
         const dpadInfo = document.getElementById('selected-info');
         if (dpadInfo && dpadInfo.parentElement) dpadInfo.parentElement.style.display = 'none';
@@ -521,6 +521,7 @@ async function init() {
         silumanContainer.appendChild(formCard);
         
         // POP-UP PREVIEW MODAL DENGAN LIVE SIZE & WARNA
+        // Diperbarui: bg-checkered telah dihapus sepenuhnya (diganti bg-transparent). 
         const previewModal = document.createElement('div');
         previewModal.id = 'auto-preview-modal';
         previewModal.className = 'fixed inset-0 bg-black/80 z-[200] hidden flex-col items-center justify-center p-4 backdrop-blur-sm';
@@ -619,13 +620,17 @@ async function init() {
                 wrapper.innerHTML = ''; 
                 const lottieDiv = document.createElement('div');
                 lottieDiv.style.position = 'absolute'; 
-                lottieDiv.style.inset = '0'; 
+                lottieDiv.style.inset = '0';
+                lottieDiv.style.width = '100%';    // FIX: Pastikan dimensi penuh
+                lottieDiv.style.height = '100%';   // FIX: Pastikan dimensi penuh
                 lottieDiv.style.zIndex = '10';
                 wrapper.appendChild(lottieDiv);
 
+                // FIX UTAMA: Ubah renderer dari 'svg' menjadi 'canvas' karena Lottie SVG
+                // sering gagal/blank saat merender format ekspor TGS spesifik Telegram.
                 previewAnimInstance = lottie.loadAnimation({
                     container: lottieDiv,
-                    renderer: 'svg',
+                    renderer: 'canvas',
                     loop: true, 
                     autoplay: true,
                     animationData: animData
