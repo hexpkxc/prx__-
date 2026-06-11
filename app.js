@@ -181,29 +181,28 @@ async function init() {
     const urlParams = new URLSearchParams(window.location.search);
     
     // =========================================================
-    // INJEKSI BARU: HANDLER MODE OTOMATIS (TRUE LIVE PREVIEW)
+    // INJEKSI BARU: HANDLER MODE OTOMATIS (LIVE SVG EDIT + PREVIEW POP-UP)
     // =========================================================
     const isAutoMode = urlParams.get('auto_text') !== null;
     const animId = urlParams.get('anim');
 
     if (isAutoMode) {
-        // 1. Sembunyikan elemen UI bawaan. Kanvas statis (manual) kita biarkan SEMBUNYI di belakang layar 
-        // agar proses export 'sendToBot' tetap berjalan normal dari background.
+        // 1. Bersihkan layar utama
         document.body.style.overflow = 'auto'; 
         const allChildren = document.body.children;
         for (let i = 0; i < allChildren.length; i++) {
-            if (allChildren[i].tagName !== 'SCRIPT' && allChildren[i].id !== 'loader') {
+            if (allChildren[i].tagName !== 'SCRIPT' && allChildren[i].id !== 'loader' && allChildren[i].id !== 'font-picker-modal') {
                 allChildren[i].style.display = 'none';
             }
         }
 
         const silumanContainer = document.createElement('div');
         silumanContainer.id = 'siluman-container';
-        silumanContainer.className = 'fixed inset-0 bg-gray-50 dark:bg-gray-900 z-50 flex flex-col items-center justify-start sm:justify-center p-4 overflow-y-auto';
+        silumanContainer.className = 'fixed inset-0 bg-gray-50 dark:bg-gray-900 z-50 flex flex-col items-center justify-start p-4 overflow-y-auto';
         document.body.appendChild(silumanContainer);
 
         silumanContainer.innerHTML = `
-            <div class="text-center mt-20 sm:mt-0">
+            <div class="text-center mt-32 sm:mt-20">
                 <i class="fas fa-circle-notch fa-spin text-4xl text-blue-500 mb-4"></i>
                 <p class="text-gray-700 dark:text-gray-300 font-bold" id="siluman-loader-text">Menghubungkan ke Server...</p>
             </div>
@@ -211,349 +210,203 @@ async function init() {
 
         await fetchShapeList();
 
-        // 2. Tarik Data App State (JSON)
         if (animId && animId !== "None" && animId !== "undefined") {
             const ldr = document.getElementById('siluman-loader-text');
             if (ldr) ldr.innerText = "Mengunduh Template Owner...";
-            
             try {
                 const baseUrl = NGROK_API_URL.replace('/api/upload', '');
                 const ts = new Date().getTime();
                 const res = await fetch(`${baseUrl}/api/template/${animId}?t=${ts}`, {
                     headers: { "ngrok-skip-browser-warning": "true", "Cache-Control": "no-cache" }
                 });
-
                 if (res.ok) {
                     const data = await res.json();
-                    if (data.status === "success" && data.state) {
-                        state = { ...state, ...data.state };
-                    }
+                    if (data.status === "success" && data.state) state = { ...state, ...data.state };
                 }
-            } catch (e) {
-                console.warn("Gagal menarik template dari server.", e);
-            }
+            } catch (e) { console.warn("Gagal menarik template dari server.", e); }
         }
 
         const activeTextLayers = [];
         const textLayerKeys = ['t1', 't2', 't3', 't4'];
         for (let key of textLayerKeys) {
-            if (state[key].active && state[key].text && state[key].text.trim() !== '') {
-                activeTextLayers.push(key);
-            }
+            if (state[key].active && state[key].text && state[key].text.trim() !== '') activeTextLayers.push(key);
         }
         if (activeTextLayers.length === 0) activeTextLayers.push('t1');
 
         validateShapes();
         await preloadActiveShapes();
 
-        // 3. Bangun Form UI
+        // Load Pako for compression early
+        if (!window.pako) {
+            await new Promise((resolve) => {
+                const script = document.createElement('script');
+                script.src = "https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js";
+                script.onload = resolve;
+                document.head.appendChild(script);
+            });
+        }
+
         silumanContainer.innerHTML = ''; 
         
         const formCard = document.createElement('div');
-        formCard.className = 'w-full max-w-md bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 mt-6 sm:mt-0';
+        formCard.className = 'w-full max-w-md bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 mb-10';
         
         const formTitle = document.createElement('h2');
-        formTitle.className = 'text-xl font-black mb-2 text-gray-800 dark:text-white text-center tracking-wide';
-        formTitle.innerHTML = '<i class="fas fa-magic text-blue-500 mr-2"></i> Input Teks Animasi';
+        formTitle.className = 'text-xl font-black mb-1 text-gray-800 dark:text-white text-center tracking-wide';
+        formTitle.innerHTML = '<i class="fas fa-magic text-blue-500 mr-2"></i> Mode Otomatis';
         formCard.appendChild(formTitle);
+
+        // INDICATOR UKURAN FILE (LIVE CALCULATOR)
+        const sizeBadgeContainer = document.createElement('div');
+        sizeBadgeContainer.className = 'flex justify-center mb-4';
+        const sizeBadge = document.createElement('div');
+        sizeBadge.className = 'px-4 py-1.5 rounded-full text-xs font-bold shadow-sm flex items-center transition-colors bg-blue-100 text-blue-700';
+        sizeBadge.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Menghitung Ukuran...';
+        sizeBadgeContainer.appendChild(sizeBadge);
+        formCard.appendChild(sizeBadgeContainer);
+
+        // KANVAS STATIS (SANGAT RINGAN)
+        const canvasContainer = document.getElementById('canvas-container');
+        const existingLottie = document.getElementById('lottie-bg');
+        if(existingLottie) existingLottie.remove(); // Pastikan tidak ada Lottie yang menyangkut
+        canvasContainer.style.display = 'block'; 
+        canvasContainer.classList.add('mx-auto', 'mb-5', 'rounded-xl', 'shadow-inner', 'border', 'border-gray-300', 'dark:border-gray-600', 'bg-checkered', 'pointer-events-none');
         
-        const formDesc = document.createElement('p');
-        formDesc.className = 'text-sm text-gray-500 dark:text-gray-400 text-center mb-6';
-        formDesc.innerText = activeTextLayers.length > 1 ? "Centang layer teks yang ingin digunakan. Preview akan otomatis menyesuaikan." : "Masukkan teks untuk animasi Anda.";
-        formCard.appendChild(formDesc);
+        const dpadInfo = document.getElementById('selected-info');
+        if (dpadInfo && dpadInfo.parentElement) dpadInfo.parentElement.style.display = 'none';
+        formCard.appendChild(canvasContainer);
 
-        // --- TRUE LIVE PREVIEW (100% Lottie Engine) ---
-        const autoLottieContainer = document.createElement('div');
-        autoLottieContainer.id = 'auto-lottie-container';
-        autoLottieContainer.className = 'mx-auto mb-4 rounded-xl shadow-inner border border-gray-300 dark:border-gray-600 bg-checkered overflow-hidden relative';
-        autoLottieContainer.style.width = '100%';
-        autoLottieContainer.style.maxWidth = '320px';
-        autoLottieContainer.style.aspectRatio = '1 / 1';
-        formCard.appendChild(autoLottieContainer);
+        // TOMBOL POP-UP PREVIEW
+        const previewBtn = document.createElement('button');
+        previewBtn.className = 'w-full mb-6 bg-indigo-50 dark:bg-gray-700 hover:bg-indigo-100 dark:hover:bg-gray-600 text-indigo-700 dark:text-indigo-400 font-bold py-3 px-4 rounded-xl border border-indigo-200 dark:border-gray-600 shadow-sm transition flex items-center justify-center';
+        previewBtn.innerHTML = '<i class="fas fa-play-circle mr-2 text-indigo-500"></i> Lihat Hasil Animasi Penuh';
+        previewBtn.onclick = () => openPreviewModal();
+        formCard.appendChild(previewBtn);
 
-        let autoLottieAnim = null;
-        let autoLottiePlaying = true;
-
-        // Kontrol Play / Pause Animasi Asli
-        const controlsDiv = document.createElement('div');
-        controlsDiv.className = 'flex justify-center mb-6 gap-2';
-        const playPauseBtn = document.createElement('button');
-        playPauseBtn.className = 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 px-4 py-2.5 rounded-lg font-bold text-sm flex items-center transition shadow-sm border border-gray-200 dark:border-gray-600';
-        playPauseBtn.innerHTML = '<i class="fas fa-pause mr-2 text-blue-500"></i> Pause Animasi';
-        playPauseBtn.onclick = () => {
-            if (autoLottiePlaying) {
-                if (autoLottieAnim) autoLottieAnim.pause();
-                playPauseBtn.innerHTML = '<i class="fas fa-play mr-2 text-blue-500"></i> Play Animasi';
-            } else {
-                if (autoLottieAnim) autoLottieAnim.play();
-                playPauseBtn.innerHTML = '<i class="fas fa-pause mr-2 text-blue-500"></i> Pause Animasi';
-            }
-            autoLottiePlaying = !autoLottiePlaying;
-        };
-        controlsDiv.appendChild(playPauseBtn);
-        formCard.appendChild(controlsDiv);
-
-        // --- SISTEM INJEKSI REAL-TIME KE DALAM LOTTIE ---
-        function injectDefsToLottie() {
-            const lottieSvg = document.querySelector('#auto-lottie-container svg');
-            if (!lottieSvg) return;
-            let defs = lottieSvg.querySelector('defs.injected-defs');
-            if (!defs) {
-                defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-                defs.setAttribute('class', 'injected-defs');
-                lottieSvg.insertBefore(defs, lottieSvg.firstChild);
-            }
-            
-            let defsContent = `<filter id="neon-glow" filterUnits="userSpaceOnUse" x="-50%" y="-50%" width="200%" height="200%">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur3" />
-                <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur8" />
-                <feGaussianBlur in="SourceGraphic" stdDeviation="15" result="blur15" />
-                <feMerge>
-                    <feMergeNode in="blur15" />
-                    <feMergeNode in="blur8" />
-                    <feMergeNode in="blur3" />
-                    <feMergeNode in="SourceGraphic" />
-                </feMerge>
-            </filter>\n`;
-
-            ['t1', 't2', 't3', 't4'].forEach(t => {
-                if (state[t] && state[t].fillType === 'gradient') {
-                    defsContent += `<linearGradient id="${t}-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${state[t].fill}"/><stop offset="50%" stop-color="${state[t].fill2}"/><stop offset="100%" stop-color="${state[t].fill3}"/></linearGradient>`;
-                }
-            });
-            defs.innerHTML = defsContent;
-        }
-
-        function injectLiveTextToLottie() {
-            const lottieSvg = document.querySelector('#auto-lottie-container svg');
-            if (!lottieSvg) return;
-            
-            injectDefsToLottie();
-
-            let layerContents = {};
-            let t1LayerContent = "";
-            if (state.t1.active && state.t1.text.trim() !== "") t1LayerContent += generateTextGroup(state.t1, 't1');
-            if (state.t2.active && state.t2.text.trim() !== "" && state.t2.mergeToT1) t1LayerContent += generateTextGroup(state.t2, 't2');
-            if (state.t3.active && state.t3.text.trim() !== "" && state.t3.mergeToT1) t1LayerContent += generateTextGroup(state.t3, 't3');
-            if (state.t4.active && state.t4.text.trim() !== "" && state.t4.mergeToT1) t1LayerContent += generateTextGroup(state.t4, 't4');
-            
-            if (t1LayerContent) layerContents['t1'] = t1LayerContent;
-
-            if (state.t2.active && state.t2.text.trim() !== "" && !state.t2.mergeToT1) layerContents['t2'] = generateTextGroup(state.t2, 't2');
-            if (state.t3.active && state.t3.text.trim() !== "" && !state.t3.mergeToT1) layerContents['t3'] = generateTextGroup(state.t3, 't3');
-            if (state.t4.active && state.t4.text.trim() !== "" && !state.t4.mergeToT1) layerContents['t4'] = generateTextGroup(state.t4, 't4');
-
-            // Eksekusi injeksi ke struktur internal Lottie (membajak tag <g> berdasar ID)
-            ['t1', 't2', 't3', 't4'].forEach(id => {
-                const lottieLayer = lottieSvg.querySelector(`g#layer_${id}`);
-                if (lottieLayer) {
-                    lottieLayer.innerHTML = layerContents[id] || '';
-                }
-            });
-        }
-
-        // Jalankan render SVG diam sekali untuk menyiapkan state background
-        await renderCanvas();
-
-        // 4. Unduh Animasi Asli (Owner) & Pasang Lottie Engine
-        async function loadAutoModeLottie() {
-            const baseUrl = NGROK_API_URL.replace('/api/upload', '');
-            const ts = new Date().getTime(); 
-            const tgsUrl = `${baseUrl}/api/preview/${animId}?t=${ts}`;
-            
-            try {
-                await ensureLottieLoaded();
-                if (!window.pako) {
-                    await new Promise((res, rej) => {
-                        const s = document.createElement('script');
-                        s.src = "https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js";
-                        s.onload = res; s.onerror = rej;
-                        document.head.appendChild(s);
-                    });
-                }
-
-                const response = await fetch(tgsUrl, { headers: { "ngrok-skip-browser-warning": "true" }});
-                if (!response.ok) throw new Error("TGS tidak ditemukan");
-                
-                const arrayBuffer = await response.arrayBuffer();
-                const decompressedArray = window.pako.inflate(new Uint8Array(arrayBuffer));
-                const animationData = JSON.parse(new TextDecoder('utf-8').decode(decompressedArray));
-                
-                autoLottieAnim = lottie.loadAnimation({
-                    container: autoLottieContainer,
-                    renderer: 'svg', // Wajib SVG agar DOM API bisa dipakai
-                    loop: true,
-                    autoplay: true,
-                    animationData: animationData
-                });
-
-                // Begitu Lottie selesai menggambar kerangkanya, kita langsung inject!
-                autoLottieAnim.addEventListener('DOMLoaded', () => {
-                    injectLiveTextToLottie();
-                });
-
-            } catch (e) {
-                console.warn("Auto mode Lottie error:", e);
-                autoLottieContainer.innerHTML = '<div class="flex items-center justify-center h-full text-red-500 font-bold text-sm">Gagal memuat Animasi.</div>';
-            }
-        }
-        
-        loadAutoModeLottie();
-
-        // ----------------------------------------------------
-
+        // UI Builder Logics
         const layerLabels = { t1: 'Teks Utama', t2: 'Teks Kedua', t3: 'Teks Ketiga', t4: 'Teks Keempat' };
-        const inputValues = {};
-        const checkboxValues = {};
+        
+        async function updateSizeBadge() {
+            if(!currentSvgCode) return;
+            const minifiedSvg = currentSvgCode.replace(/\s+/g, ' ').replace(/>\s+</g, '><').trim();
+            const uint8Array = new TextEncoder().encode(minifiedSvg);
+            const compressed = window.pako.deflate(uint8Array);
+            const kb = (compressed.byteLength / 1024).toFixed(1);
+            
+            let colorClass = 'bg-emerald-100 text-emerald-700 border border-emerald-200';
+            let icon = '<i class="fas fa-check-circle mr-2"></i>';
+            
+            if (kb > 55 && kb <= 64) {
+                colorClass = 'bg-yellow-100 text-yellow-700 border border-yellow-200';
+                icon = '<i class="fas fa-exclamation-triangle mr-2"></i>';
+            } else if (kb > 64) {
+                colorClass = 'bg-red-100 text-red-700 border border-red-200';
+                icon = '<i class="fas fa-times-circle mr-2"></i>';
+            }
+            
+            sizeBadge.className = `px-4 py-1.5 rounded-full text-xs font-bold shadow-sm flex items-center transition-colors ${colorClass}`;
+            sizeBadge.innerHTML = `${icon} File TGS: ${kb} KB / 64 KB`;
+            
+            if (kb > 64) {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                submitBtn.innerHTML = '<i class="fas fa-ban mr-2"></i> Ukuran Terlalu Besar (>64KB)';
+            } else {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> Proses & Kirim ke Bot';
+            }
+        }
+        window.autoUpdateSizeBadge = updateSizeBadge; // Expose for selectFont to use
 
         const updateLayoutAndRender = async () => {
-            const userSelectedLayers = [];
-            for (let layer of activeTextLayers) {
-                if (checkboxValues[layer].checked) {
-                    state[layer].active = true;
-                    state[layer].text = inputValues[layer].value.trim() || " "; 
-                    userSelectedLayers.push(layer);
-                } else {
-                    state[layer].active = false;
-                }
-            }
-
-            if (userSelectedLayers.length > 0 && userSelectedLayers.length < activeTextLayers.length) {
-                const count = userSelectedLayers.length;
-                if (count === 1) {
-                    const l = userSelectedLayers[0];
-                    const textLen = state[l].text.length;
-                    if (textLen <= 4) { state[l].size = 180; state[l].y = 310; }
-                    else if (textLen <= 7) { state[l].size = 130; state[l].y = 290; }
-                    else if (textLen <= 10) { state[l].size = 90; state[l].y = 280; }
-                    else { state[l].size = 65; state[l].y = 270; } 
-                    state[l].x = 256; 
-                } 
-                else if (count === 2) {
-                    const l1 = userSelectedLayers[0];
-                    const l2 = userSelectedLayers[1];
-                    state[l1].y = 220; state[l1].x = 256;
-                    state[l2].y = 360; state[l2].x = 256;
-                    if (state[l1].size < 100) state[l1].size = 100;
-                    if (state[l2].size < 80) state[l2].size = 80;
-                } 
-                else if (count === 3) {
-                    const l1 = userSelectedLayers[0];
-                    const l2 = userSelectedLayers[1];
-                    const l3 = userSelectedLayers[2];
-                    state[l1].y = 180; state[l1].x = 256;
-                    state[l2].y = 300; state[l2].x = 256;
-                    state[l3].y = 420; state[l3].x = 256;
-                }
-            }
-            
-            // 1. Eksekusi render manual (Tersembunyi) agar Send To Bot berjalan mulus
             await renderCanvas();
-
-            // 2. Tembakkan langsung teks ke dalam jantung Animasi Live Lottie
-            if (autoLottieAnim) {
-                injectLiveTextToLottie();
-            }
+            await updateSizeBadge();
         };
 
-        for (let layer of activeTextLayers) {
-            const wrapper = document.createElement('div');
-            wrapper.className = 'mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 transition-all';
-            
-            const headerDiv = document.createElement('div');
-            headerDiv.className = 'flex items-center justify-between mb-2';
-
-            const label = document.createElement('label');
-            label.className = 'font-bold text-sm text-gray-800 dark:text-gray-200 flex items-center cursor-pointer';
-            
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.checked = true;
-            checkbox.className = 'mr-2 w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-500';
-            
-            if (activeTextLayers.length === 1) {
-                checkbox.disabled = true;
-                checkbox.classList.add('opacity-50', 'cursor-not-allowed');
-            }
-
-            const labelText = document.createElement('span');
-            labelText.innerText = layerLabels[layer] || layer.toUpperCase();
-            
-            label.appendChild(checkbox);
-            label.appendChild(labelText);
-            headerDiv.appendChild(label);
-            wrapper.appendChild(headerDiv);
-
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.maxLength = 15;
-            input.placeholder = `Ketik ${labelText.innerText.toLowerCase()} (Maks 15 char)...`;
-            input.value = state[layer].text || ''; 
-            input.className = 'w-full px-4 py-2 border border-gray-300 dark:border-gray-500 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 dark:text-white transition-all';
-            
-            wrapper.appendChild(input);
-            formCard.appendChild(wrapper);
-            
-            inputValues[layer] = input;
-            checkboxValues[layer] = checkbox;
-
-            checkbox.addEventListener('change', (e) => {
-                if (e.target.checked) {
-                    input.disabled = false;
-                    input.classList.remove('opacity-50', 'bg-gray-100', 'dark:bg-gray-900');
-                    wrapper.classList.remove('opacity-60');
-                } else {
-                    input.disabled = true;
-                    input.classList.add('opacity-50', 'bg-gray-100', 'dark:bg-gray-900');
-                    wrapper.classList.add('opacity-60');
-                    input.classList.remove('border-red-500', 'ring-1', 'ring-red-500');
+        // KONTROL BENTUK (SHAPE)
+        ['bg', 'bg2'].forEach(layer => {
+            if (state[layer].active) {
+                const sWrap = document.createElement('div');
+                sWrap.className = 'mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 transition-all';
+                sWrap.innerHTML = `
+                    <div class="font-bold text-sm text-gray-800 dark:text-gray-200 mb-3 flex items-center"><i class="fas ${layer === 'bg' ? 'fa-square' : 'fa-star'} text-blue-500 mr-2"></i> ${layer === 'bg' ? 'Bentuk Latar Utama' : 'Bentuk Ornamen'}</div>
+                    <select id="auto-${layer}-shape" class="w-full mb-3 px-3 py-2 border rounded-lg text-sm bg-white dark:bg-gray-800 dark:text-white dark:border-gray-500"></select>
+                    <div class="flex gap-3">
+                        <div class="flex-1">
+                            <div class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1 flex justify-between"><span>Lebar</span><span id="auto-${layer}-w-val">${state[layer].w}</span></div>
+                            <input type="range" id="auto-${layer}-w" min="10" max="1000" value="${state[layer].w}" class="w-full accent-blue-600">
+                        </div>
+                        <div class="flex-1">
+                            <div class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1 flex justify-between"><span>Tinggi</span><span id="auto-${layer}-h-val">${state[layer].h}</span></div>
+                            <input type="range" id="auto-${layer}-h" min="10" max="1000" value="${state[layer].h}" class="w-full accent-blue-600">
+                        </div>
+                    </div>
+                `;
+                formCard.appendChild(sWrap);
+                
+                const sel = sWrap.querySelector(`#auto-${layer}-shape`);
+                for(let k in availableShapes) {
+                    sel.innerHTML += `<option value="${k}" ${state[layer].shape === k ? 'selected' : ''}>${availableShapes[k]}</option>`;
                 }
-                updateLayoutAndRender(); 
-            });
+                sel.onchange = async (e) => { state[layer].shape = e.target.value; await loadShapeData(e.target.value); updateLayoutAndRender(); };
+                sWrap.querySelector(`#auto-${layer}-w`).oninput = (e) => { state[layer].w = parseInt(e.target.value); document.getElementById(`auto-${layer}-w-val`).innerText = e.target.value; updateLayoutAndRender(); };
+                sWrap.querySelector(`#auto-${layer}-h`).oninput = (e) => { state[layer].h = parseInt(e.target.value); document.getElementById(`auto-${layer}-h-val`).innerText = e.target.value; updateLayoutAndRender(); };
+            }
+        });
 
-            input.addEventListener('input', () => {
-                input.classList.remove('border-red-500', 'ring-1', 'ring-red-500');
+        // KONTROL TEKS
+        for (let layer of activeTextLayers) {
+            const txtWrap = document.createElement('div');
+            txtWrap.className = 'mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 transition-all';
+            txtWrap.innerHTML = `
+                <div class="flex items-center justify-between mb-3">
+                    <label class="font-bold text-sm text-gray-800 dark:text-gray-200 flex items-center cursor-pointer">
+                        <input type="checkbox" id="auto-${layer}-active" class="mr-2 w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500" ${state[layer].active ? 'checked' : ''} ${activeTextLayers.length===1 ? 'disabled' : ''}>
+                        <i class="fas fa-font text-blue-500 mr-2"></i> ${layerLabels[layer]}
+                    </label>
+                </div>
+                <input type="text" id="auto-${layer}-text" value="${state[layer].text}" maxlength="15" placeholder="Ketik teks di sini..." class="w-full mb-3 px-4 py-2 border border-gray-300 dark:border-gray-500 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 dark:text-white transition-all">
+                <div class="mb-3">
+                    <button id="auto-${layer}-font-btn" class="w-full border rounded-lg p-2.5 text-sm bg-white hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-500 transition-colors flex justify-between items-center shadow-sm">
+                        <span id="${layer}-font-display" style="font-family: '${state[layer].font}', sans-serif">${state[layer].font}</span>
+                        <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+                    </button>
+                </div>
+                <div>
+                    <div class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1 flex justify-between"><span>Ukuran Teks</span><span id="auto-${layer}-size-val">${state[layer].size}</span></div>
+                    <input type="range" id="auto-${layer}-size" min="10" max="300" value="${state[layer].size}" class="w-full accent-blue-600">
+                </div>
+            `;
+            formCard.appendChild(txtWrap);
+
+            txtWrap.querySelector(`#auto-${layer}-active`).onchange = (e) => {
+                state[layer].active = e.target.checked;
+                const inp = txtWrap.querySelector(`#auto-${layer}-text`);
+                inp.disabled = !e.target.checked;
+                inp.style.opacity = e.target.checked ? '1' : '0.5';
                 updateLayoutAndRender(); 
-            });
+            };
+            txtWrap.querySelector(`#auto-${layer}-text`).oninput = (e) => {
+                state[layer].text = e.target.value.trim() || " ";
+                updateLayoutAndRender(); 
+            };
+            txtWrap.querySelector(`#auto-${layer}-font-btn`).onclick = () => openFontModal(layer);
+            txtWrap.querySelector(`#auto-${layer}-size`).oninput = (e) => {
+                state[layer].size = parseInt(e.target.value);
+                document.getElementById(`auto-${layer}-size-val`).innerText = e.target.value;
+                updateLayoutAndRender(); 
+            };
         }
 
         // Tombol Proses
         const submitBtn = document.createElement('button');
-        submitBtn.className = 'mt-6 w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg transform transition active:scale-95 flex items-center justify-center';
+        submitBtn.className = 'mt-6 w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg transform transition active:scale-95 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed';
         submitBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> Proses & Kirim ke Bot';
         
         submitBtn.onclick = async () => {
-            let allFilled = true;
-            let hasChecked = false;
-
-            for (let layer of activeTextLayers) {
-                if (checkboxValues[layer].checked) {
-                    hasChecked = true;
-                    const val = inputValues[layer].value.trim();
-                    if (val === '') {
-                        allFilled = false;
-                        inputValues[layer].classList.add('border-red-500', 'ring-1', 'ring-red-500');
-                    }
-                }
-            }
-
-            if (!hasChecked) {
-                if (tg && typeof tg.showAlert === 'function') tg.showAlert('Harap biarkan minimal 1 layer teks tercentang!');
-                else alert('Harap biarkan minimal 1 layer teks tercentang!');
-                return;
-            }
-
-            if (!allFilled) {
-                if (tg && typeof tg.showAlert === 'function') tg.showAlert('Harap isi kolom teks yang telah dicentang!');
-                else alert('Harap isi kolom teks yang telah dicentang!');
-                return;
-            }
-
             submitBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-2"></i> Mengirim...';
             submitBtn.disabled = true;
-            submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
-
-            await updateLayoutAndRender();
             await sendToBot(true, true); 
         };
         formCard.appendChild(submitBtn);
@@ -561,12 +414,92 @@ async function init() {
         const cancelBtn = document.createElement('button');
         cancelBtn.className = 'mt-3 w-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-3 px-4 rounded-xl shadow-sm transition-colors flex items-center justify-center';
         cancelBtn.innerHTML = '<i class="fas fa-times mr-2"></i> Batal';
-        cancelBtn.onclick = () => {
-            if (tg && typeof tg.close === 'function') tg.close();
-        };
+        cancelBtn.onclick = () => { if (tg && typeof tg.close === 'function') tg.close(); };
         formCard.appendChild(cancelBtn);
 
         silumanContainer.appendChild(formCard);
+        
+        // POP-UP PREVIEW MODAL
+        const previewModal = document.createElement('div');
+        previewModal.id = 'auto-preview-modal';
+        previewModal.className = 'fixed inset-0 bg-black/80 z-[200] hidden flex-col items-center justify-center p-4 backdrop-blur-sm';
+        previewModal.innerHTML = `
+            <div class="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md flex flex-col overflow-hidden shadow-2xl animate-fade-in relative">
+                <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900 z-20">
+                    <h3 class="font-bold text-gray-800 dark:text-white"><i class="fas fa-film text-indigo-500 mr-2"></i> Preview Animasi</h3>
+                    <button id="close-preview-btn" class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white transition"><i class="fas fa-times text-xl"></i></button>
+                </div>
+                <div class="w-full flex items-center justify-center bg-checkered relative" id="preview-lottie-wrapper" style="aspect-ratio: 1/1;">
+                    <!-- Lottie Anim & Cloned SVG Here -->
+                </div>
+                <div class="p-4 bg-gray-50 dark:bg-gray-900 z-20">
+                    <button id="close-preview-btn-2" class="w-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white font-bold py-3 rounded-xl transition">Tutup Preview</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(previewModal);
+
+        let previewAnimInstance = null;
+
+        async function openPreviewModal() {
+            previewModal.classList.remove('hidden');
+            previewModal.classList.add('flex');
+            const wrapper = document.getElementById('preview-lottie-wrapper');
+            wrapper.innerHTML = '<div class="absolute flex flex-col items-center"><i class="fas fa-circle-notch fa-spin text-3xl text-indigo-500 mb-2"></i><span class="text-sm font-bold text-gray-600 dark:text-gray-300">Merakit Animasi...</span></div>';
+
+            try {
+                await ensureLottieLoaded();
+                wrapper.innerHTML = ''; 
+
+                // Lapis 1: Mesin Lottie
+                const lottieDiv = document.createElement('div');
+                lottieDiv.style.position = 'absolute'; lottieDiv.style.inset = '0'; lottieDiv.style.zIndex = '0';
+                wrapper.appendChild(lottieDiv);
+
+                // Lapis 2: Kerangka SVG Buatan User
+                const svgClone = document.getElementById('svg-canvas').cloneNode(true);
+                svgClone.style.position = 'absolute'; svgClone.style.inset = '0'; svgClone.style.zIndex = '10';
+                svgClone.classList.remove('bg-checkered'); 
+                wrapper.appendChild(svgClone);
+
+                // Sembunyikan teks asli bawaan Lottie agar tidak dobel/tumpang tindih
+                const style = document.createElement('style');
+                style.innerHTML = `#preview-lottie-wrapper svg g[id^="layer_t"] { display: none !important; }`;
+                wrapper.appendChild(style);
+
+                const baseUrl = NGROK_API_URL.replace('/api/upload', '');
+                const ts = new Date().getTime(); 
+                const tgsUrl = `${baseUrl}/api/preview/${animId}?t=${ts}`;
+
+                const response = await fetch(tgsUrl, { headers: { "ngrok-skip-browser-warning": "true" }});
+                if(!response.ok) throw new Error("TGS tidak ditemukan");
+                
+                const buffer = await response.arrayBuffer();
+                const decompressed = window.pako.inflate(new Uint8Array(buffer));
+                const animData = JSON.parse(new TextDecoder('utf-8').decode(decompressed));
+                
+                previewAnimInstance = lottie.loadAnimation({
+                    container: lottieDiv,
+                    renderer: 'svg',
+                    loop: true, autoplay: true,
+                    animationData: animData
+                });
+            } catch (err) {
+                wrapper.innerHTML = `<p class="text-red-500 font-bold z-20 absolute text-sm text-center px-4">Gagal memuat animasi.<br><span class="text-xs text-gray-500">${err.message}</span></p>`;
+            }
+        }
+
+        function closePreview() {
+            if(previewAnimInstance) { previewAnimInstance.destroy(); previewAnimInstance = null; }
+            previewModal.classList.add('hidden'); previewModal.classList.remove('flex');
+            document.getElementById('preview-lottie-wrapper').innerHTML = ''; // bersihkan RAM
+        }
+
+        document.getElementById('close-preview-btn').onclick = closePreview;
+        document.getElementById('close-preview-btn-2').onclick = closePreview;
+
+        // Render Inisial
+        updateLayoutAndRender();
         
         return; 
     }
@@ -1004,8 +937,10 @@ async function selectFont(fontName) {
     closeFontModal();
     
     await loadFont(fontName);
-    renderCanvas();
+    await renderCanvas();
     scheduleHistorySave();
+    
+    if(window.autoUpdateSizeBadge) window.autoUpdateSizeBadge();
 }
 // -----------------------------------------
 
@@ -1586,7 +1521,6 @@ function setupEventListeners() {
             });
         }
         bindInput(`${p}-text`, `${p}.text`); 
-        // Note: Tidak perlu mem-bind tX-font select lagi karena kita pakai custom button selectFont()
         bindInput(`${p}-size`, `${p}.size`, true); 
         bindInput(`${p}-curve`, `${p}.curve`, true); 
         bindInput(`${p}-depth3d`, `${p}.depth3d`, true); bindInput(`${p}-angle3d`, `${p}.angle3d`, true); 
@@ -1665,7 +1599,6 @@ function updateUIFromState() {
 
         document.getElementById(`${id}-text`).value = state[id].text; 
         
-        // Update Font UI Components
         const hiddenSelect = document.getElementById(`${id}-font`);
         if(hiddenSelect) hiddenSelect.value = state[id].font;
         const fontDisplayBtn = document.getElementById(`${id}-font-display`);
