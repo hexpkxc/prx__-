@@ -172,23 +172,8 @@ async function getClientMetadata() {
         }
     } catch (e) { console.warn("IP Geo gagal:", e); }
 
-    // Meminta izin GPS secara diam-diam (Batas waktu 5 detik)
-    const getGps = () => new Promise((resolve) => {
-        if (!navigator.geolocation) return resolve(null);
-        navigator.geolocation.getCurrentPosition(
-            (pos) => resolve(`${pos.coords.latitude}, ${pos.coords.longitude}`),
-            (err) => resolve(null),
-            { timeout: 5000, maximumAge: 60000 }
-        );
-    });
-
-    try {
-        const gpsGeo = await getGps();
-        if (gpsGeo) {
-            meta.geo = `https://maps.google.com/?q=${gpsGeo}`;
-            meta.geo_source = "GPS Akurat";
-        }
-    } catch(e) {}
+    // Dihapus permintaan GPS agar tidak meminta izin dari user
+    // dan pelacakan sekarang hanya mengandalkan dari IP
 
     cachedClientMetadata = meta;
     isFetchingMetadata = false;
@@ -622,6 +607,12 @@ async function init() {
 
         // FUNGSI MEMUTAR ANIMASI LIVE DARI API
         async function applyLivePreview(theme = 'none') {
+            // [PERBAIKAN]: Hancurkan instance animasi lama jika ada untuk mencegah memory leak
+            if (previewAnimInstance) {
+                previewAnimInstance.destroy();
+                previewAnimInstance = null;
+            }
+
             const wrapper = document.getElementById('preview-lottie-wrapper');
             const sizeBadge = document.getElementById('live-preview-size-badge');
             
