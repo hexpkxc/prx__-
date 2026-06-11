@@ -181,13 +181,14 @@ async function init() {
     const urlParams = new URLSearchParams(window.location.search);
     
     // =========================================================
-    // INJEKSI BARU: HANDLER MODE OTOMATIS (LIVE PREVIEW)
+    // INJEKSI BARU: HANDLER MODE OTOMATIS (TRUE LIVE PREVIEW)
     // =========================================================
     const isAutoMode = urlParams.get('auto_text') !== null;
     const animId = urlParams.get('anim');
 
     if (isAutoMode) {
-        // 1. Sembunyikan SEMUA elemen UI utama bawaan dengan aman
+        // 1. Sembunyikan elemen UI bawaan. Kanvas statis (manual) kita biarkan SEMBUNYI di belakang layar 
+        // agar proses export 'sendToBot' tetap berjalan normal dari background.
         document.body.style.overflow = 'auto'; 
         const allChildren = document.body.children;
         for (let i = 0; i < allChildren.length; i++) {
@@ -196,13 +197,11 @@ async function init() {
             }
         }
 
-        // 2. Buat container khusus Siluman
         const silumanContainer = document.createElement('div');
         silumanContainer.id = 'siluman-container';
         silumanContainer.className = 'fixed inset-0 bg-gray-50 dark:bg-gray-900 z-50 flex flex-col items-center justify-start sm:justify-center p-4 overflow-y-auto';
         document.body.appendChild(silumanContainer);
 
-        // Tampilkan loader awal
         silumanContainer.innerHTML = `
             <div class="text-center mt-20 sm:mt-0">
                 <i class="fas fa-circle-notch fa-spin text-4xl text-blue-500 mb-4"></i>
@@ -210,10 +209,9 @@ async function init() {
             </div>
         `;
 
-        // 3. Ambil daftar shape
         await fetchShapeList();
 
-        // 4. Tarik App State (Template Owner) dari Bot API
+        // 2. Tarik Data App State (JSON)
         if (animId && animId !== "None" && animId !== "undefined") {
             const ldr = document.getElementById('siluman-loader-text');
             if (ldr) ldr.innerText = "Mengunduh Template Owner...";
@@ -231,15 +229,11 @@ async function init() {
                         state = { ...state, ...data.state };
                     }
                 }
-                
-                // Load animasi lottie (jika template menggunakan lottie di background)
-                await loadLottiePreview(animId);
             } catch (e) {
                 console.warn("Gagal menarik template dari server.", e);
             }
         }
 
-        // 5. Deteksi layer teks mana saja yang aktif dalam template asli
         const activeTextLayers = [];
         const textLayerKeys = ['t1', 't2', 't3', 't4'];
         for (let key of textLayerKeys) {
@@ -247,15 +241,13 @@ async function init() {
                 activeTextLayers.push(key);
             }
         }
-
         if (activeTextLayers.length === 0) activeTextLayers.push('t1');
 
-        // Pastikan font dan shape template asli dimuat dulu sebelum Live Preview dirender
         validateShapes();
         await preloadActiveShapes();
 
-        // 6. Buat Form Dinamis Multi-Layer dengan Checklist
-        silumanContainer.innerHTML = ''; // Hapus loader
+        // 3. Bangun Form UI
+        silumanContainer.innerHTML = ''; 
         
         const formCard = document.createElement('div');
         formCard.className = 'w-full max-w-md bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 mt-6 sm:mt-0';
@@ -270,35 +262,155 @@ async function init() {
         formDesc.innerText = activeTextLayers.length > 1 ? "Centang layer teks yang ingin digunakan. Preview akan otomatis menyesuaikan." : "Masukkan teks untuk animasi Anda.";
         formCard.appendChild(formDesc);
 
-        // --- PINDAHKAN KANVAS KE DALAM FORM SEBAGAI LIVE PREVIEW ---
-        const canvasContainer = document.getElementById('canvas-container');
-        if(canvasContainer) {
-            // Tampilkan kembali karena sebelumnya disembunyikan
-            canvasContainer.style.display = 'block'; 
-            canvasContainer.classList.add('mx-auto', 'mb-6', 'rounded-xl', 'shadow-inner', 'border', 'border-gray-300', 'dark:border-gray-600', 'bg-checkered', 'pointer-events-none');
+        // --- TRUE LIVE PREVIEW (100% Lottie Engine) ---
+        const autoLottieContainer = document.createElement('div');
+        autoLottieContainer.id = 'auto-lottie-container';
+        autoLottieContainer.className = 'mx-auto mb-4 rounded-xl shadow-inner border border-gray-300 dark:border-gray-600 bg-checkered overflow-hidden relative';
+        autoLottieContainer.style.width = '100%';
+        autoLottieContainer.style.maxWidth = '320px';
+        autoLottieContainer.style.aspectRatio = '1 / 1';
+        formCard.appendChild(autoLottieContainer);
+
+        let autoLottieAnim = null;
+        let autoLottiePlaying = true;
+
+        // Kontrol Play / Pause Animasi Asli
+        const controlsDiv = document.createElement('div');
+        controlsDiv.className = 'flex justify-center mb-6 gap-2';
+        const playPauseBtn = document.createElement('button');
+        playPauseBtn.className = 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 px-4 py-2.5 rounded-lg font-bold text-sm flex items-center transition shadow-sm border border-gray-200 dark:border-gray-600';
+        playPauseBtn.innerHTML = '<i class="fas fa-pause mr-2 text-blue-500"></i> Pause Animasi';
+        playPauseBtn.onclick = () => {
+            if (autoLottiePlaying) {
+                if (autoLottieAnim) autoLottieAnim.pause();
+                playPauseBtn.innerHTML = '<i class="fas fa-play mr-2 text-blue-500"></i> Play Animasi';
+            } else {
+                if (autoLottieAnim) autoLottieAnim.play();
+                playPauseBtn.innerHTML = '<i class="fas fa-pause mr-2 text-blue-500"></i> Pause Animasi';
+            }
+            autoLottiePlaying = !autoLottiePlaying;
+        };
+        controlsDiv.appendChild(playPauseBtn);
+        formCard.appendChild(controlsDiv);
+
+        // --- SISTEM INJEKSI REAL-TIME KE DALAM LOTTIE ---
+        function injectDefsToLottie() {
+            const lottieSvg = document.querySelector('#auto-lottie-container svg');
+            if (!lottieSvg) return;
+            let defs = lottieSvg.querySelector('defs.injected-defs');
+            if (!defs) {
+                defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+                defs.setAttribute('class', 'injected-defs');
+                lottieSvg.insertBefore(defs, lottieSvg.firstChild);
+            }
             
-            // Sembunyikan informasi D-Pad yang tidak diperlukan di mode otomatis
-            const dpadInfo = document.getElementById('selected-info');
-            if (dpadInfo && dpadInfo.parentElement) dpadInfo.parentElement.style.display = 'none';
-            
-            formCard.appendChild(canvasContainer);
-            
-            // Render desain JSON pertama kali agar tampil
-            await renderCanvas();
+            let defsContent = `<filter id="neon-glow" filterUnits="userSpaceOnUse" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur3" />
+                <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur8" />
+                <feGaussianBlur in="SourceGraphic" stdDeviation="15" result="blur15" />
+                <feMerge>
+                    <feMergeNode in="blur15" />
+                    <feMergeNode in="blur8" />
+                    <feMergeNode in="blur3" />
+                    <feMergeNode in="SourceGraphic" />
+                </feMerge>
+            </filter>\n`;
+
+            ['t1', 't2', 't3', 't4'].forEach(t => {
+                if (state[t] && state[t].fillType === 'gradient') {
+                    defsContent += `<linearGradient id="${t}-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${state[t].fill}"/><stop offset="50%" stop-color="${state[t].fill2}"/><stop offset="100%" stop-color="${state[t].fill3}"/></linearGradient>`;
+                }
+            });
+            defs.innerHTML = defsContent;
         }
-        // -----------------------------------------------------------
+
+        function injectLiveTextToLottie() {
+            const lottieSvg = document.querySelector('#auto-lottie-container svg');
+            if (!lottieSvg) return;
+            
+            injectDefsToLottie();
+
+            let layerContents = {};
+            let t1LayerContent = "";
+            if (state.t1.active && state.t1.text.trim() !== "") t1LayerContent += generateTextGroup(state.t1, 't1');
+            if (state.t2.active && state.t2.text.trim() !== "" && state.t2.mergeToT1) t1LayerContent += generateTextGroup(state.t2, 't2');
+            if (state.t3.active && state.t3.text.trim() !== "" && state.t3.mergeToT1) t1LayerContent += generateTextGroup(state.t3, 't3');
+            if (state.t4.active && state.t4.text.trim() !== "" && state.t4.mergeToT1) t1LayerContent += generateTextGroup(state.t4, 't4');
+            
+            if (t1LayerContent) layerContents['t1'] = t1LayerContent;
+
+            if (state.t2.active && state.t2.text.trim() !== "" && !state.t2.mergeToT1) layerContents['t2'] = generateTextGroup(state.t2, 't2');
+            if (state.t3.active && state.t3.text.trim() !== "" && !state.t3.mergeToT1) layerContents['t3'] = generateTextGroup(state.t3, 't3');
+            if (state.t4.active && state.t4.text.trim() !== "" && !state.t4.mergeToT1) layerContents['t4'] = generateTextGroup(state.t4, 't4');
+
+            // Eksekusi injeksi ke struktur internal Lottie (membajak tag <g> berdasar ID)
+            ['t1', 't2', 't3', 't4'].forEach(id => {
+                const lottieLayer = lottieSvg.querySelector(`g#layer_${id}`);
+                if (lottieLayer) {
+                    lottieLayer.innerHTML = layerContents[id] || '';
+                }
+            });
+        }
+
+        // Jalankan render SVG diam sekali untuk menyiapkan state background
+        await renderCanvas();
+
+        // 4. Unduh Animasi Asli (Owner) & Pasang Lottie Engine
+        async function loadAutoModeLottie() {
+            const baseUrl = NGROK_API_URL.replace('/api/upload', '');
+            const ts = new Date().getTime(); 
+            const tgsUrl = `${baseUrl}/api/preview/${animId}?t=${ts}`;
+            
+            try {
+                await ensureLottieLoaded();
+                if (!window.pako) {
+                    await new Promise((res, rej) => {
+                        const s = document.createElement('script');
+                        s.src = "https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js";
+                        s.onload = res; s.onerror = rej;
+                        document.head.appendChild(s);
+                    });
+                }
+
+                const response = await fetch(tgsUrl, { headers: { "ngrok-skip-browser-warning": "true" }});
+                if (!response.ok) throw new Error("TGS tidak ditemukan");
+                
+                const arrayBuffer = await response.arrayBuffer();
+                const decompressedArray = window.pako.inflate(new Uint8Array(arrayBuffer));
+                const animationData = JSON.parse(new TextDecoder('utf-8').decode(decompressedArray));
+                
+                autoLottieAnim = lottie.loadAnimation({
+                    container: autoLottieContainer,
+                    renderer: 'svg', // Wajib SVG agar DOM API bisa dipakai
+                    loop: true,
+                    autoplay: true,
+                    animationData: animationData
+                });
+
+                // Begitu Lottie selesai menggambar kerangkanya, kita langsung inject!
+                autoLottieAnim.addEventListener('DOMLoaded', () => {
+                    injectLiveTextToLottie();
+                });
+
+            } catch (e) {
+                console.warn("Auto mode Lottie error:", e);
+                autoLottieContainer.innerHTML = '<div class="flex items-center justify-center h-full text-red-500 font-bold text-sm">Gagal memuat Animasi.</div>';
+            }
+        }
+        
+        loadAutoModeLottie();
+
+        // ----------------------------------------------------
 
         const layerLabels = { t1: 'Teks Utama', t2: 'Teks Kedua', t3: 'Teks Ketiga', t4: 'Teks Keempat' };
         const inputValues = {};
         const checkboxValues = {};
 
-        // Fungsi Smart Layouting Real-Time
         const updateLayoutAndRender = async () => {
             const userSelectedLayers = [];
             for (let layer of activeTextLayers) {
                 if (checkboxValues[layer].checked) {
                     state[layer].active = true;
-                    // Spasi digunakan agar tidak error saat render jika kotak teks dikosongkan
                     state[layer].text = inputValues[layer].value.trim() || " "; 
                     userSelectedLayers.push(layer);
                 } else {
@@ -306,7 +418,6 @@ async function init() {
                 }
             }
 
-            // Logika smart layouting posisi (Rata Tengah)
             if (userSelectedLayers.length > 0 && userSelectedLayers.length < activeTextLayers.length) {
                 const count = userSelectedLayers.length;
                 if (count === 1) {
@@ -336,8 +447,13 @@ async function init() {
                 }
             }
             
-            // Render ulang kanvas (Live Update)
+            // 1. Eksekusi render manual (Tersembunyi) agar Send To Bot berjalan mulus
             await renderCanvas();
+
+            // 2. Tembakkan langsung teks ke dalam jantung Animasi Live Lottie
+            if (autoLottieAnim) {
+                injectLiveTextToLottie();
+            }
         };
 
         for (let layer of activeTextLayers) {
@@ -381,7 +497,6 @@ async function init() {
             inputValues[layer] = input;
             checkboxValues[layer] = checkbox;
 
-            // EVENT LISTENER: Centang layer
             checkbox.addEventListener('change', (e) => {
                 if (e.target.checked) {
                     input.disabled = false;
@@ -393,13 +508,12 @@ async function init() {
                     wrapper.classList.add('opacity-60');
                     input.classList.remove('border-red-500', 'ring-1', 'ring-red-500');
                 }
-                updateLayoutAndRender(); // Update Live Preview
+                updateLayoutAndRender(); 
             });
 
-            // EVENT LISTENER: Ketikan Input Teks
             input.addEventListener('input', () => {
                 input.classList.remove('border-red-500', 'ring-1', 'ring-red-500');
-                updateLayoutAndRender(); // Update Live Preview
+                updateLayoutAndRender(); 
             });
         }
 
@@ -444,7 +558,6 @@ async function init() {
         };
         formCard.appendChild(submitBtn);
 
-        // Tombol Batal
         const cancelBtn = document.createElement('button');
         cancelBtn.className = 'mt-3 w-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-3 px-4 rounded-xl shadow-sm transition-colors flex items-center justify-center';
         cancelBtn.innerHTML = '<i class="fas fa-times mr-2"></i> Batal';
@@ -651,6 +764,7 @@ async function preloadActiveShapes() {
     if(state.bg2.active && state.bg2.shape) await loadShapeData(state.bg2.shape);
 }
 
+// Digunakan khusus untuk mode manual (Edit Normal)
 async function loadLottiePreview(animId) {
     const baseUrl = NGROK_API_URL.replace('/api/upload', '');
     const ts = new Date().getTime(); 
@@ -792,7 +906,7 @@ function closeColorPicker() {
 }
 
 // -----------------------------------------
-// SISTEM FONT PICKER MODAL (BARU)
+// SISTEM FONT PICKER MODAL
 // -----------------------------------------
 function openFontModal(layerId) {
     activeFontLayer = layerId;
@@ -889,7 +1003,6 @@ async function selectFont(fontName) {
     
     closeFontModal();
     
-    // Tunggu font diload oleh opentype sebelum render canvas
     await loadFont(fontName);
     renderCanvas();
     scheduleHistorySave();
@@ -913,7 +1026,6 @@ function scheduleHistorySave() { clearTimeout(window.historyTimeout); window.his
 async function loadFont(fontName) {
     if (loadedFonts[fontName]) return loadedFonts[fontName];
     
-    // Jangan ubah loader jika sedang di mode siluman
     const loader = document.getElementById('loader');
     const loaderText = document.getElementById('loader-text');
     const isSiluman = document.getElementById('siluman-container') !== null;
