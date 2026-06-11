@@ -430,7 +430,7 @@ async function init() {
                     <button id="close-preview-btn" class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white transition"><i class="fas fa-times text-xl"></i></button>
                 </div>
                 <div class="w-full flex items-center justify-center bg-checkered relative" id="preview-lottie-wrapper" style="aspect-ratio: 1/1;">
-                    <!-- Lottie Anim & Cloned SVG Here -->
+                    <!-- Lottie Anim Here -->
                 </div>
                 <div class="p-4 bg-gray-50 dark:bg-gray-900 z-20">
                     <button id="close-preview-btn-2" class="w-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white font-bold py-3 rounded-xl transition">Tutup Preview</button>
@@ -441,53 +441,78 @@ async function init() {
 
         let previewAnimInstance = null;
 
+        // --- PEMBARUAN: FUNGSI OPEN PREVIEW MENGGUNAKAN API LIVE_PREVIEW ---
         async function openPreviewModal() {
             previewModal.classList.remove('hidden');
             previewModal.classList.add('flex');
             const wrapper = document.getElementById('preview-lottie-wrapper');
-            wrapper.innerHTML = '<div class="absolute flex flex-col items-center"><i class="fas fa-circle-notch fa-spin text-3xl text-indigo-500 mb-2"></i><span class="text-sm font-bold text-gray-600 dark:text-gray-300">Merakit Animasi...</span></div>';
+            wrapper.innerHTML = '<div class="absolute flex flex-col items-center"><i class="fas fa-circle-notch fa-spin text-3xl text-indigo-500 mb-2"></i><span class="text-sm font-bold text-gray-600 dark:text-gray-300">Live Rendering...</span></div>';
 
             try {
                 await ensureLottieLoaded();
-                wrapper.innerHTML = ''; 
 
-                // Lapis 1: Mesin Lottie
-                const lottieDiv = document.createElement('div');
-                lottieDiv.style.position = 'absolute'; lottieDiv.style.inset = '0'; lottieDiv.style.zIndex = '0';
-                wrapper.appendChild(lottieDiv);
+                if(!currentSvgCode || currentSvgCode.trim() === "") {
+                    throw new Error("Desain SVG masih kosong, silakan modifikasi terlebih dahulu.");
+                }
 
-                // Lapis 2: Kerangka SVG Buatan User
-                const svgClone = document.getElementById('svg-canvas').cloneNode(true);
-                svgClone.style.position = 'absolute'; svgClone.style.inset = '0'; svgClone.style.zIndex = '10';
-                svgClone.classList.remove('bg-checkered'); 
-                wrapper.appendChild(svgClone);
+                // 1. Kompres SVG (identik dengan saat kirim pesan ke bot)
+                const minifiedSvg = currentSvgCode.replace(/\s+/g, ' ').replace(/>\s+</g, '><').trim();
+                const uint8Array = new TextEncoder().encode(minifiedSvg);
+                const compressed = window.pako.deflate(uint8Array);
+                let binary = '';
+                const len = compressed.byteLength;
+                for (let i = 0; i < len; i++) binary += String.fromCharCode(compressed[i]);
+                const base64CompressedSvg = window.btoa(binary);
 
-                // Sembunyikan teks asli bawaan Lottie agar tidak dobel/tumpang tindih
-                const style = document.createElement('style');
-                style.innerHTML = `#preview-lottie-wrapper svg g[id^="layer_t"] { display: none !important; }`;
-                wrapper.appendChild(style);
-
+                const initData = tg && tg.initData ? tg.initData : "";
                 const baseUrl = NGROK_API_URL.replace('/api/upload', '');
-                const ts = new Date().getTime(); 
-                const tgsUrl = `${baseUrl}/api/preview/${animId}?t=${ts}`;
-
-                const response = await fetch(tgsUrl, { headers: { "ngrok-skip-browser-warning": "true" }});
-                if(!response.ok) throw new Error("TGS tidak ditemukan");
                 
+                // 2. Request POST ke API live_preview baru
+                const response = await fetch(`${baseUrl}/api/live_preview`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json', 
+                        'ngrok-skip-browser-warning': 'true' 
+                    },
+                    body: JSON.stringify({
+                        init_data: initData,
+                        svg_data: base64CompressedSvg,
+                        is_compressed: true,
+                        anim_id: animId,
+                        app_state: state
+                    })
+                });
+
+                if(!response.ok) {
+                    const errObj = await response.json().catch(() => ({}));
+                    throw new Error(errObj.error || "Gagal memproses render instan di server.");
+                }
+
+                // 3. Dekompresi Balasan File TGS
                 const buffer = await response.arrayBuffer();
                 const decompressed = window.pako.inflate(new Uint8Array(buffer));
                 const animData = JSON.parse(new TextDecoder('utf-8').decode(decompressed));
-                
+
+                // 4. Putar secara utuh tanpa tempelan
+                wrapper.innerHTML = ''; 
+                const lottieDiv = document.createElement('div');
+                lottieDiv.style.position = 'absolute'; 
+                lottieDiv.style.inset = '0'; 
+                lottieDiv.style.zIndex = '10';
+                wrapper.appendChild(lottieDiv);
+
                 previewAnimInstance = lottie.loadAnimation({
                     container: lottieDiv,
                     renderer: 'svg',
-                    loop: true, autoplay: true,
+                    loop: true, 
+                    autoplay: true,
                     animationData: animData
                 });
             } catch (err) {
                 wrapper.innerHTML = `<p class="text-red-500 font-bold z-20 absolute text-sm text-center px-4">Gagal memuat animasi.<br><span class="text-xs text-gray-500">${err.message}</span></p>`;
             }
         }
+        // ---------------------------------------------------------------------
 
         function closePreview() {
             if(previewAnimInstance) { previewAnimInstance.destroy(); previewAnimInstance = null; }
