@@ -131,8 +131,6 @@ let colorPicker;
 let activeColorStatePath = null;
 let activeColorBtnElement = null;
 
-window.autoMaxLengths = {}; // Menyimpan limit huruf bawaan dari template owner
-
 async function ensureLottieLoaded() {
     if (window.lottie) return true;
     return new Promise((resolve) => {
@@ -243,12 +241,6 @@ async function init() {
                 if (res.ok) {
                     const data = await res.json();
                     if (data.status === "success" && data.state) {
-                        // REKAM LIMIT PANJANG HURUF DARI OWNER TEMPLATE
-                        for (let key of textLayerKeys) {
-                            if (data.state[key] && data.state[key].text) {
-                                window.autoMaxLengths[key] = data.state[key].text.length;
-                            }
-                        }
                         state = { ...state, ...data.state };
                     }
                 }
@@ -284,12 +276,13 @@ async function init() {
         formTitle.innerHTML = '<i class="fas fa-magic text-blue-500 mr-2"></i> Mode Otomatis';
         formCard.appendChild(formTitle);
 
-        // KANVAS STATIS (SANGAT RINGAN) - Indikator Size dipindah ke Preview Popup
+        // KANVAS STATIS (STICKY SAAT DI-SCROLL)
         const canvasContainer = document.getElementById('canvas-container');
         const existingLottie = document.getElementById('lottie-bg');
-        if(existingLottie) existingLottie.remove(); // Pastikan tidak ada Lottie yang menyangkut
+        if(existingLottie) existingLottie.remove(); 
+        
         canvasContainer.style.display = 'block'; 
-        canvasContainer.classList.add('mx-auto', 'mb-5', 'rounded-xl', 'shadow-inner', 'border', 'border-gray-300', 'dark:border-gray-600', 'bg-checkered', 'pointer-events-none');
+        canvasContainer.classList.add('mx-auto', 'mb-5', 'rounded-xl', 'shadow-xl', 'border', 'border-gray-300', 'dark:border-gray-600', 'bg-checkered', 'pointer-events-none', 'sticky', 'top-2', 'z-40');
         
         const dpadInfo = document.getElementById('selected-info');
         if (dpadInfo && dpadInfo.parentElement) dpadInfo.parentElement.style.display = 'none';
@@ -307,7 +300,6 @@ async function init() {
         
         const updateLayoutAndRender = async () => {
             await renderCanvas();
-            // Optional: minimal check on size can still be kept if needed.
         };
 
         // KONTROL BENTUK (SHAPE)
@@ -341,13 +333,10 @@ async function init() {
             }
         });
 
-        // KONTROL TEKS DIPERBARUI: Lebar, Tinggi, Lengkungan, Spasi & Warna
+        // KONTROL TEKS DIPERBARUI: Lebar, Tinggi, Spasi, Rotasi, Font + Copy, Warna Gradient + Copy
         for (let layer of activeTextLayers) {
             const txtWrap = document.createElement('div');
             txtWrap.className = 'mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 transition-all';
-            
-            // Limit text dinamis
-            const maxLen = window.autoMaxLengths[layer] ? window.autoMaxLengths[layer] : 15;
             
             txtWrap.innerHTML = `
                 <div class="flex items-center justify-between mb-3">
@@ -357,22 +346,25 @@ async function init() {
                     </label>
                 </div>
                 
-                <input type="text" id="auto-${layer}-text" value="${state[layer].text}" maxlength="${maxLen}" placeholder="Maksimal ${maxLen} huruf" class="w-full mb-3 px-4 py-2 border border-gray-300 dark:border-gray-500 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 dark:text-white transition-all">
+                <input type="text" id="auto-${layer}-text" value="${state[layer].text}" placeholder="Masukkan teks..." class="w-full mb-3 px-4 py-2 border border-gray-300 dark:border-gray-500 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 dark:text-white transition-all">
                 
-                <div class="mb-3">
-                    <button id="auto-${layer}-font-btn" class="w-full border rounded-lg p-2.5 text-sm bg-white hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-500 transition-colors flex justify-between items-center shadow-sm">
+                <div class="mb-3 flex gap-2">
+                    <button id="auto-${layer}-font-btn" class="flex-1 border rounded-lg p-2.5 text-sm bg-white hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-500 transition-colors flex justify-between items-center shadow-sm">
                         <span id="${layer}-font-display" style="font-family: '${state[layer].font}', sans-serif">${state[layer].font}</span>
                         <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+                    </button>
+                    <button id="auto-${layer}-apply-font" title="Terapkan font ini ke semua teks aktif" class="bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-800/50 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-700/50 rounded-lg px-3 flex items-center justify-center transition shadow-sm">
+                        <i class="fas fa-copy"></i>
                     </button>
                 </div>
                 
                 <div class="flex gap-3 mb-3">
                     <div class="flex-1">
-                        <div class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1 flex justify-between"><span>Lebar Teks</span><span id="auto-${layer}-w-val">${state[layer].w || state[layer].size || 100}</span></div>
+                        <div class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1 flex justify-between"><span>Lebar</span><span id="auto-${layer}-w-val">${state[layer].w || state[layer].size || 100}</span></div>
                         <input type="range" id="auto-${layer}-w" min="10" max="800" value="${state[layer].w || state[layer].size || 100}" class="w-full accent-blue-600">
                     </div>
                     <div class="flex-1">
-                        <div class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1 flex justify-between"><span>Tinggi Teks</span><span id="auto-${layer}-h-val">${state[layer].h || state[layer].size || 100}</span></div>
+                        <div class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1 flex justify-between"><span>Tinggi</span><span id="auto-${layer}-h-val">${state[layer].h || state[layer].size || 100}</span></div>
                         <input type="range" id="auto-${layer}-h" min="10" max="800" value="${state[layer].h || state[layer].size || 100}" class="w-full accent-blue-600">
                     </div>
                 </div>
@@ -383,13 +375,37 @@ async function init() {
                 </div>
 
                 <div class="mb-3">
-                    <div class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1 flex justify-between"><span>Lengkungan</span><span id="auto-${layer}-curve-val">${state[layer].curve || 0}</span></div>
-                    <input type="range" id="auto-${layer}-curve" min="-100" max="100" value="${state[layer].curve || 0}" class="w-full accent-blue-600">
+                    <div class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1 flex justify-between"><span>Rotasi</span><span id="auto-${layer}-rotate-val">${state[layer].rotate || 0}°</span></div>
+                    <input type="range" id="auto-${layer}-rotate" min="-180" max="180" value="${state[layer].rotate || 0}" class="w-full accent-blue-600">
                 </div>
 
-                <div class="mt-3 flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
-                    <span class="text-sm font-bold text-gray-700 dark:text-gray-200"><i class="fas fa-palette text-pink-500 mr-2"></i>Warna Teks</span>
-                    <input type="color" id="auto-${layer}-color" value="${state[layer].fillType === 'solid' ? state[layer].fill : '#ffffff'}" class="w-10 h-10 rounded cursor-pointer border-0 p-0 shadow-sm">
+                <div class="mt-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-sm font-bold text-gray-700 dark:text-gray-200"><i class="fas fa-palette text-pink-500 mr-2"></i>Warna Teks</span>
+                        <button id="auto-${layer}-apply-color" title="Terapkan warna ini ke semua teks aktif" class="bg-pink-50 hover:bg-pink-100 dark:bg-pink-900/30 dark:hover:bg-pink-800/50 text-pink-600 dark:text-pink-400 border border-pink-200 dark:border-pink-700/50 text-[11px] font-bold rounded px-2 py-1 transition flex items-center shadow-sm">
+                            <i class="fas fa-copy mr-1"></i> Semua
+                        </button>
+                    </div>
+                    
+                    <select id="auto-${layer}-fillType" class="w-full mb-3 px-3 py-1.5 border border-gray-300 dark:border-gray-500 rounded-lg text-sm bg-gray-50 dark:bg-gray-700 dark:text-white transition">
+                        <option value="solid" ${state[layer].fillType === 'solid' ? 'selected' : ''}>Warna Solid</option>
+                        <option value="gradient" ${state[layer].fillType === 'gradient' ? 'selected' : ''}>Warna Gradien</option>
+                    </select>
+
+                    <div class="flex gap-2 justify-between">
+                        <div class="flex-1 flex flex-col items-center">
+                            <span class="text-[10px] text-gray-500 dark:text-gray-400 mb-1">Warna 1</span>
+                            <input type="color" id="auto-${layer}-fill" value="${state[layer].fill || '#ffffff'}" class="w-10 h-10 rounded cursor-pointer border-0 p-0 shadow-sm">
+                        </div>
+                        <div class="flex-1 flex flex-col items-center" id="auto-${layer}-fill2-container" style="display: ${state[layer].fillType === 'gradient' ? 'flex' : 'none'};">
+                            <span class="text-[10px] text-gray-500 dark:text-gray-400 mb-1">Warna 2</span>
+                            <input type="color" id="auto-${layer}-fill2" value="${state[layer].fill2 || '#ff0000'}" class="w-10 h-10 rounded cursor-pointer border-0 p-0 shadow-sm">
+                        </div>
+                        <div class="flex-1 flex flex-col items-center" id="auto-${layer}-fill3-container" style="display: ${state[layer].fillType === 'gradient' ? 'flex' : 'none'};">
+                            <span class="text-[10px] text-gray-500 dark:text-gray-400 mb-1">Warna 3</span>
+                            <input type="color" id="auto-${layer}-fill3" value="${state[layer].fill3 || '#0000ff'}" class="w-10 h-10 rounded cursor-pointer border-0 p-0 shadow-sm">
+                        </div>
+                    </div>
                 </div>
             `;
             formCard.appendChild(txtWrap);
@@ -421,15 +437,65 @@ async function init() {
                 document.getElementById(`auto-${layer}-spacing-val`).innerText = e.target.value;
                 updateLayoutAndRender(); 
             };
-            txtWrap.querySelector(`#auto-${layer}-curve`).oninput = (e) => {
-                state[layer].curve = parseInt(e.target.value);
-                document.getElementById(`auto-${layer}-curve-val`).innerText = e.target.value;
+            txtWrap.querySelector(`#auto-${layer}-rotate`).oninput = (e) => {
+                state[layer].rotate = parseInt(e.target.value);
+                document.getElementById(`auto-${layer}-rotate-val`).innerText = e.target.value + '°';
                 updateLayoutAndRender(); 
             };
-            txtWrap.querySelector(`#auto-${layer}-color`).oninput = (e) => {
-                state[layer].fillType = 'solid'; // override gradient jika user mengubah warna disini
-                state[layer].fill = e.target.value;
+            
+            // Fungsionalitas Pewarnaan Gradient/Solid
+            const fillTypeSel = txtWrap.querySelector(`#auto-${layer}-fillType`);
+            const fill2Cont = txtWrap.querySelector(`#auto-${layer}-fill2-container`);
+            const fill3Cont = txtWrap.querySelector(`#auto-${layer}-fill3-container`);
+            
+            fillTypeSel.onchange = (e) => {
+                state[layer].fillType = e.target.value;
+                const isGrad = e.target.value === 'gradient';
+                fill2Cont.style.display = isGrad ? 'flex' : 'none';
+                fill3Cont.style.display = isGrad ? 'flex' : 'none';
                 updateLayoutAndRender();
+            };
+            
+            txtWrap.querySelector(`#auto-${layer}-fill`).oninput = (e) => { state[layer].fill = e.target.value; updateLayoutAndRender(); };
+            txtWrap.querySelector(`#auto-${layer}-fill2`).oninput = (e) => { state[layer].fill2 = e.target.value; updateLayoutAndRender(); };
+            txtWrap.querySelector(`#auto-${layer}-fill3`).oninput = (e) => { state[layer].fill3 = e.target.value; updateLayoutAndRender(); };
+            
+            // Tombol "Terapkan Font ke Semua"
+            txtWrap.querySelector(`#auto-${layer}-apply-font`).onclick = async () => {
+                const fName = state[layer].font;
+                for (let other of activeTextLayers) {
+                    if (other !== layer && state[other].active) {
+                        state[other].font = fName;
+                        const disp = document.getElementById(`${other}-font-display`);
+                        if (disp) { disp.innerText = fName; disp.style.fontFamily = `'${fName}', sans-serif`; }
+                    }
+                }
+                await updateLayoutAndRender();
+            };
+            
+            // Tombol "Terapkan Warna ke Semua"
+            txtWrap.querySelector(`#auto-${layer}-apply-color`).onclick = async () => {
+                const ft = state[layer].fillType; const f1 = state[layer].fill; const f2 = state[layer].fill2; const f3 = state[layer].fill3;
+                for (let other of activeTextLayers) {
+                    if (other !== layer && state[other].active) {
+                        state[other].fillType = ft; state[other].fill = f1; state[other].fill2 = f2; state[other].fill3 = f3;
+                        
+                        const elType = document.getElementById(`auto-${other}-fillType`);
+                        const elF1 = document.getElementById(`auto-${other}-fill`);
+                        const elF2 = document.getElementById(`auto-${other}-fill2`);
+                        const elF3 = document.getElementById(`auto-${other}-fill3`);
+                        const elF2C = document.getElementById(`auto-${other}-fill2-container`);
+                        const elF3C = document.getElementById(`auto-${other}-fill3-container`);
+                        
+                        if(elType) elType.value = ft;
+                        if(elF1) elF1.value = f1;
+                        if(elF2) elF2.value = f2;
+                        if(elF3) elF3.value = f3;
+                        if(elF2C) elF2C.style.display = ft === 'gradient' ? 'flex' : 'none';
+                        if(elF3C) elF3C.style.display = ft === 'gradient' ? 'flex' : 'none';
+                    }
+                }
+                await updateLayoutAndRender();
             };
         }
 
@@ -1502,7 +1568,7 @@ function generateTextGroup(tState, idTag) {
     renderedPaths += makeUse(baseFill, baseStroke, baseStrokeW);
     
     return `
-    <g transform="translate(${tState.x}, ${tState.y}) rotate(${tState.rotate}) scale(${sx}, ${sy})" class="clickable" data-id="${idTag}">
+    <g transform="translate(${tState.x}, ${tState.y}) rotate(${tState.rotate || 0}) scale(${sx}, ${sy})" class="clickable" data-id="${idTag}">
         <rect x="${-w/2 - 10/sx}" y="${-h/2 - (h*0.2) - 10/sy}" width="${w + 20/sx}" height="${h*1.4 + 20/sy}" fill="transparent" />
         ${isSelected ? `<rect x="${-w/2 - 10/sx}" y="${-h/2 - (h*0.2) - 10/sy}" width="${w + 20/sx}" height="${h*1.4 + 20/sy}" class="focus-ring" />` : ''}
         ${renderedPaths}
@@ -1601,9 +1667,9 @@ function setupEventListeners() {
             let val = el.type === 'checkbox' ? e.target.checked : e.target.value; if(isNum) val = parseInt(val) || 0;
             const path = statePath.split('.'); state[path[0]][path[1]] = val;
             
-            if(id.includes('size') || id.includes('curve') || id.includes('-w') || id.includes('-h') || id.includes('spacing')) {
+            if(id.includes('size') || id.includes('curve') || id.includes('-w') || id.includes('-h') || id.includes('spacing') || id.includes('rotate')) {
                 const valSpan = document.getElementById(id + '-val');
-                if (valSpan) valSpan.innerText = val;
+                if (valSpan) valSpan.innerText = val + (id.includes('rotate') ? '°' : '');
             }
             
             if (id.includes('effect')) {
@@ -1674,6 +1740,7 @@ function setupEventListeners() {
         bindInput(`${p}-h`, `${p}.h`, true); 
         bindInput(`${p}-spacing`, `${p}.spacing`, true); 
         bindInput(`${p}-curve`, `${p}.curve`, true); 
+        bindInput(`${p}-rotate`, `${p}.rotate`, true); 
         bindInput(`${p}-depth3d`, `${p}.depth3d`, true); bindInput(`${p}-angle3d`, `${p}.angle3d`, true); 
         bindInput(`${p}-fillType`, `${p}.fillType`); bindInput(`${p}-fill-none`, `${p}.fillNone`); 
         bindInput(`${p}-stroke-none`, `${p}.strokeNone`); bindInput(`${p}-strokeW`, `${p}.strokeW`, true); 
@@ -1774,9 +1841,14 @@ function updateUIFromState() {
             document.getElementById(`${id}-spacing`).value = state[id].spacing || 0;
             document.getElementById(`${id}-spacing-val`).innerText = state[id].spacing || 0;
         }
-        
-        document.getElementById(`${id}-curve`).value = state[id].curve || 0; 
-        document.getElementById(`${id}-curve-val`).innerText = state[id].curve || 0;
+        if (document.getElementById(`${id}-curve`)) {
+            document.getElementById(`${id}-curve`).value = state[id].curve || 0; 
+            document.getElementById(`${id}-curve-val`).innerText = state[id].curve || 0;
+        }
+        if (document.getElementById(`${id}-rotate`)) {
+            document.getElementById(`${id}-rotate`).value = state[id].rotate || 0; 
+            document.getElementById(`${id}-rotate-val`).innerText = (state[id].rotate || 0) + '°';
+        }
         
         document.getElementById(`${id}-depth3d`).value = state[id].depth3d || 30; 
         document.getElementById(`${id}-angle3d`).value = state[id].angle3d || 45; 
