@@ -116,10 +116,10 @@ let state = {
     layerOrder: ['bg', 'bg2', 't4', 't3', 't2', 't1'],
     bg: { active: true, shape: "", x: -59, y: 31, w: 630, h: 450, colorType: "gradient", color: "#161417", color2: "#0000ff", color3: "#201833", rotate: 0, outlineOnly: false, strokeW: 8 },
     bg2: { active: false, mergeToBg1: false, shape: "", x: 156, y: 50, w: 200, h: 200, colorType: "original", color: "#FFD700", color2: "#FFA500", color3: "#FF4500", rotate: 0, outlineOnly: false, strokeW: 8 },
-    t1: { active: true, text: "HEX", font: "Luckiest Guy", size: 231, x: 256, y: 280, curve: 0, depth3d: 30, angle3d: 45, color3d: "#1f2937", fillType: "gradient", fill: "#6b3200", fill2: "#ff1b00", fill3: "#692800", stroke: "#000000", strokeW: 8, fillNone: false, strokeNone: false, rotate: 0, effect: "shadow" },
-    t2: { active: false, mergeToT1: false, text: "TERBATAS!", font: "Luckiest Guy", size: 60, x: 256, y: 340, curve: 0, depth3d: 20, angle3d: 45, color3d: "#1f2937", fillType: "solid", fill: "#FFEB3B", fill2: "#FF8800", fill3: "#FF0000", stroke: "#000000", strokeW: 4, fillNone: false, strokeNone: false, rotate: 0, effect: "none" },
-    t3: { active: false, mergeToT1: false, text: "SPESIAL!", font: "Creepster", size: 50, x: 256, y: 400, curve: 0, depth3d: 20, angle3d: 45, color3d: "#1f2937", fillType: "solid", fill: "#00FF00", fill2: "#0088FF", fill3: "#0000FF", stroke: "#000000", strokeW: 4, fillNone: false, strokeNone: false, rotate: 0, effect: "none" },
-    t4: { active: false, mergeToT1: false, text: "EKSTRA!", font: "Creepster", size: 50, x: 256, y: 460, curve: 0, depth3d: 20, angle3d: 45, color3d: "#1f2937", fillType: "solid", fill: "#FF00FF", fill2: "#0088FF", fill3: "#0000FF", stroke: "#000000", strokeW: 4, fillNone: false, strokeNone: false, rotate: 0, effect: "none" }
+    t1: { active: true, text: "HEX", font: "Luckiest Guy", size: 231, w: 250, h: 80, spacing: 0, x: 256, y: 280, curve: 0, depth3d: 30, angle3d: 45, color3d: "#1f2937", fillType: "gradient", fill: "#6b3200", fill2: "#ff1b00", fill3: "#692800", stroke: "#000000", strokeW: 8, fillNone: false, strokeNone: false, rotate: 0, effect: "shadow" },
+    t2: { active: false, mergeToT1: false, text: "TERBATAS!", font: "Luckiest Guy", size: 60, w: 200, h: 60, spacing: 0, x: 256, y: 340, curve: 0, depth3d: 20, angle3d: 45, color3d: "#1f2937", fillType: "solid", fill: "#FFEB3B", fill2: "#FF8800", fill3: "#FF0000", stroke: "#000000", strokeW: 4, fillNone: false, strokeNone: false, rotate: 0, effect: "none" },
+    t3: { active: false, mergeToT1: false, text: "SPESIAL!", font: "Creepster", size: 50, w: 200, h: 60, spacing: 0, x: 256, y: 400, curve: 0, depth3d: 20, angle3d: 45, color3d: "#1f2937", fillType: "solid", fill: "#00FF00", fill2: "#0088FF", fill3: "#0000FF", stroke: "#000000", strokeW: 4, fillNone: false, strokeNone: false, rotate: 0, effect: "none" },
+    t4: { active: false, mergeToT1: false, text: "EKSTRA!", font: "Creepster", size: 50, w: 200, h: 60, spacing: 0, x: 256, y: 460, curve: 0, depth3d: 20, angle3d: 45, color3d: "#1f2937", fillType: "solid", fill: "#FF00FF", fill2: "#0088FF", fill3: "#0000FF", stroke: "#000000", strokeW: 4, fillNone: false, strokeNone: false, rotate: 0, effect: "none" }
 };
 
 let historyStack = [], currentHistoryIndex = -1, selectedObject = null, isRendering = false, renderQueued = false;
@@ -130,6 +130,8 @@ let canvas;
 let colorPicker;
 let activeColorStatePath = null;
 let activeColorBtnElement = null;
+
+window.autoMaxLengths = {}; // Menyimpan limit huruf bawaan dari template owner
 
 async function ensureLottieLoaded() {
     if (window.lottie) return true;
@@ -176,6 +178,23 @@ function injectFontStyles() {
     document.head.appendChild(styleElement);
 }
 
+// ===============================================
+// HELPER FUNGTION TEMA WARNA & PREVIEW
+// ===============================================
+let cachedThemes = [];
+async function fetchThemes() {
+    if(cachedThemes.length > 0) return cachedThemes;
+    try {
+        const baseUrl = NGROK_API_URL.replace('/api/upload', '');
+        const res = await fetch(`${baseUrl}/api/themes`, { headers: {"ngrok-skip-browser-warning": "true", "Cache-Control": "no-cache"} });
+        if(res.ok) {
+            const data = await res.json();
+            if(data.status === "success") cachedThemes = data.themes;
+        }
+    } catch(e) { console.warn("Gagal tarik tema", e) }
+    return cachedThemes;
+}
+
 async function init() {
     canvas = document.getElementById('svg-canvas'); 
     const urlParams = new URLSearchParams(window.location.search);
@@ -210,6 +229,8 @@ async function init() {
 
         await fetchShapeList();
 
+        const textLayerKeys = ['t1', 't2', 't3', 't4'];
+
         if (animId && animId !== "None" && animId !== "undefined") {
             const ldr = document.getElementById('siluman-loader-text');
             if (ldr) ldr.innerText = "Mengunduh Template Owner...";
@@ -221,13 +242,20 @@ async function init() {
                 });
                 if (res.ok) {
                     const data = await res.json();
-                    if (data.status === "success" && data.state) state = { ...state, ...data.state };
+                    if (data.status === "success" && data.state) {
+                        // REKAM LIMIT PANJANG HURUF DARI OWNER TEMPLATE
+                        for (let key of textLayerKeys) {
+                            if (data.state[key] && data.state[key].text) {
+                                window.autoMaxLengths[key] = data.state[key].text.length;
+                            }
+                        }
+                        state = { ...state, ...data.state };
+                    }
                 }
             } catch (e) { console.warn("Gagal menarik template dari server.", e); }
         }
 
         const activeTextLayers = [];
-        const textLayerKeys = ['t1', 't2', 't3', 't4'];
         for (let key of textLayerKeys) {
             if (state[key].active && state[key].text && state[key].text.trim() !== '') activeTextLayers.push(key);
         }
@@ -252,20 +280,11 @@ async function init() {
         formCard.className = 'w-full max-w-md bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 mb-10';
         
         const formTitle = document.createElement('h2');
-        formTitle.className = 'text-xl font-black mb-1 text-gray-800 dark:text-white text-center tracking-wide';
+        formTitle.className = 'text-xl font-black mb-4 text-gray-800 dark:text-white text-center tracking-wide';
         formTitle.innerHTML = '<i class="fas fa-magic text-blue-500 mr-2"></i> Mode Otomatis';
         formCard.appendChild(formTitle);
 
-        // INDICATOR UKURAN FILE (LIVE CALCULATOR)
-        const sizeBadgeContainer = document.createElement('div');
-        sizeBadgeContainer.className = 'flex justify-center mb-4';
-        const sizeBadge = document.createElement('div');
-        sizeBadge.className = 'px-4 py-1.5 rounded-full text-xs font-bold shadow-sm flex items-center transition-colors bg-blue-100 text-blue-700';
-        sizeBadge.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Menghitung Ukuran...';
-        sizeBadgeContainer.appendChild(sizeBadge);
-        formCard.appendChild(sizeBadgeContainer);
-
-        // KANVAS STATIS (SANGAT RINGAN)
+        // KANVAS STATIS (SANGAT RINGAN) - Indikator Size dipindah ke Preview Popup
         const canvasContainer = document.getElementById('canvas-container');
         const existingLottie = document.getElementById('lottie-bg');
         if(existingLottie) existingLottie.remove(); // Pastikan tidak ada Lottie yang menyangkut
@@ -286,42 +305,9 @@ async function init() {
         // UI Builder Logics
         const layerLabels = { t1: 'Teks Utama', t2: 'Teks Kedua', t3: 'Teks Ketiga', t4: 'Teks Keempat' };
         
-        async function updateSizeBadge() {
-            if(!currentSvgCode) return;
-            const minifiedSvg = currentSvgCode.replace(/\s+/g, ' ').replace(/>\s+</g, '><').trim();
-            const uint8Array = new TextEncoder().encode(minifiedSvg);
-            const compressed = window.pako.deflate(uint8Array);
-            const kb = (compressed.byteLength / 1024).toFixed(1);
-            
-            let colorClass = 'bg-emerald-100 text-emerald-700 border border-emerald-200';
-            let icon = '<i class="fas fa-check-circle mr-2"></i>';
-            
-            if (kb > 55 && kb <= 64) {
-                colorClass = 'bg-yellow-100 text-yellow-700 border border-yellow-200';
-                icon = '<i class="fas fa-exclamation-triangle mr-2"></i>';
-            } else if (kb > 64) {
-                colorClass = 'bg-red-100 text-red-700 border border-red-200';
-                icon = '<i class="fas fa-times-circle mr-2"></i>';
-            }
-            
-            sizeBadge.className = `px-4 py-1.5 rounded-full text-xs font-bold shadow-sm flex items-center transition-colors ${colorClass}`;
-            sizeBadge.innerHTML = `${icon} File TGS: ${kb} KB / 64 KB`;
-            
-            if (kb > 64) {
-                submitBtn.disabled = true;
-                submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                submitBtn.innerHTML = '<i class="fas fa-ban mr-2"></i> Ukuran Terlalu Besar (>64KB)';
-            } else {
-                submitBtn.disabled = false;
-                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                submitBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> Proses & Kirim ke Bot';
-            }
-        }
-        window.autoUpdateSizeBadge = updateSizeBadge; // Expose for selectFont to use
-
         const updateLayoutAndRender = async () => {
             await renderCanvas();
-            await updateSizeBadge();
+            // Optional: minimal check on size can still be kept if needed.
         };
 
         // KONTROL BENTUK (SHAPE)
@@ -355,10 +341,14 @@ async function init() {
             }
         });
 
-        // KONTROL TEKS
+        // KONTROL TEKS DIPERBARUI: Lebar, Tinggi, Lengkungan, Spasi & Warna
         for (let layer of activeTextLayers) {
             const txtWrap = document.createElement('div');
             txtWrap.className = 'mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 transition-all';
+            
+            // Limit text dinamis
+            const maxLen = window.autoMaxLengths[layer] ? window.autoMaxLengths[layer] : 15;
+            
             txtWrap.innerHTML = `
                 <div class="flex items-center justify-between mb-3">
                     <label class="font-bold text-sm text-gray-800 dark:text-gray-200 flex items-center cursor-pointer">
@@ -366,16 +356,40 @@ async function init() {
                         <i class="fas fa-font text-blue-500 mr-2"></i> ${layerLabels[layer]}
                     </label>
                 </div>
-                <input type="text" id="auto-${layer}-text" value="${state[layer].text}" maxlength="15" placeholder="Ketik teks di sini..." class="w-full mb-3 px-4 py-2 border border-gray-300 dark:border-gray-500 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 dark:text-white transition-all">
+                
+                <input type="text" id="auto-${layer}-text" value="${state[layer].text}" maxlength="${maxLen}" placeholder="Maksimal ${maxLen} huruf" class="w-full mb-3 px-4 py-2 border border-gray-300 dark:border-gray-500 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 dark:text-white transition-all">
+                
                 <div class="mb-3">
                     <button id="auto-${layer}-font-btn" class="w-full border rounded-lg p-2.5 text-sm bg-white hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-500 transition-colors flex justify-between items-center shadow-sm">
                         <span id="${layer}-font-display" style="font-family: '${state[layer].font}', sans-serif">${state[layer].font}</span>
                         <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
                     </button>
                 </div>
-                <div>
-                    <div class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1 flex justify-between"><span>Ukuran Teks</span><span id="auto-${layer}-size-val">${state[layer].size}</span></div>
-                    <input type="range" id="auto-${layer}-size" min="10" max="300" value="${state[layer].size}" class="w-full accent-blue-600">
+                
+                <div class="flex gap-3 mb-3">
+                    <div class="flex-1">
+                        <div class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1 flex justify-between"><span>Lebar Teks</span><span id="auto-${layer}-w-val">${state[layer].w || state[layer].size || 100}</span></div>
+                        <input type="range" id="auto-${layer}-w" min="10" max="800" value="${state[layer].w || state[layer].size || 100}" class="w-full accent-blue-600">
+                    </div>
+                    <div class="flex-1">
+                        <div class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1 flex justify-between"><span>Tinggi Teks</span><span id="auto-${layer}-h-val">${state[layer].h || state[layer].size || 100}</span></div>
+                        <input type="range" id="auto-${layer}-h" min="10" max="800" value="${state[layer].h || state[layer].size || 100}" class="w-full accent-blue-600">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1 flex justify-between"><span>Spasi Antar Huruf</span><span id="auto-${layer}-spacing-val">${state[layer].spacing || 0}</span></div>
+                    <input type="range" id="auto-${layer}-spacing" min="-50" max="150" value="${state[layer].spacing || 0}" class="w-full accent-blue-600">
+                </div>
+
+                <div class="mb-3">
+                    <div class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1 flex justify-between"><span>Lengkungan</span><span id="auto-${layer}-curve-val">${state[layer].curve || 0}</span></div>
+                    <input type="range" id="auto-${layer}-curve" min="-100" max="100" value="${state[layer].curve || 0}" class="w-full accent-blue-600">
+                </div>
+
+                <div class="mt-3 flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                    <span class="text-sm font-bold text-gray-700 dark:text-gray-200"><i class="fas fa-palette text-pink-500 mr-2"></i>Warna Teks</span>
+                    <input type="color" id="auto-${layer}-color" value="${state[layer].fillType === 'solid' ? state[layer].fill : '#ffffff'}" class="w-10 h-10 rounded cursor-pointer border-0 p-0 shadow-sm">
                 </div>
             `;
             formCard.appendChild(txtWrap);
@@ -388,20 +402,41 @@ async function init() {
                 updateLayoutAndRender(); 
             };
             txtWrap.querySelector(`#auto-${layer}-text`).oninput = (e) => {
-                state[layer].text = e.target.value.trim() || " ";
+                state[layer].text = e.target.value || " ";
                 updateLayoutAndRender(); 
             };
             txtWrap.querySelector(`#auto-${layer}-font-btn`).onclick = () => openFontModal(layer);
-            txtWrap.querySelector(`#auto-${layer}-size`).oninput = (e) => {
-                state[layer].size = parseInt(e.target.value);
-                document.getElementById(`auto-${layer}-size-val`).innerText = e.target.value;
+            txtWrap.querySelector(`#auto-${layer}-w`).oninput = (e) => {
+                state[layer].w = parseInt(e.target.value);
+                document.getElementById(`auto-${layer}-w-val`).innerText = e.target.value;
                 updateLayoutAndRender(); 
+            };
+            txtWrap.querySelector(`#auto-${layer}-h`).oninput = (e) => {
+                state[layer].h = parseInt(e.target.value);
+                document.getElementById(`auto-${layer}-h-val`).innerText = e.target.value;
+                updateLayoutAndRender(); 
+            };
+            txtWrap.querySelector(`#auto-${layer}-spacing`).oninput = (e) => {
+                state[layer].spacing = parseInt(e.target.value);
+                document.getElementById(`auto-${layer}-spacing-val`).innerText = e.target.value;
+                updateLayoutAndRender(); 
+            };
+            txtWrap.querySelector(`#auto-${layer}-curve`).oninput = (e) => {
+                state[layer].curve = parseInt(e.target.value);
+                document.getElementById(`auto-${layer}-curve-val`).innerText = e.target.value;
+                updateLayoutAndRender(); 
+            };
+            txtWrap.querySelector(`#auto-${layer}-color`).oninput = (e) => {
+                state[layer].fillType = 'solid'; // override gradient jika user mengubah warna disini
+                state[layer].fill = e.target.value;
+                updateLayoutAndRender();
             };
         }
 
         // Tombol Proses
         const submitBtn = document.createElement('button');
-        submitBtn.className = 'mt-6 w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg transform transition active:scale-95 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed';
+        submitBtn.id = 'auto-submit-btn';
+        submitBtn.className = 'mt-6 w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg transform transition active:scale-95 flex items-center justify-center';
         submitBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> Proses & Kirim ke Bot';
         
         submitBtn.onclick = async () => {
@@ -419,21 +454,30 @@ async function init() {
 
         silumanContainer.appendChild(formCard);
         
-        // POP-UP PREVIEW MODAL
+        // POP-UP PREVIEW MODAL DENGAN LIVE SIZE & WARNA
         const previewModal = document.createElement('div');
         previewModal.id = 'auto-preview-modal';
         previewModal.className = 'fixed inset-0 bg-black/80 z-[200] hidden flex-col items-center justify-center p-4 backdrop-blur-sm';
         previewModal.innerHTML = `
             <div class="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md flex flex-col overflow-hidden shadow-2xl animate-fade-in relative">
                 <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900 z-20">
-                    <h3 class="font-bold text-gray-800 dark:text-white"><i class="fas fa-film text-indigo-500 mr-2"></i> Preview Animasi</h3>
+                    <div class="flex flex-col">
+                        <h3 class="font-bold text-gray-800 dark:text-white"><i class="fas fa-film text-indigo-500 mr-2"></i> Live Preview</h3>
+                        <span id="live-preview-size-badge" class="mt-1 px-2 py-0.5 w-max bg-gray-100 text-gray-600 text-[10px] font-bold rounded-full">-- KB</span>
+                    </div>
                     <button id="close-preview-btn" class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white transition"><i class="fas fa-times text-xl"></i></button>
                 </div>
+                
                 <div class="w-full flex items-center justify-center bg-checkered relative" id="preview-lottie-wrapper" style="aspect-ratio: 1/1;">
                     <!-- Lottie Anim Here -->
                 </div>
-                <div class="p-4 bg-gray-50 dark:bg-gray-900 z-20">
-                    <button id="close-preview-btn-2" class="w-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white font-bold py-3 rounded-xl transition">Tutup Preview</button>
+                
+                <div class="p-4 bg-gray-50 dark:bg-gray-900 z-20 border-t border-gray-200 dark:border-gray-700">
+                    <label class="block text-xs font-bold text-gray-600 dark:text-gray-300 mb-2"><i class="fas fa-palette mr-1 text-pink-500"></i> Tema Warna (Opsional)</label>
+                    <select id="preview-theme-select" class="w-full mb-4 px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 dark:text-white transition shadow-sm focus:ring-2 focus:ring-indigo-500">
+                        <option value="none">Original (Bawaan Template)</option>
+                    </select>
+                    <button id="close-preview-btn-2" class="w-full bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900 dark:hover:bg-indigo-800 text-indigo-800 dark:text-indigo-200 font-bold py-3 rounded-xl transition">Tutup Preview</button>
                 </div>
             </div>
         `;
@@ -441,21 +485,19 @@ async function init() {
 
         let previewAnimInstance = null;
 
-        // --- PEMBARUAN: FUNGSI OPEN PREVIEW MENGGUNAKAN API LIVE_PREVIEW ---
-        async function openPreviewModal() {
-            previewModal.classList.remove('hidden');
-            previewModal.classList.add('flex');
+        // FUNGSI MEMUTAR ANIMASI LIVE DARI API
+        async function applyLivePreview(theme = 'none') {
             const wrapper = document.getElementById('preview-lottie-wrapper');
+            const sizeBadge = document.getElementById('live-preview-size-badge');
+            
             wrapper.innerHTML = '<div class="absolute flex flex-col items-center"><i class="fas fa-circle-notch fa-spin text-3xl text-indigo-500 mb-2"></i><span class="text-sm font-bold text-gray-600 dark:text-gray-300">Live Rendering...</span></div>';
+            sizeBadge.innerText = 'Menghitung...';
+            sizeBadge.className = "mt-1 px-2 py-0.5 w-max bg-gray-100 text-gray-600 text-[10px] font-bold rounded-full";
 
             try {
                 await ensureLottieLoaded();
+                if(!currentSvgCode || currentSvgCode.trim() === "") throw new Error("Desain SVG kosong.");
 
-                if(!currentSvgCode || currentSvgCode.trim() === "") {
-                    throw new Error("Desain SVG masih kosong, silakan modifikasi terlebih dahulu.");
-                }
-
-                // 1. Kompres SVG (identik dengan saat kirim pesan ke bot)
                 const minifiedSvg = currentSvgCode.replace(/\s+/g, ' ').replace(/>\s+</g, '><').trim();
                 const uint8Array = new TextEncoder().encode(minifiedSvg);
                 const compressed = window.pako.deflate(uint8Array);
@@ -467,19 +509,16 @@ async function init() {
                 const initData = tg && tg.initData ? tg.initData : "";
                 const baseUrl = NGROK_API_URL.replace('/api/upload', '');
                 
-                // 2. Request POST ke API live_preview baru
                 const response = await fetch(`${baseUrl}/api/live_preview`, {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json', 
-                        'ngrok-skip-browser-warning': 'true' 
-                    },
+                    headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
                     body: JSON.stringify({
                         init_data: initData,
                         svg_data: base64CompressedSvg,
                         is_compressed: true,
                         anim_id: animId,
-                        app_state: state
+                        app_state: state,
+                        theme: theme
                     })
                 });
 
@@ -487,13 +526,30 @@ async function init() {
                     const errObj = await response.json().catch(() => ({}));
                     throw new Error(errObj.error || "Gagal memproses render instan di server.");
                 }
+                
+                // MENGATUR BADGE UKURAN LIVE
+                const fileSizeKB = response.headers.get('X-File-Size-KB') || '--';
+                const submitFormBtn = document.getElementById('auto-submit-btn');
+                
+                if (parseFloat(fileSizeKB) > 64) {
+                    sizeBadge.className = "mt-1 px-2 py-0.5 w-max bg-red-100 text-red-700 text-[10px] font-bold rounded-full border border-red-200";
+                    if(submitFormBtn) {
+                        submitFormBtn.disabled = true;
+                        submitFormBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    }
+                } else {
+                    sizeBadge.className = "mt-1 px-2 py-0.5 w-max bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-full border border-emerald-200";
+                    if(submitFormBtn) {
+                        submitFormBtn.disabled = false;
+                        submitFormBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    }
+                }
+                sizeBadge.innerHTML = `<i class="fas fa-weight-hanging mr-1"></i> ${fileSizeKB} KB`;
 
-                // 3. Dekompresi Balasan File TGS
                 const buffer = await response.arrayBuffer();
                 const decompressed = window.pako.inflate(new Uint8Array(buffer));
                 const animData = JSON.parse(new TextDecoder('utf-8').decode(decompressed));
 
-                // 4. Putar secara utuh tanpa tempelan
                 wrapper.innerHTML = ''; 
                 const lottieDiv = document.createElement('div');
                 lottieDiv.style.position = 'absolute'; 
@@ -512,12 +568,35 @@ async function init() {
                 wrapper.innerHTML = `<p class="text-red-500 font-bold z-20 absolute text-sm text-center px-4">Gagal memuat animasi.<br><span class="text-xs text-gray-500">${err.message}</span></p>`;
             }
         }
-        // ---------------------------------------------------------------------
+
+        async function openPreviewModal() {
+            previewModal.classList.remove('hidden');
+            previewModal.classList.add('flex');
+            
+            const themes = await fetchThemes();
+            const select = document.getElementById('preview-theme-select');
+            
+            if(select.options.length <= 1) { 
+                themes.forEach(t => {
+                    const opt = document.createElement('option');
+                    opt.value = t;
+                    opt.innerText = t.replace(/_/g, ' ').toUpperCase();
+                    select.appendChild(opt);
+                });
+                select.onchange = (e) => {
+                    state.selectedTheme = e.target.value; 
+                    applyLivePreview(e.target.value);
+                };
+            }
+            
+            // Re-apply preview setiap dibuka agar text terbaru terefleksikan
+            applyLivePreview(select.value);
+        }
 
         function closePreview() {
             if(previewAnimInstance) { previewAnimInstance.destroy(); previewAnimInstance = null; }
             previewModal.classList.add('hidden'); previewModal.classList.remove('flex');
-            document.getElementById('preview-lottie-wrapper').innerHTML = ''; // bersihkan RAM
+            document.getElementById('preview-lottie-wrapper').innerHTML = ''; 
         }
 
         document.getElementById('close-preview-btn').onclick = closePreview;
@@ -585,6 +664,29 @@ function finishInit() {
     saveStateToHistory(); 
     renderCanvas();
 }
+
+// Custom Spacing Function (Pengganti GetPath Default)
+function getPathWithSpacing(font, text, fontSize, letterSpacing) {
+    const path = new opentype.Path();
+    let cursor = 0;
+    const scale = 1 / font.unitsPerEm * fontSize;
+    
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const glyph = font.charToGlyph(char);
+        const glyphPath = glyph.getPath(cursor, 0, fontSize);
+        path.extend(glyphPath);
+        
+        let kerning = 0;
+        if (i < text.length - 1) {
+            kerning = font.getKerningValue(glyph, font.charToGlyph(text[i + 1])) * scale;
+        }
+        
+        cursor += (glyph.advanceWidth * scale) + kerning + letterSpacing;
+    }
+    return path;
+}
+
 
 async function fetchShapeList() {
     try {
@@ -1336,11 +1438,29 @@ async function renderCanvas() {
 
 function generateTextGroup(tState, idTag) {
     const font = loadedFonts[tState.font]; if (!font) return '';
-    const path = font.getPath(tState.text, 0, 0, parseInt(tState.size));
-    const box = path.getBoundingBox(); 
-    const w = box.x2 - box.x1; const h = box.y2 - box.y1;
-    const offsetX = -w / 2 - box.x1; const offsetY = h / 2;
+
+    const internalSize = 100;
+    const spacing = parseFloat(tState.spacing) || 0;
     
+    const path = getPathWithSpacing(font, tState.text, internalSize, spacing);
+    const box = path.getBoundingBox();
+    
+    let w = box.x2 - box.x1;
+    let h = box.y2 - box.y1;
+    
+    if (w <= 0) w = 1;
+    if (h <= 0) h = 1;
+
+    let sx, sy;
+    if (tState.w !== undefined && tState.h !== undefined) {
+        sx = tState.w / w;
+        sy = tState.h / h;
+    } else {
+        const scale = (tState.size || 100) / internalSize;
+        sx = scale;
+        sy = scale;
+    }
+
     const warpedPathStr = warpPathData(path, parseInt(tState.curve) || 0, box);
 
     const activeFillColor = tState.fillType === 'gradient' ? `url(#${idTag}-grad)` : tState.fill;
@@ -1349,6 +1469,9 @@ function generateTextGroup(tState, idTag) {
     const baseStrokeW = tState.strokeNone ? 0 : (parseInt(tState.strokeW) || 0);
     
     const isSelected = selectedObject === idTag;
+    
+    const offsetX = -w / 2 - box.x1; 
+    const offsetY = h / 2;
     
     const makeUse = (fColor, sColor, swValue, dx=0, dy=0) => {
         return `<use href="#base-${idTag}" xlink:href="#base-${idTag}" transform="translate(${offsetX + dx}, ${offsetY + dy})" fill="${fColor}" stroke="${sColor}" stroke-width="${swValue}" stroke-linejoin="round" />`;
@@ -1379,9 +1502,9 @@ function generateTextGroup(tState, idTag) {
     renderedPaths += makeUse(baseFill, baseStroke, baseStrokeW);
     
     return `
-    <g transform="translate(${tState.x}, ${tState.y}) rotate(${tState.rotate})" class="clickable" data-id="${idTag}">
-        <rect x="${-w/2 - 10}" y="${-h/2 - (h*0.2) - 10}" width="${w + 20}" height="${h*1.4 + 20}" fill="transparent" />
-        ${isSelected ? `<rect x="${-w/2 - 10}" y="${-h/2 - (h*0.2) - 10}" width="${w + 20}" height="${h*1.4 + 20}" class="focus-ring" />` : ''}
+    <g transform="translate(${tState.x}, ${tState.y}) rotate(${tState.rotate}) scale(${sx}, ${sy})" class="clickable" data-id="${idTag}">
+        <rect x="${-w/2 - 10/sx}" y="${-h/2 - (h*0.2) - 10/sy}" width="${w + 20/sx}" height="${h*1.4 + 20/sy}" fill="transparent" />
+        ${isSelected ? `<rect x="${-w/2 - 10/sx}" y="${-h/2 - (h*0.2) - 10/sy}" width="${w + 20/sx}" height="${h*1.4 + 20/sy}" class="focus-ring" />` : ''}
         ${renderedPaths}
     </g>`;
 }
@@ -1478,7 +1601,7 @@ function setupEventListeners() {
             let val = el.type === 'checkbox' ? e.target.checked : e.target.value; if(isNum) val = parseInt(val) || 0;
             const path = statePath.split('.'); state[path[0]][path[1]] = val;
             
-            if(id.includes('size') || id.includes('curve') || id.includes('-w') || id.includes('-h')) {
+            if(id.includes('size') || id.includes('curve') || id.includes('-w') || id.includes('-h') || id.includes('spacing')) {
                 const valSpan = document.getElementById(id + '-val');
                 if (valSpan) valSpan.innerText = val;
             }
@@ -1547,6 +1670,9 @@ function setupEventListeners() {
         }
         bindInput(`${p}-text`, `${p}.text`); 
         bindInput(`${p}-size`, `${p}.size`, true); 
+        bindInput(`${p}-w`, `${p}.w`, true); 
+        bindInput(`${p}-h`, `${p}.h`, true); 
+        bindInput(`${p}-spacing`, `${p}.spacing`, true); 
         bindInput(`${p}-curve`, `${p}.curve`, true); 
         bindInput(`${p}-depth3d`, `${p}.depth3d`, true); bindInput(`${p}-angle3d`, `${p}.angle3d`, true); 
         bindInput(`${p}-fillType`, `${p}.fillType`); bindInput(`${p}-fill-none`, `${p}.fillNone`); 
@@ -1632,7 +1758,22 @@ function updateUIFromState() {
             fontDisplayBtn.style.fontFamily = `'${state[id].font}', sans-serif`;
         }
         
-        document.getElementById(`${id}-size`).value = state[id].size; document.getElementById(`${id}-size-val`).innerText = state[id].size; 
+        if (document.getElementById(`${id}-size`)) {
+            document.getElementById(`${id}-size`).value = state[id].size; 
+            document.getElementById(`${id}-size-val`).innerText = state[id].size; 
+        }
+        if (document.getElementById(`${id}-w`)) {
+            document.getElementById(`${id}-w`).value = state[id].w || state[id].size || 100;
+            document.getElementById(`${id}-w-val`).innerText = state[id].w || state[id].size || 100;
+        }
+        if (document.getElementById(`${id}-h`)) {
+            document.getElementById(`${id}-h`).value = state[id].h || state[id].size || 100;
+            document.getElementById(`${id}-h-val`).innerText = state[id].h || state[id].size || 100;
+        }
+        if (document.getElementById(`${id}-spacing`)) {
+            document.getElementById(`${id}-spacing`).value = state[id].spacing || 0;
+            document.getElementById(`${id}-spacing-val`).innerText = state[id].spacing || 0;
+        }
         
         document.getElementById(`${id}-curve`).value = state[id].curve || 0; 
         document.getElementById(`${id}-curve-val`).innerText = state[id].curve || 0;
@@ -1736,6 +1877,7 @@ async function sendToBot(isSilent = false, isAuto = false) {
 
         const initData = tg.initData;
         
+        // --- KIRIM JUGA TEMA YANG SEDANG TERPILIH DI PREVIEW KE BOT ---
         const response = await fetch(NGROK_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1744,7 +1886,8 @@ async function sendToBot(isSilent = false, isAuto = false) {
                 svg_data: base64CompressedSvg, 
                 is_compressed: true,
                 is_auto: isAuto, 
-                app_state: state
+                app_state: state,
+                theme: state.selectedTheme
             })
         });
         
