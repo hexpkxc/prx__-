@@ -358,38 +358,64 @@
                             <label class="block text-[11px] font-bold text-gray-600 mb-1">Teks / Kata</label>
                             <input type="text" id="t1-text" value="HEX" class="w-full border rounded-lg p-2 outline-blue-500 font-bold bg-gray-50 transition-colors">
                         </div>
-                        
-                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
-                            <div class="flex justify-between items-center mb-1">
-                                <label class="block text-[11px] font-bold text-gray-800">Lengkungan (Curve)</label>
-                                <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t1-curve-val">0</span>
-                            </div>
-                            <div class="flex justify-between text-[9px] text-gray-400 px-1 mb-1">
-                                <span>Melengkung ke Bawah</span>
-                                <span>Lurus</span>
-                                <span>Melengkung ke Atas</span>
-                            </div>
-                            <input type="range" id="t1-curve" min="-100" max="100" value="0" class="w-full accent-blue-600">
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-600 mb-1">Pilih Font</label>
+                            <button type="button" id="btn-t1-font" onclick="openFontModal('t1')" class="w-full border rounded-lg p-2.5 text-sm outline-blue-500 bg-gray-50 hover:bg-gray-100 transition-colors flex justify-between items-center text-left border-gray-300 shadow-sm">
+                                <span id="t1-font-display" class="truncate font-medium">Memuat Font...</span>
+                                <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+                            </button>
+                            <select id="t1-font" class="hidden"></select>
                         </div>
 
-                        <div class="grid grid-cols-1 gap-3">
+                        <div class="grid grid-cols-2 gap-3">
                             <div>
-                                <label class="block text-[11px] font-bold text-gray-600 mb-1">Pilih Font</label>
-                                <!-- T1 Font Button & Hidden Select -->
-                                <button type="button" id="btn-t1-font" onclick="openFontModal('t1')" class="w-full border rounded-lg p-2.5 text-sm outline-blue-500 bg-gray-50 hover:bg-gray-100 transition-colors flex justify-between items-center text-left border-gray-300">
-                                    <span id="t1-font-display" class="truncate font-medium">Memuat Font...</span>
-                                    <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
-                                </button>
-                                <select id="t1-font" class="hidden"></select>
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="block text-[11px] font-bold text-gray-600">Lebar</label>
+                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t1-w-val">250</span>
+                                </div>
+                                <input type="range" id="t1-w" min="10" max="800" value="250" class="w-full accent-blue-600">
                             </div>
                             <div>
                                 <div class="flex justify-between items-center mb-1">
-                                    <label class="block text-[11px] font-bold text-gray-600">Ukuran Teks</label>
-                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t1-size-val">231</span>
+                                    <label class="block text-[11px] font-bold text-gray-600">Tinggi</label>
+                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t1-h-val">80</span>
                                 </div>
-                                <input type="range" id="t1-size" min="10" max="300" value="231" class="w-full accent-blue-600">
+                                <input type="range" id="t1-h" min="10" max="800" value="80" class="w-full accent-blue-600">
                             </div>
                         </div>
+
+                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
+                            <div class="mb-3">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="block text-[11px] font-bold text-gray-800">Spasi Antar Huruf</label>
+                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t1-spacing-val">0</span>
+                                </div>
+                                <input type="range" id="t1-spacing" min="-50" max="150" value="0" class="w-full accent-blue-600">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="block text-[11px] font-bold text-gray-800">Lengkungan (Curve)</label>
+                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t1-curve-val">0</span>
+                                </div>
+                                <div class="flex justify-between text-[9px] text-gray-400 px-1 mb-1">
+                                    <span>Melengkung ke Bawah</span>
+                                    <span>Lurus</span>
+                                    <span>Melengkung ke Atas</span>
+                                </div>
+                                <input type="range" id="t1-curve" min="-100" max="100" value="0" class="w-full accent-blue-600">
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="block text-[11px] font-bold text-gray-800">Rotasi Miring</label>
+                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t1-rotate-val">0°</span>
+                                </div>
+                                <input type="range" id="t1-rotate" min="-180" max="180" value="0" class="w-full accent-blue-600">
+                            </div>
+                        </div>
+
                         <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
                             <div class="flex justify-between items-center mb-1">
                                 <label class="text-[11px] font-bold text-gray-800">Tipe Warna Teks</label>
@@ -487,37 +513,63 @@
                             <input type="text" id="t2-text" value="TERBATAS!" class="w-full border rounded-lg p-2 outline-blue-500 font-bold bg-gray-50 transition-colors">
                         </div>
 
-                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
-                            <div class="flex justify-between items-center mb-1">
-                                <label class="block text-[11px] font-bold text-gray-800">Lengkungan (Curve)</label>
-                                <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t2-curve-val">0</span>
-                            </div>
-                            <div class="flex justify-between text-[9px] text-gray-400 px-1 mb-1">
-                                <span>Melengkung ke Bawah</span>
-                                <span>Lurus</span>
-                                <span>Melengkung ke Atas</span>
-                            </div>
-                            <input type="range" id="t2-curve" min="-100" max="100" value="0" class="w-full accent-blue-600">
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-600 mb-1">Pilih Font</label>
+                            <button type="button" id="btn-t2-font" onclick="openFontModal('t2')" class="w-full border rounded-lg p-2.5 text-sm outline-blue-500 bg-gray-50 hover:bg-gray-100 transition-colors flex justify-between items-center text-left border-gray-300 shadow-sm">
+                                <span id="t2-font-display" class="truncate font-medium">Memuat Font...</span>
+                                <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+                            </button>
+                            <select id="t2-font" class="hidden"></select>
                         </div>
 
-                        <div class="grid grid-cols-1 gap-3">
+                        <div class="grid grid-cols-2 gap-3">
                             <div>
-                                <label class="block text-[11px] font-bold text-gray-600 mb-1">Pilih Font</label>
-                                <!-- T2 Font Button & Hidden Select -->
-                                <button type="button" id="btn-t2-font" onclick="openFontModal('t2')" class="w-full border rounded-lg p-2.5 text-sm outline-blue-500 bg-gray-50 hover:bg-gray-100 transition-colors flex justify-between items-center text-left border-gray-300">
-                                    <span id="t2-font-display" class="truncate font-medium">Memuat Font...</span>
-                                    <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
-                                </button>
-                                <select id="t2-font" class="hidden"></select>
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="block text-[11px] font-bold text-gray-600">Lebar</label>
+                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t2-w-val">200</span>
+                                </div>
+                                <input type="range" id="t2-w" min="10" max="800" value="200" class="w-full accent-blue-600">
                             </div>
                             <div>
                                 <div class="flex justify-between items-center mb-1">
-                                    <label class="block text-[11px] font-bold text-gray-600">Ukuran Teks</label>
-                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t2-size-val">60</span>
+                                    <label class="block text-[11px] font-bold text-gray-600">Tinggi</label>
+                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t2-h-val">60</span>
                                 </div>
-                                <input type="range" id="t2-size" min="10" max="300" value="60" class="w-full accent-blue-600">
+                                <input type="range" id="t2-h" min="10" max="800" value="60" class="w-full accent-blue-600">
                             </div>
                         </div>
+
+                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
+                            <div class="mb-3">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="block text-[11px] font-bold text-gray-800">Spasi Antar Huruf</label>
+                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t2-spacing-val">0</span>
+                                </div>
+                                <input type="range" id="t2-spacing" min="-50" max="150" value="0" class="w-full accent-blue-600">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="block text-[11px] font-bold text-gray-800">Lengkungan (Curve)</label>
+                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t2-curve-val">0</span>
+                                </div>
+                                <div class="flex justify-between text-[9px] text-gray-400 px-1 mb-1">
+                                    <span>Melengkung ke Bawah</span>
+                                    <span>Lurus</span>
+                                    <span>Melengkung ke Atas</span>
+                                </div>
+                                <input type="range" id="t2-curve" min="-100" max="100" value="0" class="w-full accent-blue-600">
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="block text-[11px] font-bold text-gray-800">Rotasi Miring</label>
+                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t2-rotate-val">0°</span>
+                                </div>
+                                <input type="range" id="t2-rotate" min="-180" max="180" value="0" class="w-full accent-blue-600">
+                            </div>
+                        </div>
+
                         <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
                             <div class="flex justify-between items-center mb-1">
                                 <label class="text-[11px] font-bold text-gray-800">Tipe Warna Teks</label>
@@ -614,37 +666,63 @@
                             <input type="text" id="t3-text" value="SPESIAL!" class="w-full border rounded-lg p-2 outline-blue-500 font-bold bg-gray-50 transition-colors">
                         </div>
 
-                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
-                            <div class="flex justify-between items-center mb-1">
-                                <label class="block text-[11px] font-bold text-gray-800">Lengkungan (Curve)</label>
-                                <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t3-curve-val">0</span>
-                            </div>
-                            <div class="flex justify-between text-[9px] text-gray-400 px-1 mb-1">
-                                <span>Melengkung ke Bawah</span>
-                                <span>Lurus</span>
-                                <span>Melengkung ke Atas</span>
-                            </div>
-                            <input type="range" id="t3-curve" min="-100" max="100" value="0" class="w-full accent-blue-600">
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-600 mb-1">Pilih Font</label>
+                            <button type="button" id="btn-t3-font" onclick="openFontModal('t3')" class="w-full border rounded-lg p-2.5 text-sm outline-blue-500 bg-gray-50 hover:bg-gray-100 transition-colors flex justify-between items-center text-left border-gray-300 shadow-sm">
+                                <span id="t3-font-display" class="truncate font-medium">Memuat Font...</span>
+                                <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+                            </button>
+                            <select id="t3-font" class="hidden"></select>
                         </div>
 
-                        <div class="grid grid-cols-1 gap-3">
+                        <div class="grid grid-cols-2 gap-3">
                             <div>
-                                <label class="block text-[11px] font-bold text-gray-600 mb-1">Pilih Font</label>
-                                <!-- T3 Font Button & Hidden Select -->
-                                <button type="button" id="btn-t3-font" onclick="openFontModal('t3')" class="w-full border rounded-lg p-2.5 text-sm outline-blue-500 bg-gray-50 hover:bg-gray-100 transition-colors flex justify-between items-center text-left border-gray-300">
-                                    <span id="t3-font-display" class="truncate font-medium">Memuat Font...</span>
-                                    <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
-                                </button>
-                                <select id="t3-font" class="hidden"></select>
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="block text-[11px] font-bold text-gray-600">Lebar</label>
+                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t3-w-val">200</span>
+                                </div>
+                                <input type="range" id="t3-w" min="10" max="800" value="200" class="w-full accent-blue-600">
                             </div>
                             <div>
                                 <div class="flex justify-between items-center mb-1">
-                                    <label class="block text-[11px] font-bold text-gray-600">Ukuran Teks</label>
-                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t3-size-val">50</span>
+                                    <label class="block text-[11px] font-bold text-gray-600">Tinggi</label>
+                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t3-h-val">60</span>
                                 </div>
-                                <input type="range" id="t3-size" min="10" max="300" value="50" class="w-full accent-blue-600">
+                                <input type="range" id="t3-h" min="10" max="800" value="60" class="w-full accent-blue-600">
                             </div>
                         </div>
+
+                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
+                            <div class="mb-3">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="block text-[11px] font-bold text-gray-800">Spasi Antar Huruf</label>
+                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t3-spacing-val">0</span>
+                                </div>
+                                <input type="range" id="t3-spacing" min="-50" max="150" value="0" class="w-full accent-blue-600">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="block text-[11px] font-bold text-gray-800">Lengkungan (Curve)</label>
+                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t3-curve-val">0</span>
+                                </div>
+                                <div class="flex justify-between text-[9px] text-gray-400 px-1 mb-1">
+                                    <span>Melengkung ke Bawah</span>
+                                    <span>Lurus</span>
+                                    <span>Melengkung ke Atas</span>
+                                </div>
+                                <input type="range" id="t3-curve" min="-100" max="100" value="0" class="w-full accent-blue-600">
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="block text-[11px] font-bold text-gray-800">Rotasi Miring</label>
+                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t3-rotate-val">0°</span>
+                                </div>
+                                <input type="range" id="t3-rotate" min="-180" max="180" value="0" class="w-full accent-blue-600">
+                            </div>
+                        </div>
+
                         <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
                             <div class="flex justify-between items-center mb-1">
                                 <label class="text-[11px] font-bold text-gray-800">Tipe Warna Teks</label>
@@ -741,37 +819,63 @@
                             <input type="text" id="t4-text" value="EKSTRA!" class="w-full border rounded-lg p-2 outline-blue-500 font-bold bg-gray-50 transition-colors">
                         </div>
 
-                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
-                            <div class="flex justify-between items-center mb-1">
-                                <label class="block text-[11px] font-bold text-gray-800">Lengkungan (Curve)</label>
-                                <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t4-curve-val">0</span>
-                            </div>
-                            <div class="flex justify-between text-[9px] text-gray-400 px-1 mb-1">
-                                <span>Melengkung ke Bawah</span>
-                                <span>Lurus</span>
-                                <span>Melengkung ke Atas</span>
-                            </div>
-                            <input type="range" id="t4-curve" min="-100" max="100" value="0" class="w-full accent-blue-600">
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-600 mb-1">Pilih Font</label>
+                            <button type="button" id="btn-t4-font" onclick="openFontModal('t4')" class="w-full border rounded-lg p-2.5 text-sm outline-blue-500 bg-gray-50 hover:bg-gray-100 transition-colors flex justify-between items-center text-left border-gray-300 shadow-sm">
+                                <span id="t4-font-display" class="truncate font-medium">Memuat Font...</span>
+                                <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+                            </button>
+                            <select id="t4-font" class="hidden"></select>
                         </div>
 
-                        <div class="grid grid-cols-1 gap-3">
+                        <div class="grid grid-cols-2 gap-3">
                             <div>
-                                <label class="block text-[11px] font-bold text-gray-600 mb-1">Pilih Font</label>
-                                <!-- T4 Font Button & Hidden Select -->
-                                <button type="button" id="btn-t4-font" onclick="openFontModal('t4')" class="w-full border rounded-lg p-2.5 text-sm outline-blue-500 bg-gray-50 hover:bg-gray-100 transition-colors flex justify-between items-center text-left border-gray-300">
-                                    <span id="t4-font-display" class="truncate font-medium">Memuat Font...</span>
-                                    <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
-                                </button>
-                                <select id="t4-font" class="hidden"></select>
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="block text-[11px] font-bold text-gray-600">Lebar</label>
+                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t4-w-val">200</span>
+                                </div>
+                                <input type="range" id="t4-w" min="10" max="800" value="200" class="w-full accent-blue-600">
                             </div>
                             <div>
                                 <div class="flex justify-between items-center mb-1">
-                                    <label class="block text-[11px] font-bold text-gray-600">Ukuran Teks</label>
-                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t4-size-val">50</span>
+                                    <label class="block text-[11px] font-bold text-gray-600">Tinggi</label>
+                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t4-h-val">60</span>
                                 </div>
-                                <input type="range" id="t4-size" min="10" max="300" value="50" class="w-full accent-blue-600">
+                                <input type="range" id="t4-h" min="10" max="800" value="60" class="w-full accent-blue-600">
                             </div>
                         </div>
+
+                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
+                            <div class="mb-3">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="block text-[11px] font-bold text-gray-800">Spasi Antar Huruf</label>
+                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t4-spacing-val">0</span>
+                                </div>
+                                <input type="range" id="t4-spacing" min="-50" max="150" value="0" class="w-full accent-blue-600">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="block text-[11px] font-bold text-gray-800">Lengkungan (Curve)</label>
+                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t4-curve-val">0</span>
+                                </div>
+                                <div class="flex justify-between text-[9px] text-gray-400 px-1 mb-1">
+                                    <span>Melengkung ke Bawah</span>
+                                    <span>Lurus</span>
+                                    <span>Melengkung ke Atas</span>
+                                </div>
+                                <input type="range" id="t4-curve" min="-100" max="100" value="0" class="w-full accent-blue-600">
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="block text-[11px] font-bold text-gray-800">Rotasi Miring</label>
+                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t4-rotate-val">0°</span>
+                                </div>
+                                <input type="range" id="t4-rotate" min="-180" max="180" value="0" class="w-full accent-blue-600">
+                            </div>
+                        </div>
+
                         <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
                             <div class="flex justify-between items-center mb-1">
                                 <label class="text-[11px] font-bold text-gray-800">Tipe Warna Teks</label>
