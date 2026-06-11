@@ -534,7 +534,7 @@ async function init() {
                     <button id="close-preview-btn" class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white transition"><i class="fas fa-times text-xl"></i></button>
                 </div>
                 
-                <div class="w-full flex items-center justify-center bg-checkered relative" id="preview-lottie-wrapper" style="aspect-ratio: 1/1;">
+                <div class="w-full flex items-center justify-center bg-transparent relative" id="preview-lottie-wrapper" style="aspect-ratio: 1/1;">
                     <!-- Lottie Anim Here -->
                 </div>
                 
