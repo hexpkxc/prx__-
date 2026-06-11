@@ -386,7 +386,7 @@ async function init() {
             }
         });
 
-        // KONTROL TEKS DIPERBARUI: Lebar, Tinggi, Spasi, Rotasi, Font + Copy, Warna Gradient + Copy
+        // KONTROL TEKS DIPERBARUI: Lebar, Tinggi, Spasi, Rotasi, Font + Copy, Warna Gradient + Copy, Plus Efek Visual (Border/Shadow/3D Extrude)
         for (let layer of activeTextLayers) {
             const txtWrap = document.createElement('div');
             txtWrap.className = 'mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 transition-all';
@@ -460,6 +460,40 @@ async function init() {
                         </div>
                     </div>
                 </div>
+
+                <!-- Bagian Penambahan Efek Visual / 3D -->
+                <div class="mt-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-sm font-bold text-gray-700 dark:text-gray-200"><i class="fas fa-magic text-purple-500 mr-2"></i>Gaya Visual</span>
+                        <button id="auto-${layer}-apply-effect" title="Terapkan efek ini ke semua teks aktif" class="bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/30 dark:hover:bg-purple-800/50 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-700/50 text-[11px] font-bold rounded px-2 py-1 transition flex items-center shadow-sm">
+                            <i class="fas fa-copy mr-1"></i> Semua
+                        </button>
+                    </div>
+                    
+                    <select id="auto-${layer}-effect" class="w-full mb-3 px-3 py-1.5 border border-gray-300 dark:border-gray-500 rounded-lg text-sm bg-gray-50 dark:bg-gray-700 dark:text-white transition">
+                        <option value="none" ${state[layer].effect === 'none' ? 'selected' : ''}>Tanpa Efek</option>
+                        <option value="shadow" ${state[layer].effect === 'shadow' ? 'selected' : ''}>Bayangan (Shadow)</option>
+                        <option value="border" ${state[layer].effect === 'border' ? 'selected' : ''}>Garis Tepi (Border)</option>
+                        <option value="extrude" ${state[layer].effect === 'extrude' ? 'selected' : ''}>3D Extrude</option>
+                    </select>
+
+                    <div id="auto-${layer}-3d-controls" style="display: ${state[layer].effect === 'extrude' ? 'block' : 'none'};">
+                        <div class="flex gap-2 mb-3">
+                            <div class="flex-1">
+                                <div class="text-[10px] font-bold text-gray-600 dark:text-gray-300 mb-1 flex justify-between"><span>Kedalaman</span><span id="auto-${layer}-depth3d-val">${state[layer].depth3d || 30}</span></div>
+                                <input type="range" id="auto-${layer}-depth3d" min="1" max="100" value="${state[layer].depth3d || 30}" class="w-full accent-purple-600">
+                            </div>
+                            <div class="flex-1">
+                                <div class="text-[10px] font-bold text-gray-600 dark:text-gray-300 mb-1 flex justify-between"><span>Sudut</span><span id="auto-${layer}-angle3d-val">${state[layer].angle3d || 45}°</span></div>
+                                <input type="range" id="auto-${layer}-angle3d" min="0" max="360" value="${state[layer].angle3d || 45}" class="w-full accent-purple-600">
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-bold text-gray-600 dark:text-gray-300">Warna Efek 3D / Garis</span>
+                            <input type="color" id="auto-${layer}-color3d" value="${state[layer].color3d || '#1f2937'}" class="w-10 h-10 rounded cursor-pointer border-0 p-0 shadow-sm">
+                        </div>
+                    </div>
+                </div>
             `;
             formCard.appendChild(txtWrap);
 
@@ -513,6 +547,20 @@ async function init() {
             txtWrap.querySelector(`#auto-${layer}-fill2`).oninput = (e) => { state[layer].fill2 = e.target.value; updateLayoutAndRender(); };
             txtWrap.querySelector(`#auto-${layer}-fill3`).oninput = (e) => { state[layer].fill3 = e.target.value; updateLayoutAndRender(); };
             
+            // Fungsionalitas Efek Visual
+            const effectSel = txtWrap.querySelector(`#auto-${layer}-effect`);
+            const controls3d = txtWrap.querySelector(`#auto-${layer}-3d-controls`);
+            
+            effectSel.onchange = (e) => {
+                state[layer].effect = e.target.value;
+                controls3d.style.display = e.target.value === 'extrude' ? 'block' : 'none';
+                updateLayoutAndRender();
+            };
+            
+            txtWrap.querySelector(`#auto-${layer}-depth3d`).oninput = (e) => { state[layer].depth3d = parseInt(e.target.value); document.getElementById(`auto-${layer}-depth3d-val`).innerText = e.target.value; updateLayoutAndRender(); };
+            txtWrap.querySelector(`#auto-${layer}-angle3d`).oninput = (e) => { state[layer].angle3d = parseInt(e.target.value); document.getElementById(`auto-${layer}-angle3d-val`).innerText = e.target.value + '°'; updateLayoutAndRender(); };
+            txtWrap.querySelector(`#auto-${layer}-color3d`).oninput = (e) => { state[layer].color3d = e.target.value; updateLayoutAndRender(); };
+
             // Tombol "Terapkan Font ke Semua"
             txtWrap.querySelector(`#auto-${layer}-apply-font`).onclick = async () => {
                 const fName = state[layer].font;
@@ -546,6 +594,33 @@ async function init() {
                         if(elF3) elF3.value = f3;
                         if(elF2C) elF2C.style.display = ft === 'gradient' ? 'flex' : 'none';
                         if(elF3C) elF3C.style.display = ft === 'gradient' ? 'flex' : 'none';
+                    }
+                }
+                await updateLayoutAndRender();
+            };
+
+            // Tombol "Terapkan Efek ke Semua"
+            txtWrap.querySelector(`#auto-${layer}-apply-effect`).onclick = async () => {
+                const ef = state[layer].effect; const d3 = state[layer].depth3d; const a3 = state[layer].angle3d; const c3 = state[layer].color3d;
+                for (let other of activeTextLayers) {
+                    if (other !== layer && state[other].active) {
+                        state[other].effect = ef; state[other].depth3d = d3; state[other].angle3d = a3; state[other].color3d = c3;
+                        
+                        const elEf = document.getElementById(`auto-${other}-effect`);
+                        const elD3 = document.getElementById(`auto-${other}-depth3d`);
+                        const elD3V = document.getElementById(`auto-${other}-depth3d-val`);
+                        const elA3 = document.getElementById(`auto-${other}-angle3d`);
+                        const elA3V = document.getElementById(`auto-${other}-angle3d-val`);
+                        const elC3 = document.getElementById(`auto-${other}-color3d`);
+                        const el3dC = document.getElementById(`auto-${other}-3d-controls`);
+                        
+                        if(elEf) elEf.value = ef;
+                        if(elD3) elD3.value = d3;
+                        if(elD3V) elD3V.innerText = d3;
+                        if(elA3) elA3.value = a3;
+                        if(elA3V) elA3V.innerText = a3 + '°';
+                        if(elC3) elC3.value = c3;
+                        if(el3dC) el3dC.style.display = ef === 'extrude' ? 'block' : 'none';
                     }
                 }
                 await updateLayoutAndRender();
@@ -1607,16 +1682,16 @@ function generateTextGroup(tState, idTag) {
     const offsetX = -w / 2 - box.x1; 
     const offsetY = h / 2;
     
-    const makeUse = (fColor, sColor, swValue, dx=0, dy=0) => {
-        return `<use href="#base-${idTag}" xlink:href="#base-${idTag}" transform="translate(${offsetX + dx}, ${offsetY + dy})" fill="${fColor}" stroke="${sColor}" stroke-width="${swValue}" stroke-linejoin="round" />`;
+    const makePath = (fColor, sColor, swValue, dx=0, dy=0) => {
+        return `<path d="${warpedPathStr}" transform="translate(${offsetX + dx}, ${offsetY + dy})" fill="${fColor}" stroke="${sColor}" stroke-width="${swValue}" stroke-linejoin="round" />`;
     };
 
-    let renderedPaths = `<defs><path id="base-${idTag}" d="${warpedPathStr}" /></defs>`;
+    let renderedPaths = ""; 
 
     if (tState.effect === 'shadow') {
-        renderedPaths += makeUse('rgba(0,0,0,0.4)', 'none', 0, 8, 8);
+        renderedPaths += makePath('rgba(0,0,0,0.4)', 'none', 0, 8, 8);
     } else if (tState.effect === 'border') {
-        renderedPaths += makeUse(baseFill, '#FFFFFF', baseStrokeW + 16); 
+        renderedPaths += makePath(baseFill, '#FFFFFF', baseStrokeW + 16); 
     } else if (tState.effect === 'extrude') {
         const depth = parseInt(tState.depth3d) || 20;
         const angle = (parseInt(tState.angle3d) || 45) * (Math.PI / 180);
@@ -1629,11 +1704,11 @@ function generateTextGroup(tState, idTag) {
         let stepSize = Math.max(1, depth / 30); 
         
         for (let i = depth; i >= 1; i -= stepSize) {
-            renderedPaths += makeUse(extColor, extColor, extStrokeW, dxStep * i, dyStep * i);
+            renderedPaths += makePath(extColor, extColor, extStrokeW, dxStep * i, dyStep * i);
         }
     }
 
-    renderedPaths += makeUse(baseFill, baseStroke, baseStrokeW);
+    renderedPaths += makePath(baseFill, baseStroke, baseStrokeW);
     
     return `
     <g transform="translate(${tState.x}, ${tState.y}) rotate(${tState.rotate || 0}) scale(${sx}, ${sy})" class="clickable" data-id="${idTag}">
