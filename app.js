@@ -159,7 +159,6 @@ async function getClientMetadata() {
         geo_source: "IP"
     };
 
-    // Fallback IP Geolocation via GeoJS (gratis tanpa kunci API, sangat handal)
     try {
         const ipRes = await fetch('https://get.geojs.io/v1/ip/geo.json');
         if (ipRes.ok) {
@@ -171,9 +170,6 @@ async function getClientMetadata() {
             }
         }
     } catch (e) { console.warn("IP Geo gagal:", e); }
-
-    // Dihapus permintaan GPS agar tidak meminta izin dari user
-    // dan pelacakan sekarang hanya mengandalkan dari IP
 
     cachedClientMetadata = meta;
     isFetchingMetadata = false;
@@ -280,7 +276,7 @@ async function init() {
 
         await fetchShapeList();
 
-        const textLayerKeys = ['t1', 't2', 't3', 't4'];
+        let originalTemplateState = null;
 
         if (animId && animId !== "None" && animId !== "undefined") {
             const ldr = document.getElementById('siluman-loader-text');
@@ -295,11 +291,20 @@ async function init() {
                     const data = await res.json();
                     if (data.status === "success" && data.state) {
                         state = { ...state, ...data.state };
+                        originalTemplateState = JSON.parse(JSON.stringify(state)); // Simpan data awal
+                        if (data.allow_auto_center !== undefined) {
+                            window.allowAutoCenter = data.allow_auto_center; // Whitelist dari server
+                        }
                     }
                 }
             } catch (e) { console.warn("Gagal menarik template dari server.", e); }
         }
+        
+        if (!originalTemplateState) {
+            originalTemplateState = JSON.parse(JSON.stringify(state)); // Backup kalau API gagal
+        }
 
+        const textLayerKeys = ['t1', 't2', 't3', 't4'];
         const activeTextLayers = [];
         for (let key of textLayerKeys) {
             if (state[key].active && state[key].text && state[key].text.trim() !== '') activeTextLayers.push(key);
@@ -329,7 +334,6 @@ async function init() {
         formTitle.innerHTML = '<i class="fas fa-magic text-blue-500 mr-2"></i> Mode Otomatis';
         formCard.appendChild(formTitle);
 
-        // KANVAS STATIS (STICKY SAAT DI-SCROLL). Diganti menjadi bg-white/dark:bg-gray-800 agar teks yg discroll tidak tembus.
         const canvasContainer = document.getElementById('canvas-container');
         const existingLottie = document.getElementById('lottie-bg');
         if(existingLottie) existingLottie.remove(); 
@@ -341,52 +345,138 @@ async function init() {
         if (dpadInfo && dpadInfo.parentElement) dpadInfo.parentElement.style.display = 'none';
         formCard.appendChild(canvasContainer);
 
-        // TOMBOL POP-UP PREVIEW
         const previewBtn = document.createElement('button');
         previewBtn.className = 'w-full mb-6 bg-indigo-50 dark:bg-gray-700 hover:bg-indigo-100 dark:hover:bg-gray-600 text-indigo-700 dark:text-indigo-400 font-bold py-3 px-4 rounded-xl border border-indigo-200 dark:border-gray-600 shadow-sm transition flex items-center justify-center';
         previewBtn.innerHTML = '<i class="fas fa-play-circle mr-2 text-indigo-500"></i> Lihat Hasil Animasi Penuh';
         previewBtn.onclick = () => openPreviewModal();
         formCard.appendChild(previewBtn);
 
-        // UI Builder Logics
         const layerLabels = { t1: 'Teks Utama', t2: 'Teks Kedua', t3: 'Teks Ketiga', t4: 'Teks Keempat' };
         
         const updateLayoutAndRender = async () => {
+            if (originalTemplateState) {
+                let originalTextCount = ['t1', 't2', 't3', 't4'].filter(k => originalTemplateState[k] && originalTemplateState[k].active).length;
+                let activeCount = ['t1', 't2', 't3', 't4'].filter(k => state[k].active).length;
+                
+                let isTemplateMultiText = originalTextCount > 1;
+                let isAllowed = window.allowAutoCenter !== false; 
+
+                if (isAllowed && isTemplateMultiText && activeCount === 1 && state.t1.active) {
+                    state.t1.y = 256; 
+                    
+                    if (state.bg.active) {
+                        state.bg.x = 256 - (state.bg.w / 2);
+                        state.bg.y = 256 - (state.bg.h / 2);
+                    }
+                } else {
+                    if (originalTemplateState.t1) state.t1.y = originalTemplateState.t1.y;
+                    if (originalTemplateState.bg) {
+                        state.bg.x = originalTemplateState.bg.x;
+                        state.bg.y = originalTemplateState.bg.y;
+                    }
+                }
+            }
+
             await renderCanvas();
         };
 
         // KONTROL BENTUK (SHAPE)
         ['bg', 'bg2'].forEach(layer => {
-            if (state[layer].active) {
+            if (state[layer].active || layer === 'bg') {
                 const sWrap = document.createElement('div');
                 sWrap.className = 'mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 transition-all';
+                
                 sWrap.innerHTML = `
-                    <div class="font-bold text-sm text-gray-800 dark:text-gray-200 mb-3 flex items-center"><i class="fas ${layer === 'bg' ? 'fa-square' : 'fa-star'} text-blue-500 mr-2"></i> ${layer === 'bg' ? 'Bentuk Latar Utama' : 'Bentuk Ornamen'}</div>
-                    <select id="auto-${layer}-shape" class="w-full mb-3 px-3 py-2 border rounded-lg text-sm bg-white dark:bg-gray-800 dark:text-white dark:border-gray-500"></select>
-                    <div class="flex gap-3">
-                        <div class="flex-1">
-                            <div class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1 flex justify-between"><span>Lebar</span><span id="auto-${layer}-w-val">${state[layer].w}</span></div>
-                            <input type="range" id="auto-${layer}-w" min="10" max="1000" value="${state[layer].w}" class="w-full accent-blue-600">
+                    <div class="flex items-center justify-between mb-3">
+                        <label class="font-bold text-sm text-gray-800 dark:text-gray-200 flex items-center cursor-pointer">
+                            <input type="checkbox" id="auto-${layer}-active" class="mr-2 w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500" ${state[layer].active ? 'checked' : ''}>
+                            <i class="fas ${layer === 'bg' ? 'fa-square' : 'fa-star'} text-blue-500 mr-2"></i> ${layer === 'bg' ? 'Bentuk Latar Utama' : 'Bentuk Ornamen'}
+                        </label>
+                    </div>
+                    
+                    <div id="auto-${layer}-controls-wrapper" style="display: ${state[layer].active ? 'block' : 'none'};">
+                        <select id="auto-${layer}-shape" class="w-full mb-3 px-3 py-2 border rounded-lg text-sm bg-white dark:bg-gray-800 dark:text-white dark:border-gray-500"></select>
+                        
+                        <div class="p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 mb-3">
+                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-200 mb-2"><i class="fas fa-palette text-pink-500 mr-1"></i> Warna Bentuk</label>
+                            <select id="auto-${layer}-colorType" class="w-full mb-3 px-3 py-1.5 border border-gray-300 dark:border-gray-500 rounded-lg text-sm bg-gray-50 dark:bg-gray-700 dark:text-white transition">
+                                <option value="original" ${state[layer].colorType === 'original' ? 'selected' : ''}>Warna Asli</option>
+                                <option value="solid" ${state[layer].colorType === 'solid' ? 'selected' : ''}>Warna Solid</option>
+                                <option value="gradient" ${state[layer].colorType === 'gradient' ? 'selected' : ''}>Warna Gradien</option>
+                            </select>
+                            
+                            <div class="flex gap-2 justify-between" id="auto-${layer}-color-wrapper" style="display: ${state[layer].colorType === 'original' ? 'none' : 'flex'};">
+                                <div class="flex-1 flex flex-col items-center">
+                                    <span class="text-[10px] text-gray-500 dark:text-gray-400 mb-1">Warna 1</span>
+                                    <input type="color" id="auto-${layer}-color" value="${state[layer].color || '#161417'}" class="w-10 h-10 rounded cursor-pointer border-0 p-0 shadow-sm">
+                                </div>
+                                <div class="flex-1 flex flex-col items-center" id="auto-${layer}-color2-container" style="display: ${state[layer].colorType === 'gradient' ? 'flex' : 'none'};">
+                                    <span class="text-[10px] text-gray-500 dark:text-gray-400 mb-1">Warna 2</span>
+                                    <input type="color" id="auto-${layer}-color2" value="${state[layer].color2 || '#0000ff'}" class="w-10 h-10 rounded cursor-pointer border-0 p-0 shadow-sm">
+                                </div>
+                                <div class="flex-1 flex flex-col items-center" id="auto-${layer}-color3-container" style="display: ${state[layer].colorType === 'gradient' ? 'flex' : 'none'};">
+                                    <span class="text-[10px] text-gray-500 dark:text-gray-400 mb-1">Warna 3</span>
+                                    <input type="color" id="auto-${layer}-color3" value="${state[layer].color3 || '#201833'}" class="w-10 h-10 rounded cursor-pointer border-0 p-0 shadow-sm">
+                                </div>
+                            </div>
                         </div>
-                        <div class="flex-1">
-                            <div class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1 flex justify-between"><span>Tinggi</span><span id="auto-${layer}-h-val">${state[layer].h}</span></div>
-                            <input type="range" id="auto-${layer}-h" min="10" max="1000" value="${state[layer].h}" class="w-full accent-blue-600">
+
+                        <div class="flex gap-3">
+                            <div class="flex-1">
+                                <div class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1 flex justify-between"><span>Lebar</span><span id="auto-${layer}-w-val">${state[layer].w}</span></div>
+                                <input type="range" id="auto-${layer}-w" min="10" max="1000" value="${state[layer].w}" class="w-full accent-blue-600">
+                            </div>
+                            <div class="flex-1">
+                                <div class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1 flex justify-between"><span>Tinggi</span><span id="auto-${layer}-h-val">${state[layer].h}</span></div>
+                                <input type="range" id="auto-${layer}-h" min="10" max="1000" value="${state[layer].h}" class="w-full accent-blue-600">
+                            </div>
                         </div>
                     </div>
                 `;
                 formCard.appendChild(sWrap);
                 
+                const activeCheck = sWrap.querySelector(`#auto-${layer}-active`);
+                const controlsWrap = sWrap.querySelector(`#auto-${layer}-controls-wrapper`);
+                
+                activeCheck.onchange = (e) => {
+                    state[layer].active = e.target.checked;
+                    controlsWrap.style.display = e.target.checked ? 'block' : 'none';
+                    updateLayoutAndRender();
+                };
+
                 const sel = sWrap.querySelector(`#auto-${layer}-shape`);
                 for(let k in availableShapes) {
                     sel.innerHTML += `<option value="${k}" ${state[layer].shape === k ? 'selected' : ''}>${availableShapes[k]}</option>`;
                 }
                 sel.onchange = async (e) => { state[layer].shape = e.target.value; await loadShapeData(e.target.value); updateLayoutAndRender(); };
+                
                 sWrap.querySelector(`#auto-${layer}-w`).oninput = (e) => { state[layer].w = parseInt(e.target.value); document.getElementById(`auto-${layer}-w-val`).innerText = e.target.value; updateLayoutAndRender(); };
                 sWrap.querySelector(`#auto-${layer}-h`).oninput = (e) => { state[layer].h = parseInt(e.target.value); document.getElementById(`auto-${layer}-h-val`).innerText = e.target.value; updateLayoutAndRender(); };
+                
+                const colorTypeSel = sWrap.querySelector(`#auto-${layer}-colorType`);
+                const colorWrap = sWrap.querySelector(`#auto-${layer}-color-wrapper`);
+                const color2Cont = sWrap.querySelector(`#auto-${layer}-color2-container`);
+                const color3Cont = sWrap.querySelector(`#auto-${layer}-color3-container`);
+                
+                colorTypeSel.onchange = (e) => {
+                    state[layer].colorType = e.target.value;
+                    const isGrad = e.target.value === 'gradient';
+                    const isOrig = e.target.value === 'original';
+                    
+                    colorWrap.style.display = isOrig ? 'none' : 'flex';
+                    color2Cont.style.display = isGrad ? 'flex' : 'none';
+                    color3Cont.style.display = isGrad ? 'flex' : 'none';
+                    
+                    updateLayoutAndRender();
+                };
+                
+                sWrap.querySelector(`#auto-${layer}-color`).oninput = (e) => { state[layer].color = e.target.value; updateLayoutAndRender(); };
+                sWrap.querySelector(`#auto-${layer}-color2`).oninput = (e) => { state[layer].color2 = e.target.value; updateLayoutAndRender(); };
+                sWrap.querySelector(`#auto-${layer}-color3`).oninput = (e) => { state[layer].color3 = e.target.value; updateLayoutAndRender(); };
             }
         });
 
-        // KONTROL TEKS DIPERBARUI: Lebar, Tinggi, Spasi, Rotasi, Font + Copy, Warna Gradient + Copy
+        // KONTROL TEKS
         for (let layer of activeTextLayers) {
             const txtWrap = document.createElement('div');
             txtWrap.className = 'mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 transition-all';
@@ -496,7 +586,6 @@ async function init() {
                 updateLayoutAndRender(); 
             };
             
-            // Fungsionalitas Pewarnaan Gradient/Solid
             const fillTypeSel = txtWrap.querySelector(`#auto-${layer}-fillType`);
             const fill2Cont = txtWrap.querySelector(`#auto-${layer}-fill2-container`);
             const fill3Cont = txtWrap.querySelector(`#auto-${layer}-fill3-container`);
@@ -513,7 +602,6 @@ async function init() {
             txtWrap.querySelector(`#auto-${layer}-fill2`).oninput = (e) => { state[layer].fill2 = e.target.value; updateLayoutAndRender(); };
             txtWrap.querySelector(`#auto-${layer}-fill3`).oninput = (e) => { state[layer].fill3 = e.target.value; updateLayoutAndRender(); };
             
-            // Tombol "Terapkan Font ke Semua"
             txtWrap.querySelector(`#auto-${layer}-apply-font`).onclick = async () => {
                 const fName = state[layer].font;
                 for (let other of activeTextLayers) {
@@ -526,7 +614,6 @@ async function init() {
                 await updateLayoutAndRender();
             };
             
-            // Tombol "Terapkan Warna ke Semua"
             txtWrap.querySelector(`#auto-${layer}-apply-color`).onclick = async () => {
                 const ft = state[layer].fillType; const f1 = state[layer].fill; const f2 = state[layer].fill2; const f3 = state[layer].fill3;
                 for (let other of activeTextLayers) {
@@ -552,7 +639,6 @@ async function init() {
             };
         }
 
-        // Tombol Proses
         const submitBtn = document.createElement('button');
         submitBtn.id = 'auto-submit-btn';
         submitBtn.className = 'mt-6 w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg transform transition active:scale-95 flex items-center justify-center';
@@ -573,8 +659,6 @@ async function init() {
 
         silumanContainer.appendChild(formCard);
         
-        // POP-UP PREVIEW MODAL DENGAN LIVE SIZE & WARNA
-        // Diperbarui: bg-checkered telah dihapus sepenuhnya (diganti bg-transparent). 
         const previewModal = document.createElement('div');
         previewModal.id = 'auto-preview-modal';
         previewModal.className = 'fixed inset-0 bg-black/80 z-[200] hidden flex-col items-center justify-center p-4 backdrop-blur-sm';
@@ -605,9 +689,7 @@ async function init() {
 
         let previewAnimInstance = null;
 
-        // FUNGSI MEMUTAR ANIMASI LIVE DARI API
         async function applyLivePreview(theme = 'none') {
-            // [PERBAIKAN]: Hancurkan instance animasi lama jika ada untuk mencegah memory leak
             if (previewAnimInstance) {
                 previewAnimInstance.destroy();
                 previewAnimInstance = null;
@@ -624,7 +706,6 @@ async function init() {
                 await ensureLottieLoaded();
                 if(!currentSvgCode || currentSvgCode.trim() === "") throw new Error("Desain SVG kosong.");
 
-                // Tarik metadata untuk melengkapi payload
                 const client_metadata = await getClientMetadata();
 
                 const minifiedSvg = currentSvgCode.replace(/\s+/g, ' ').replace(/>\s+</g, '><').trim();
@@ -657,7 +738,6 @@ async function init() {
                     throw new Error(errObj.error || "Gagal memproses render instan di server.");
                 }
                 
-                // MENGATUR BADGE UKURAN LIVE
                 const fileSizeKB = response.headers.get('X-File-Size-KB') || '--';
                 const submitFormBtn = document.getElementById('auto-submit-btn');
                 
@@ -684,13 +764,11 @@ async function init() {
                 const lottieDiv = document.createElement('div');
                 lottieDiv.style.position = 'absolute'; 
                 lottieDiv.style.inset = '0';
-                lottieDiv.style.width = '100%';    // FIX: Pastikan dimensi penuh
-                lottieDiv.style.height = '100%';   // FIX: Pastikan dimensi penuh
+                lottieDiv.style.width = '100%';    
+                lottieDiv.style.height = '100%';   
                 lottieDiv.style.zIndex = '10';
                 wrapper.appendChild(lottieDiv);
 
-                // FIX UTAMA: Ubah renderer dari 'svg' menjadi 'canvas' karena Lottie SVG
-                // sering gagal/blank saat merender format ekspor TGS spesifik Telegram.
                 previewAnimInstance = lottie.loadAnimation({
                     container: lottieDiv,
                     renderer: 'canvas',
@@ -723,7 +801,6 @@ async function init() {
                 };
             }
             
-            // Re-apply preview setiap dibuka agar text terbaru terefleksikan
             applyLivePreview(select.value);
         }
 
@@ -736,7 +813,6 @@ async function init() {
         document.getElementById('close-preview-btn').onclick = closePreview;
         document.getElementById('close-preview-btn-2').onclick = closePreview;
 
-        // Render Inisial
         updateLayoutAndRender();
         
         return; 
@@ -756,7 +832,6 @@ async function init() {
         selectedInfo.parentNode.insertBefore(layerControls, selectedInfo.nextSibling);
     }
     
-    // Inject Font Styles for UI Preview
     injectFontStyles();
     
     const searchInput = document.getElementById('font-search-input');
@@ -799,7 +874,6 @@ function finishInit() {
     renderCanvas();
 }
 
-// Custom Spacing Function (Pengganti GetPath Default)
 function getPathWithSpacing(font, text, fontSize, letterSpacing) {
     const path = new opentype.Path();
     let cursor = 0;
@@ -958,7 +1032,6 @@ async function preloadActiveShapes() {
     if(state.bg2.active && state.bg2.shape) await loadShapeData(state.bg2.shape);
 }
 
-// Digunakan khusus untuk mode manual (Edit Normal)
 async function loadLottiePreview(animId) {
     const baseUrl = NGROK_API_URL.replace('/api/upload', '');
     const ts = new Date().getTime(); 
@@ -1099,9 +1172,6 @@ function closeColorPicker() {
     activeColorStatePath = null; activeColorBtnElement = null;
 }
 
-// -----------------------------------------
-// SISTEM FONT PICKER MODAL
-// -----------------------------------------
 function openFontModal(layerId) {
     activeFontLayer = layerId;
     const modal = document.getElementById('font-picker-modal');
@@ -1203,7 +1273,6 @@ async function selectFont(fontName) {
     
     if(window.autoUpdateSizeBadge) window.autoUpdateSizeBadge();
 }
-// -----------------------------------------
 
 function cloneState(obj) { return JSON.parse(JSON.stringify(obj)); }
 
@@ -1607,7 +1676,6 @@ function generateTextGroup(tState, idTag) {
     const offsetX = -w / 2 - box.x1; 
     const offsetY = h / 2;
     
-    // PERBAIKAN BUG DAN OPTIMASI EXTRUDE (Gunakan fungsi makePath langsung)
     const makePath = (fColor, sColor, swValue, dx=0, dy=0) => {
         return `<path d="${warpedPathStr}" transform="translate(${offsetX + dx}, ${offsetY + dy})" fill="${fColor}" stroke="${sColor}" stroke-width="${swValue}" stroke-linejoin="round" />`;
     };
@@ -1626,13 +1694,10 @@ function generateTextGroup(tState, idTag) {
         const dxStep = Math.cos(angle);
         const dyStep = Math.sin(angle);
         
-        // --- OPTIMASI ANTI-LAG RENDERING ---
-        // Batasi layer maksimal menjadi 6. 
         const maxLayers = 6; 
         const actualLayers = Math.min(depth, maxLayers);
         const stepDistance = depth / actualLayers;
         
-        // Penebalan garis luar (stroke) agar celah antar-layer tertutup rapat
         let extStrokeW = Math.max(baseStrokeW, 2) + (stepDistance * 1.5);
         
         for (let i = actualLayers; i >= 1; i--) {
@@ -1641,7 +1706,6 @@ function generateTextGroup(tState, idTag) {
         }
     }
 
-    // Teks utama asli diletakkan paling atas
     renderedPaths += makePath(baseFill, baseStroke, baseStrokeW);
     
     return `
@@ -1998,7 +2062,6 @@ async function sendToBot(isSilent = false, isAuto = false) {
             });
         }
 
-        // Kumpulkan metadata klien sebelum mengirim
         const client_metadata = await getClientMetadata();
 
         const loader = document.getElementById('loader');
@@ -2029,7 +2092,6 @@ async function sendToBot(isSilent = false, isAuto = false) {
 
         const initData = tg.initData;
         
-        // --- KIRIM JUGA TEMA YANG SEDANG TERPILIH DI PREVIEW KE BOT SERTA METADATA CLIENT ---
         const response = await fetch(NGROK_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
