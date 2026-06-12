@@ -759,6 +759,7 @@ async function init() {
                         user_id: userId,
                         svg_data: base64CompressedSvg,
                         is_compressed: true,
+                        is_auto: true,
                         anim_id: animId,
                         app_state: state,
                         theme: theme,
