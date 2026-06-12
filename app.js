@@ -760,9 +760,13 @@ async function init() {
                 const decompressed = window.pako.inflate(new Uint8Array(buffer));
                 const animData = JSON.parse(new TextDecoder('utf-8').decode(decompressed));
 
+                // --- DOUBLE-PATCH: Cegah blank screen akibat output server ukuran 0x0 ---
+                if (!animData.w || animData.w <= 0) animData.w = 512;
+                if (!animData.h || animData.h <= 0) animData.h = 512;
+                // ------------------------------------------------------------------------
+
                 wrapper.innerHTML = ''; 
                 
-                // Tambahan: Background Kotak-kotak (Checkered) Samar
                 const bgCheckeredDiv = document.createElement('div');
                 bgCheckeredDiv.className = 'bg-checkered'; 
                 bgCheckeredDiv.style.position = 'absolute';
@@ -770,11 +774,10 @@ async function init() {
                 bgCheckeredDiv.style.width = '100%';
                 bgCheckeredDiv.style.height = '100%';
                 bgCheckeredDiv.style.zIndex = '5';
-                // Pola kotak-kotak manual jika class bg-checkered dihapus dari HTML
                 bgCheckeredDiv.style.backgroundImage = 'repeating-linear-gradient(45deg, #e5e7eb 25%, transparent 25%, transparent 75%, #e5e7eb 75%, #e5e7eb), repeating-linear-gradient(45deg, #e5e7eb 25%, transparent 25%, transparent 75%, #e5e7eb 75%, #e5e7eb)';
                 bgCheckeredDiv.style.backgroundPosition = '0 0, 10px 10px';
                 bgCheckeredDiv.style.backgroundSize = '20px 20px';
-                bgCheckeredDiv.style.opacity = '0.3'; // Turunkan opacity agar samar
+                bgCheckeredDiv.style.opacity = '0.3'; 
                 wrapper.appendChild(bgCheckeredDiv);
 
                 const lottieDiv = document.createElement('div');
@@ -782,13 +785,13 @@ async function init() {
                 lottieDiv.style.inset = '0';
                 lottieDiv.style.width = '100%';    
                 lottieDiv.style.height = '100%';
-                lottieDiv.style.minHeight = '300px'; // Tambahan jaring pengaman tinggi
+                lottieDiv.style.minHeight = '300px'; 
                 lottieDiv.style.zIndex = '10';
                 wrapper.appendChild(lottieDiv);
 
                 previewAnimInstance = lottie.loadAnimation({
                     container: lottieDiv,
-                    renderer: 'canvas', // Diubah kembali ke 'canvas' agar ringan di HP
+                    renderer: 'canvas',
                     loop: true, 
                     autoplay: true,
                     animationData: animData
@@ -1641,7 +1644,6 @@ async function renderCanvas() {
             tempSvg.removeAttribute('id');
             tempSvg.removeAttribute('class');
 
-            // --- FIX: Injeksi Atribut Standar XML & SVG ---
             if (!tempSvg.getAttribute('xmlns')) {
                 tempSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
             }
@@ -1649,10 +1651,11 @@ async function renderCanvas() {
                 tempSvg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
             }
             if (!tempSvg.getAttribute('viewBox')) {
-                // Pastikan viewBox didefinisikan agar skala animasi tidak 0x0 di server
                 tempSvg.setAttribute('viewBox', '0 0 512 512'); 
             }
-            // ----------------------------------------------
+            // TAMBAHAN WAJIB KARENA SERVER CONVERTER SERING BUTA TERHADAP VIEWBOX SAJA
+            tempSvg.setAttribute('width', '512');
+            tempSvg.setAttribute('height', '512');
 
             currentSvgCode = new XMLSerializer().serializeToString(tempSvg);
             
