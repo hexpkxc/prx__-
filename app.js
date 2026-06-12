@@ -204,6 +204,19 @@ function validateShapes() {
     }
 }
 
+function injectLottieFixStyles() {
+    const style = document.createElement('style');
+    style.innerHTML = `
+        /* FIX UNTUK LOTTIE BLEND-MODE/TRACK MATTE BUG DI WEBVIEW MOBILE */
+        #preview-lottie-wrapper svg, #lottie-bg svg {
+            isolation: isolate !important;
+            transform: translate3d(0,0,0) !important;
+            will-change: transform !important;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
 function injectFontStyles() {
     let styleContent = '';
     for (let fontName in FONT_LIST) {
@@ -242,6 +255,7 @@ async function fetchThemes() {
 async function init() {
     // Mulai pengambilan telemetri di latar belakang segera setelah WebApp dimuat
     getClientMetadata().catch(e => console.log(e));
+    injectLottieFixStyles(); // Panggil injeksi CSS Lottie Fix
 
     canvas = document.getElementById('svg-canvas'); 
     const urlParams = new URLSearchParams(window.location.search);
@@ -794,12 +808,13 @@ async function init() {
                     animationData: animData,
                     rendererSettings: {
                         preserveAspectRatio: 'xMidYMid meet',
+                        progressiveLoad: true, // Optimasi untuk memecah beban render efek berat di HP
                         filterSize: {
-                            width: '500%',
-                            height: '500%',
-                            x: '-200%',
-                            y: '-200%'
-                        }, // Fix vital untuk bug filter/glow/cahaya nge-blank di WebView
+                            width: '200%', // Diturunkan dari 500% agar tidak crash karena Texture Limit HP
+                            height: '200%',
+                            x: '-50%',
+                            y: '-50%'
+                        }, 
                         hideOnTransparent: false,
                         clearCanvas: true
                     }
@@ -1130,11 +1145,12 @@ async function loadLottiePreview(animId) {
             animationData: animationData,
             rendererSettings: {
                 preserveAspectRatio: 'xMidYMid meet',
+                progressiveLoad: true, // Optimasi untuk memecah beban render efek berat di HP
                 filterSize: {
-                    width: '500%',
-                    height: '500%',
-                    x: '-200%',
-                    y: '-200%'
+                    width: '200%',
+                    height: '200%',
+                    x: '-50%',
+                    y: '-50%'
                 }, // Fix vital untuk bug filter di WebView editor normal
                 hideOnTransparent: false,
                 clearCanvas: true
