@@ -809,14 +809,27 @@ async function init() {
                 // Menggunakan idPrefix yang selalu unik setiap kali preview dibuka
                 const uniquePrefix = 'preview_anim_' + Date.now() + '_';
                 
-                const fullFileUrl = fileUrl.startsWith('http') ? fileUrl : `${baseUrl}${fileUrl}?t=${Date.now()}`;
+                // === CACHE BUSTING & PAKO DECOMPRESSION UNTUK LIVE PREVIEW ===
+                let fullFileUrl = fileUrl.startsWith('http') ? fileUrl : `${baseUrl}${fileUrl}`;
+                fullFileUrl += (fullFileUrl.includes('?') ? '&' : '?') + `t=${Date.now()}`;
+                
+                const animFileRes = await fetch(fullFileUrl, {
+                    headers: { "ngrok-skip-browser-warning": "true", "Cache-Control": "no-cache" }
+                });
+                
+                if (!animFileRes.ok) throw new Error("Gagal mengambil file animasi final dari server.");
+                
+                const arrayBuffer = await animFileRes.arrayBuffer();
+                const decompressedArr = window.pako.inflate(new Uint8Array(arrayBuffer));
+                const decompressedStr = new TextDecoder('utf-8').decode(decompressedArr);
+                const finalAnimData = JSON.parse(decompressedStr);
                 
                 previewAnimInstance = lottie.loadAnimation({
                     container: lottieDiv,
                     renderer: 'svg', 
                     loop: true, 
                     autoplay: true,
-                    path: fullFileUrl,
+                    animationData: finalAnimData, // Menggunakan animationData hasil dekompresi Pako
                     rendererSettings: {
                         preserveAspectRatio: 'xMidYMid meet',
                         idPrefix: uniquePrefix, // MENCEGAH BENTROK MASKING DI BROWSER
