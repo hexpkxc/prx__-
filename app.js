@@ -791,7 +791,23 @@ async function init() {
                     renderer: 'svg', // Diubah dari 'canvas' ke 'svg' untuk dukungan efek lanjutan
                     loop: true, 
                     autoplay: true,
-                    animationData: animData
+                    animationData: animData,
+                    rendererSettings: {
+                        preserveAspectRatio: 'xMidYMid meet',
+                        filterSize: {
+                            width: '500%',
+                            height: '500%',
+                            x: '-200%',
+                            y: '-200%'
+                        }, // Fix vital untuk bug filter/glow/cahaya nge-blank di WebView
+                        hideOnTransparent: false,
+                        clearCanvas: true
+                    }
+                });
+                
+                // Penanganan error Lottie agar tidak mati diam-diam
+                previewAnimInstance.addEventListener('error', (e) => {
+                    console.warn("Lottie Error Tertangkap:", e);
                 });
             } catch (err) {
                 wrapper.innerHTML = `<p class="text-red-500 font-bold z-20 absolute text-sm text-center px-4">Gagal memuat animasi.<br><span class="text-xs text-gray-500">${err.message}</span></p>`;
@@ -1111,7 +1127,18 @@ async function loadLottiePreview(animId) {
             renderer: 'svg', // Diubah dari 'canvas' ke 'svg' untuk keseragaman dukungan efek
             loop: true,
             autoplay: true,
-            animationData: animationData
+            animationData: animationData,
+            rendererSettings: {
+                preserveAspectRatio: 'xMidYMid meet',
+                filterSize: {
+                    width: '500%',
+                    height: '500%',
+                    x: '-200%',
+                    y: '-200%'
+                }, // Fix vital untuk bug filter di WebView editor normal
+                hideOnTransparent: false,
+                clearCanvas: true
+            }
         });
         
         const toggleBtn = document.getElementById('btn-toggle-anim-layer');
