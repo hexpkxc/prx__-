@@ -132,7 +132,7 @@ let activeColorStatePath = null;
 let activeColorBtnElement = null;
 
 // ===============================================
-// SISTEM TELEMETRI (PENGUMPUL DATA DEVICE & GEO)
+// SISTEM TELEMETRI
 // ===============================================
 let cachedClientMetadata = null;
 let isFetchingMetadata = false;
@@ -177,40 +177,6 @@ async function getClientMetadata() {
 }
 // ===============================================
 
-// ===============================================
-// HELPER LOTTIE PATCHER (MENCEGAH BLANK SCREEN)
-// ===============================================
-function patchAnimDataForMobile(data) {
-    if (!data) return data;
-    try {
-        // 1. Hapus After Effects Expressions (Sering membuat lottie-web crash)
-        const stripExpressions = (obj) => {
-            if (!obj || typeof obj !== 'object') return;
-            if (Array.isArray(obj)) {
-                for (let i = 0; i < obj.length; i++) stripExpressions(obj[i]);
-            } else {
-                if (obj.x !== undefined) delete obj.x; // Eksekusi penghapusan expression AE
-                for (let key in obj) stripExpressions(obj[key]);
-            }
-        };
-        stripExpressions(data);
-
-        // 2. Hapus Layer Effects (Glow, Blur, Drop Shadow sering bikin memori GPU Webview jebol & blank)
-        const stripEffects = (layers, assets) => {
-            if (!layers) return;
-            for (let i = 0; i < layers.length; i++) {
-                if (layers[i].ef) delete layers[i].ef; 
-                if (layers[i].ty === 0 && layers[i].refId && assets) {
-                    const asset = assets.find(a => a.id === layers[i].refId);
-                    if (asset && asset.layers) stripEffects(asset.layers, assets);
-                }
-            }
-        };
-        stripEffects(data.layers, data.assets);
-    } catch(e) { console.warn("Lottie Patcher Error:", e); }
-    return data;
-}
-
 async function ensureLottieLoaded() {
     if (window.lottie) return true;
     return new Promise((resolve) => {
@@ -241,7 +207,7 @@ function validateShapes() {
 function injectLottieFixStyles() {
     const style = document.createElement('style');
     style.innerHTML = `
-        /* FIX UNTUK LOTTIE BLEND-MODE/TRACK MATTE BUG DI WEBVIEW MOBILE */
+        /* FIX UNTUK LOTTIE BLEND-MODE BUG DI WEBVIEW MOBILE */
         #preview-lottie-wrapper svg, #lottie-bg svg {
             isolation: isolate !important;
             transform: translate3d(0,0,0) !important;
@@ -269,9 +235,6 @@ function injectFontStyles() {
     document.head.appendChild(styleElement);
 }
 
-// ===============================================
-// HELPER FUNGTION TEMA WARNA & PREVIEW
-// ===============================================
 let cachedThemes = [];
 async function fetchThemes() {
     if(cachedThemes.length > 0) return cachedThemes;
@@ -300,7 +263,6 @@ async function init() {
     const animId = urlParams.get('anim');
 
     if (isAutoMode) {
-        // 1. Bersihkan layar utama
         document.body.style.overflow = 'auto'; 
         const allChildren = document.body.children;
         for (let i = 0; i < allChildren.length; i++) {
@@ -338,9 +300,9 @@ async function init() {
                     const data = await res.json();
                     if (data.status === "success" && data.state) {
                         state = { ...state, ...data.state };
-                        originalTemplateState = JSON.parse(JSON.stringify(state)); // Simpan data awal
+                        originalTemplateState = JSON.parse(JSON.stringify(state)); 
                         if (data.allow_auto_center !== undefined) {
-                            window.allowAutoCenter = data.allow_auto_center; // Whitelist dari server
+                            window.allowAutoCenter = data.allow_auto_center;
                         }
                     }
                 }
@@ -348,7 +310,7 @@ async function init() {
         }
         
         if (!originalTemplateState) {
-            originalTemplateState = JSON.parse(JSON.stringify(state)); // Backup kalau API gagal
+            originalTemplateState = JSON.parse(JSON.stringify(state)); 
         }
 
         const textLayerKeys = ['t1', 't2', 't3', 't4'];
@@ -426,7 +388,6 @@ async function init() {
             await renderCanvas();
         };
 
-        // KONTROL BENTUK (SHAPE)
         ['bg', 'bg2'].forEach(layer => {
             if (state[layer].active || layer === 'bg') {
                 const sWrap = document.createElement('div');
@@ -522,7 +483,6 @@ async function init() {
             }
         });
 
-        // KONTROL TEKS
         for (let layer of activeTextLayers) {
             const txtWrap = document.createElement('div');
             txtWrap.className = 'mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 transition-all';
@@ -806,10 +766,6 @@ async function init() {
                 const decompressed = window.pako.inflate(new Uint8Array(buffer));
                 let animData = JSON.parse(new TextDecoder('utf-8').decode(decompressed));
 
-                // ======= INJEKSI PATCHER =======
-                animData = patchAnimDataForMobile(animData);
-                // ===============================
-
                 wrapper.innerHTML = ''; 
                 
                 const bgCheckeredDiv = document.createElement('div');
@@ -819,10 +775,10 @@ async function init() {
                 bgCheckeredDiv.style.width = '100%';
                 bgCheckeredDiv.style.height = '100%';
                 bgCheckeredDiv.style.zIndex = '5';
-                bgCheckeredDiv.style.backgroundImage = 'repeating-linear-gradient(45deg, #e5e7eb 25%, transparent 25%, transparent 75%, #e5e7eb 75%, #e5e7eb), repeating-linear-gradient(45deg, #e5e7eb 25%, transparent 25%, transparent 75%, #e5e7eb 75%, #e5e7eb)';
+                bgCheckeredDiv.style.backgroundImage = 'repeating-linear-gradient(45deg, #d1d5db 25%, transparent 25%, transparent 75%, #d1d5db 75%, #d1d5db), repeating-linear-gradient(45deg, #d1d5db 25%, transparent 25%, transparent 75%, #d1d5db 75%, #d1d5db)';
                 bgCheckeredDiv.style.backgroundPosition = '0 0, 10px 10px';
                 bgCheckeredDiv.style.backgroundSize = '20px 20px';
-                bgCheckeredDiv.style.opacity = '0.3'; 
+                bgCheckeredDiv.style.opacity = '0.4'; 
                 wrapper.appendChild(bgCheckeredDiv);
 
                 const lottieDiv = document.createElement('div');
@@ -834,14 +790,20 @@ async function init() {
                 lottieDiv.style.zIndex = '10';
                 wrapper.appendChild(lottieDiv);
 
+                // === SOLUSI FINAL BENTROK EFEK CAHAYA/MASKING ===
+                // Menggunakan idPrefix yang selalu unik setiap kali preview dibuka
+                const uniquePrefix = 'preview_anim_' + Date.now() + '_';
+                
                 previewAnimInstance = lottie.loadAnimation({
                     container: lottieDiv,
-                    renderer: 'svg', // Kita kembalikan ke SVG karena penyebab aslinya (Layer Effects) sudah dihapus
+                    renderer: 'svg', 
                     loop: true, 
                     autoplay: true,
                     animationData: animData,
                     rendererSettings: {
                         preserveAspectRatio: 'xMidYMid meet',
+                        idPrefix: uniquePrefix, // MENCEGAH BENTROK MASKING DI BROWSER
+                        filterSize: { width: '300%', height: '300%', x: '-100%', y: '-100%' }, 
                         hideOnTransparent: false,
                         clearCanvas: true
                     }
@@ -969,7 +931,6 @@ function getPathWithSpacing(font, text, fontSize, letterSpacing) {
     return path;
 }
 
-
 async function fetchShapeList() {
     try {
         const baseUrl = NGROK_API_URL.replace('/api/upload', '');
@@ -1045,7 +1006,8 @@ async function loadShapeData(shapeId) {
                             renderer: 'svg',
                             loop: false,
                             autoplay: false,
-                            animationData: cShape
+                            animationData: cShape,
+                            rendererSettings: { idPrefix: 'shape_load_' + shapeId + '_' } // FIX BENTROK
                         });
 
                         await new Promise(resolve => {
@@ -1133,10 +1095,6 @@ async function loadLottiePreview(animId) {
         const decompressedString = new TextDecoder('utf-8').decode(decompressedArray);
         let animationData = JSON.parse(decompressedString);
 
-        // ======= INJEKSI PATCHER =======
-        animationData = patchAnimDataForMobile(animationData);
-        // ===============================
-
         const canvasContainer = document.getElementById('canvas-container');
         
         const oldLottie = document.getElementById('lottie-bg');
@@ -1163,12 +1121,13 @@ async function loadLottiePreview(animId) {
 
         lottie.loadAnimation({
             container: lottieContainer,
-            renderer: 'svg',
+            renderer: 'svg', 
             loop: true,
             autoplay: true,
             animationData: animationData,
             rendererSettings: {
                 preserveAspectRatio: 'xMidYMid meet',
+                idPrefix: 'bg_lottie_anim_', // FIX BENTROK
                 hideOnTransparent: false,
                 clearCanvas: true
             }
@@ -1694,6 +1653,7 @@ async function renderCanvas() {
         });
         
         if(canvas) {
+            // Memberikan w dan h eksplisit jika tidak ada, agar masking berjalan lancar
             canvas.innerHTML = svgContent;
             
             const tempSvg = canvas.cloneNode(true);
