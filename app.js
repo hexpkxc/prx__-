@@ -765,13 +765,14 @@ async function init() {
                 lottieDiv.style.position = 'absolute'; 
                 lottieDiv.style.inset = '0';
                 lottieDiv.style.width = '100%';    
-                lottieDiv.style.height = '100%';   
+                lottieDiv.style.height = '100%';
+                lottieDiv.style.minHeight = '300px'; // Tambahan jaring pengaman tinggi
                 lottieDiv.style.zIndex = '10';
                 wrapper.appendChild(lottieDiv);
 
                 previewAnimInstance = lottie.loadAnimation({
                     container: lottieDiv,
-                    renderer: 'canvas',
+                    renderer: 'svg', // Diubah dari 'canvas' ke 'svg' agar lebih kompatibel dan stabil
                     loop: true, 
                     autoplay: true,
                     animationData: animData
