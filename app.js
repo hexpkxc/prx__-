@@ -1640,6 +1640,20 @@ async function renderCanvas() {
             tempSvg.querySelectorAll('.focus-ring, rect[fill="transparent"]').forEach(el => el.remove());
             tempSvg.removeAttribute('id');
             tempSvg.removeAttribute('class');
+
+            // --- FIX: Injeksi Atribut Standar XML & SVG ---
+            if (!tempSvg.getAttribute('xmlns')) {
+                tempSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+            }
+            if (!tempSvg.getAttribute('xmlns:xlink')) {
+                tempSvg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+            }
+            if (!tempSvg.getAttribute('viewBox')) {
+                // Pastikan viewBox didefinisikan agar skala animasi tidak 0x0 di server
+                tempSvg.setAttribute('viewBox', '0 0 512 512'); 
+            }
+            // ----------------------------------------------
+
             currentSvgCode = new XMLSerializer().serializeToString(tempSvg);
             
             updateDPadButtons();
