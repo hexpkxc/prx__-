@@ -1539,4 +1539,4 @@ window.onload = async () => {
     if(addAnimBtn) {
         addAnimBtn.addEventListener('click', resetFormForNewAnimation);
     }
-};
+}
