@@ -264,6 +264,10 @@ async function fetchThemes() {
     return cachedThemes;
 }
 
+// === VARIABEL GLOBAL UNTUK MENGELOLA BLOB URL AGAR BISA DIBERSIHKAN (MENCEGAH MEMORY LEAK) ===
+let currentLivePreviewBlobUrl = null;
+let currentNormalPreviewBlobUrl = null;
+
 async function init() {
     getClientMetadata().catch(e => console.log(e));
     injectLottieFixStyles(); 
@@ -803,19 +807,33 @@ async function init() {
                 bgCheckeredDiv.style.opacity = '0.4'; 
                 wrapper.appendChild(bgCheckeredDiv);
 
-                // === CACHE BUSTING UNTUK LIVE PREVIEW ===
+                // === CACHE BUSTING & AMBIL FILE TGS SECARA MANUAL UNTUK MENEMBUS NGROK ===
                 let fullFileUrl = fileUrl.startsWith('http') ? fileUrl : `${baseUrl}${fileUrl}`;
                 fullFileUrl += (fullFileUrl.includes('?') ? '&' : '?') + `t=${Date.now()}`;
+                
+                const animFileRes = await fetch(fullFileUrl, {
+                    headers: { "ngrok-skip-browser-warning": "true", "Cache-Control": "no-cache" }
+                });
+                
+                if (!animFileRes.ok) throw new Error("Gagal mengambil file animasi final dari server.");
+                
+                // Ubah file TGS menjadi Blob URL Lokal agar tgs-player tidak dihadang Ngrok
+                const blob = await animFileRes.blob();
+                
+                if (currentLivePreviewBlobUrl) {
+                    URL.revokeObjectURL(currentLivePreviewBlobUrl);
+                }
+                currentLivePreviewBlobUrl = URL.createObjectURL(blob);
                 
                 // Pastikan library tgs-player termuat
                 await ensureTgsPlayerLoaded();
                 
-                // === MENGGUNAKAN TGS-PLAYER (ANTI BUG CAHAYA & MASKING) ===
+                // === MENGGUNAKAN TGS-PLAYER DENGAN BLOB URL LOKAL ===
                 const tgsEl = document.createElement('tgs-player');
                 tgsEl.setAttribute('autoplay', '');
                 tgsEl.setAttribute('loop', '');
                 tgsEl.setAttribute('mode', 'normal');
-                tgsEl.setAttribute('src', fullFileUrl);
+                tgsEl.setAttribute('src', currentLivePreviewBlobUrl);
                 tgsEl.style.position = 'absolute';
                 tgsEl.style.inset = '0';
                 tgsEl.style.width = '100%';
@@ -1074,7 +1092,7 @@ async function preloadActiveShapes() {
     if(state.bg2.active && state.bg2.shape) await loadShapeData(state.bg2.shape);
 }
 
-// UPDATE JUGA FUNGSI PREVIEW NORMAL MENGGUNAKAN TGS-PLAYER
+// UPDATE JUGA FUNGSI PREVIEW NORMAL MENGGUNAKAN TGS-PLAYER DAN BLOB URL
 async function loadLottiePreview(animId) {
     const baseUrl = NGROK_API_URL.replace('/api/upload', '');
     const ts = new Date().getTime(); 
@@ -1082,6 +1100,24 @@ async function loadLottiePreview(animId) {
 
     try {
         await ensureTgsPlayerLoaded();
+        
+        // MENGAMBIL FILE TGS SECARA MANUAL UNTUK MENEMBUS NGROK
+        const response = await fetch(tgsUrl, {
+            method: 'GET',
+            headers: {
+                "ngrok-skip-browser-warning": "true",
+                "Cache-Control": "no-cache"
+            }
+        });
+        
+        if (!response.ok) throw new Error("File TGS tidak ditemukan di server lokal.");
+        
+        const blob = await response.blob();
+        
+        if (currentNormalPreviewBlobUrl) {
+            URL.revokeObjectURL(currentNormalPreviewBlobUrl);
+        }
+        currentNormalPreviewBlobUrl = URL.createObjectURL(blob);
 
         const canvasContainer = document.getElementById('canvas-container');
         
@@ -1093,7 +1129,7 @@ async function loadLottiePreview(animId) {
         lottieContainer.setAttribute('autoplay', '');
         lottieContainer.setAttribute('loop', '');
         lottieContainer.setAttribute('mode', 'normal');
-        lottieContainer.setAttribute('src', tgsUrl);
+        lottieContainer.setAttribute('src', currentNormalPreviewBlobUrl); // MENGGUNAKAN BLOB URL
         
         lottieContainer.style.position = 'absolute';
         lottieContainer.style.inset = '0';
