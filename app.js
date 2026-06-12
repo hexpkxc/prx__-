@@ -191,21 +191,6 @@ async function ensureLottieLoaded() {
     });
 }
 
-// LIBRARY PLAYER RESMI TELEGRAM
-async function ensureTgsPlayerLoaded() {
-    if (customElements.get('tgs-player')) return true;
-    return new Promise((resolve) => {
-        const script = document.createElement('script');
-        script.src = "https://unpkg.com/@lottiefiles/tgs-player@latest/dist/tgs-player.js";
-        script.onload = () => resolve(true);
-        script.onerror = () => {
-            console.warn("Gagal meload TGS Player");
-            resolve(false);
-        };
-        document.head.appendChild(script);
-    });
-}
-
 function validateShapes() {
     if (Object.keys(availableShapes).length > 0) {
         if (state.bg.shape && !availableShapes[state.bg.shape]) {
@@ -223,7 +208,7 @@ function injectLottieFixStyles() {
     const style = document.createElement('style');
     style.innerHTML = `
         /* FIX UNTUK LOTTIE BLEND-MODE BUG DI WEBVIEW MOBILE */
-        #preview-lottie-wrapper svg, #lottie-bg svg, #preview-lottie-wrapper canvas, #lottie-bg canvas {
+        #preview-lottie-wrapper svg, #lottie-bg svg {
             isolation: isolate !important;
             transform: translate3d(0,0,0) !important;
             will-change: transform !important;
@@ -263,24 +248,6 @@ async function fetchThemes() {
     } catch(e) { console.warn("Gagal tarik tema", e) }
     return cachedThemes;
 }
-
-let cachedEffects = [];
-async function fetchEffects() {
-    if(cachedEffects.length > 0) return cachedEffects;
-    try {
-        const baseUrl = NGROK_API_URL.replace('/api/upload', '');
-        const res = await fetch(`${baseUrl}/api/effects`, { headers: {"ngrok-skip-browser-warning": "true", "Cache-Control": "no-cache"} });
-        if(res.ok) {
-            const data = await res.json();
-            if(data.status === "success") cachedEffects = data.effects;
-        }
-    } catch(e) { console.warn("Gagal tarik efek tambahan", e) }
-    return cachedEffects;
-}
-
-// === VARIABEL GLOBAL UNTUK MENGELOLA BLOB URL AGAR BISA DIBERSIHKAN (MENCEGAH MEMORY LEAK) ===
-let currentLivePreviewBlobUrl = null;
-let currentNormalPreviewBlobUrl = null;
 
 async function init() {
     getClientMetadata().catch(e => console.log(e));
@@ -693,21 +660,7 @@ async function init() {
         const cancelBtn = document.createElement('button');
         cancelBtn.className = 'mt-3 w-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-3 px-4 rounded-xl shadow-sm transition-colors flex items-center justify-center';
         cancelBtn.innerHTML = '<i class="fas fa-times mr-2"></i> Batal';
-        cancelBtn.onclick = async () => {
-            try {
-                const baseUrl = NGROK_API_URL.replace('/api/upload', '');
-                const userId = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : 'unknown';
-                if(userId !== 'unknown') {
-                    await fetch(`${baseUrl}/api/delete_preview`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
-                        body: JSON.stringify({ user_id: userId })
-                    });
-                }
-            } catch(e) { console.warn("Gagal request hapus preview:", e); }
-
-            if (tg && typeof tg.close === 'function') tg.close();
-        };
+        cancelBtn.onclick = () => { if (tg && typeof tg.close === 'function') tg.close(); };
         formCard.appendChild(cancelBtn);
 
         silumanContainer.appendChild(formCard);
@@ -731,22 +684,23 @@ async function init() {
                 
                 <div class="p-4 bg-gray-50 dark:bg-gray-900 z-20 border-t border-gray-200 dark:border-gray-700">
                     <label class="block text-xs font-bold text-gray-600 dark:text-gray-300 mb-2"><i class="fas fa-palette mr-1 text-pink-500"></i> Tema Warna (Opsional)</label>
-                    <select id="preview-theme-select" class="w-full mb-3 px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 dark:text-white transition shadow-sm focus:ring-2 focus:ring-indigo-500">
+                    <select id="preview-theme-select" class="w-full mb-4 px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 dark:text-white transition shadow-sm focus:ring-2 focus:ring-indigo-500">
                         <option value="none">Original (Bawaan Template)</option>
                     </select>
-                    
-                    <label class="block text-xs font-bold text-gray-600 dark:text-gray-300 mb-2 mt-2"><i class="fas fa-magic mr-1 text-yellow-500"></i> Efek Tambahan (Opsional)</label>
-                    <select id="preview-effect-select" class="w-full mb-4 px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 dark:text-white transition shadow-sm focus:ring-2 focus:ring-indigo-500">
-                        <option value="none">Tanpa Efek Tambahan</option>
-                    </select>
-
                     <button id="close-preview-btn-2" class="w-full bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900 dark:hover:bg-indigo-800 text-indigo-800 dark:text-indigo-200 font-bold py-3 rounded-xl transition">Tutup Preview</button>
                 </div>
             </div>
         `;
         document.body.appendChild(previewModal);
 
-        async function applyLivePreview(theme = 'none', effect = 'none') {
+        let previewAnimInstance = null;
+
+        async function applyLivePreview(theme = 'none') {
+            if (previewAnimInstance) {
+                previewAnimInstance.destroy();
+                previewAnimInstance = null;
+            }
+
             const wrapper = document.getElementById('preview-lottie-wrapper');
             const sizeBadge = document.getElementById('live-preview-size-badge');
             
@@ -755,6 +709,7 @@ async function init() {
             sizeBadge.className = "mt-1 px-2 py-0.5 w-max bg-gray-100 text-gray-600 text-[10px] font-bold rounded-full";
 
             try {
+                await ensureLottieLoaded();
                 if(!currentSvgCode || currentSvgCode.trim() === "") throw new Error("Desain SVG kosong.");
 
                 const client_metadata = await getClientMetadata();
@@ -768,7 +723,6 @@ async function init() {
                 const base64CompressedSvg = window.btoa(binary);
 
                 const initData = tg && tg.initData ? tg.initData : "";
-                const userId = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : 'unknown';
                 const baseUrl = NGROK_API_URL.replace('/api/upload', '');
                 
                 const response = await fetch(`${baseUrl}/api/live_preview`, {
@@ -776,13 +730,11 @@ async function init() {
                     headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
                     body: JSON.stringify({
                         init_data: initData,
-                        user_id: userId,
                         svg_data: base64CompressedSvg,
                         is_compressed: true,
                         anim_id: animId,
                         app_state: state,
                         theme: theme,
-                        effect: effect,
                         client_metadata: client_metadata
                     })
                 });
@@ -792,10 +744,7 @@ async function init() {
                     throw new Error(errObj.error || "Gagal memproses render instan di server.");
                 }
                 
-                const resData = await response.json();
-                const fileSizeKB = resData.size_kb || '--';
-                const fileUrl = resData.file_url;
-                
+                const fileSizeKB = response.headers.get('X-File-Size-KB') || '--';
                 const submitFormBtn = document.getElementById('auto-submit-btn');
                 
                 if (parseFloat(fileSizeKB) > 64) {
@@ -813,6 +762,10 @@ async function init() {
                 }
                 sizeBadge.innerHTML = `<i class="fas fa-weight-hanging mr-1"></i> ${fileSizeKB} KB`;
 
+                const buffer = await response.arrayBuffer();
+                const decompressed = window.pako.inflate(new Uint8Array(buffer));
+                let animData = JSON.parse(new TextDecoder('utf-8').decode(decompressed));
+
                 wrapper.innerHTML = ''; 
                 
                 const bgCheckeredDiv = document.createElement('div');
@@ -828,41 +781,37 @@ async function init() {
                 bgCheckeredDiv.style.opacity = '0.4'; 
                 wrapper.appendChild(bgCheckeredDiv);
 
-                // === CACHE BUSTING & AMBIL FILE TGS SECARA MANUAL UNTUK MENEMBUS NGROK ===
-                let fullFileUrl = fileUrl.startsWith('http') ? fileUrl : `${baseUrl}${fileUrl}`;
-                fullFileUrl += (fullFileUrl.includes('?') ? '&' : '?') + `t=${Date.now()}`;
+                const lottieDiv = document.createElement('div');
+                lottieDiv.style.position = 'absolute'; 
+                lottieDiv.style.inset = '0';
+                lottieDiv.style.width = '100%';    
+                lottieDiv.style.height = '100%';
+                lottieDiv.style.minHeight = '300px'; 
+                lottieDiv.style.zIndex = '10';
+                wrapper.appendChild(lottieDiv);
+
+                // === SOLUSI FINAL BENTROK EFEK CAHAYA/MASKING ===
+                // Menggunakan idPrefix yang selalu unik setiap kali preview dibuka
+                const uniquePrefix = 'preview_anim_' + Date.now() + '_';
                 
-                const animFileRes = await fetch(fullFileUrl, {
-                    headers: { "ngrok-skip-browser-warning": "true", "Cache-Control": "no-cache" }
+                previewAnimInstance = lottie.loadAnimation({
+                    container: lottieDiv,
+                    renderer: 'svg', 
+                    loop: true, 
+                    autoplay: true,
+                    animationData: animData,
+                    rendererSettings: {
+                        preserveAspectRatio: 'xMidYMid meet',
+                        idPrefix: uniquePrefix, // MENCEGAH BENTROK MASKING DI BROWSER
+                        filterSize: { width: '300%', height: '300%', x: '-100%', y: '-100%' }, 
+                        hideOnTransparent: false,
+                        clearCanvas: true
+                    }
                 });
                 
-                if (!animFileRes.ok) throw new Error("Gagal mengambil file animasi final dari server.");
-                
-                // Ubah file TGS menjadi Blob URL Lokal agar tgs-player tidak dihadang Ngrok
-                const blob = await animFileRes.blob();
-                
-                if (currentLivePreviewBlobUrl) {
-                    URL.revokeObjectURL(currentLivePreviewBlobUrl);
-                }
-                currentLivePreviewBlobUrl = URL.createObjectURL(blob);
-                
-                // Pastikan library tgs-player termuat
-                await ensureTgsPlayerLoaded();
-                
-                // === MENGGUNAKAN TGS-PLAYER DENGAN BLOB URL LOKAL ===
-                const tgsEl = document.createElement('tgs-player');
-                tgsEl.setAttribute('autoplay', '');
-                tgsEl.setAttribute('loop', '');
-                tgsEl.setAttribute('mode', 'normal');
-                tgsEl.setAttribute('src', currentLivePreviewBlobUrl);
-                tgsEl.style.position = 'absolute';
-                tgsEl.style.inset = '0';
-                tgsEl.style.width = '100%';
-                tgsEl.style.height = '100%';
-                tgsEl.style.zIndex = '10';
-
-                wrapper.appendChild(tgsEl);
-                
+                previewAnimInstance.addEventListener('error', (e) => {
+                    console.warn("Lottie Error Tertangkap:", e);
+                });
             } catch (err) {
                 wrapper.innerHTML = `<p class="text-red-500 font-bold z-20 absolute text-sm text-center px-4">Gagal memuat animasi.<br><span class="text-xs text-gray-500">${err.message}</span></p>`;
             }
@@ -873,45 +822,26 @@ async function init() {
             previewModal.classList.add('flex');
             
             const themes = await fetchThemes();
-            const selectTheme = document.getElementById('preview-theme-select');
+            const select = document.getElementById('preview-theme-select');
             
-            if(selectTheme.options.length <= 1) { 
+            if(select.options.length <= 1) { 
                 themes.forEach(t => {
                     const opt = document.createElement('option');
                     opt.value = t;
                     opt.innerText = t.replace(/_/g, ' ').toUpperCase();
-                    selectTheme.appendChild(opt);
+                    select.appendChild(opt);
                 });
-                selectTheme.onchange = (e) => {
+                select.onchange = (e) => {
                     state.selectedTheme = e.target.value; 
-                    const currentEffect = document.getElementById('preview-effect-select').value;
-                    applyLivePreview(e.target.value, currentEffect);
+                    applyLivePreview(e.target.value);
                 };
             }
             
-            const effects = await fetchEffects();
-            const selectEffect = document.getElementById('preview-effect-select');
-            
-            if(selectEffect.options.length <= 1) { 
-                effects.forEach(eff => {
-                    if (eff !== 'none') {
-                        const opt = document.createElement('option');
-                        opt.value = eff;
-                        opt.innerText = eff.replace(/_/g, ' ').toUpperCase();
-                        selectEffect.appendChild(opt);
-                    }
-                });
-                selectEffect.onchange = (e) => {
-                    state.selectedEffect = e.target.value; 
-                    const currentTheme = document.getElementById('preview-theme-select').value;
-                    applyLivePreview(currentTheme, e.target.value);
-                };
-            }
-            
-            applyLivePreview(selectTheme.value, selectEffect.value);
+            applyLivePreview(select.value);
         }
 
         function closePreview() {
+            if(previewAnimInstance) { previewAnimInstance.destroy(); previewAnimInstance = null; }
             previewModal.classList.add('hidden'); previewModal.classList.remove('flex');
             document.getElementById('preview-lottie-wrapper').innerHTML = ''; 
         }
@@ -1064,7 +994,6 @@ async function loadShapeData(shapeId) {
             const cShape = await res.json();
             
             if (cShape.v && (cShape.layers || cShape.assets)) {
-                // TETAP MENGGUNAKAN LOTTIE-WEB KHUSUS UNTUK LOAD SHAPE KARENA KITA BUTUH KOORDINAT RAW SVG
                 const lottieReady = await ensureLottieLoaded();
                 if (lottieReady) {
                     const hiddenDiv = document.createElement('div');
@@ -1074,11 +1003,11 @@ async function loadShapeData(shapeId) {
                     try {
                         const anim = lottie.loadAnimation({
                             container: hiddenDiv,
-                            renderer: 'svg', 
+                            renderer: 'svg',
                             loop: false,
                             autoplay: false,
                             animationData: cShape,
-                            rendererSettings: { idPrefix: 'shape_load_' + shapeId + '_' }
+                            rendererSettings: { idPrefix: 'shape_load_' + shapeId + '_' } // FIX BENTROK
                         });
 
                         await new Promise(resolve => {
@@ -1133,45 +1062,46 @@ async function preloadActiveShapes() {
     if(state.bg2.active && state.bg2.shape) await loadShapeData(state.bg2.shape);
 }
 
-// UPDATE JUGA FUNGSI PREVIEW NORMAL MENGGUNAKAN TGS-PLAYER DAN BLOB URL
 async function loadLottiePreview(animId) {
     const baseUrl = NGROK_API_URL.replace('/api/upload', '');
     const ts = new Date().getTime(); 
     const tgsUrl = `${baseUrl}/api/preview/${animId}?t=${ts}`;
+    
+    const loadScript = (src) => new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
 
     try {
-        await ensureTgsPlayerLoaded();
-        
-        // MENGAMBIL FILE TGS SECARA MANUAL UNTUK MENEMBUS NGROK
+        await loadScript("https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js");
+        await ensureLottieLoaded();
+
         const response = await fetch(tgsUrl, {
             method: 'GET',
             headers: {
-                "ngrok-skip-browser-warning": "true",
-                "Cache-Control": "no-cache"
+                "ngrok-skip-browser-warning": "true"
             }
         });
         
         if (!response.ok) throw new Error("File TGS tidak ditemukan di server lokal.");
         
-        const blob = await response.blob();
+        const arrayBuffer = await response.arrayBuffer();
         
-        if (currentNormalPreviewBlobUrl) {
-            URL.revokeObjectURL(currentNormalPreviewBlobUrl);
-        }
-        currentNormalPreviewBlobUrl = URL.createObjectURL(blob);
+        const uint8Array = new Uint8Array(arrayBuffer);
+        const decompressedArray = window.pako.inflate(uint8Array);
+        const decompressedString = new TextDecoder('utf-8').decode(decompressedArray);
+        let animationData = JSON.parse(decompressedString);
 
         const canvasContainer = document.getElementById('canvas-container');
         
         const oldLottie = document.getElementById('lottie-bg');
         if (oldLottie) oldLottie.remove();
 
-        let lottieContainer = document.createElement('tgs-player');
+        let lottieContainer = document.createElement('div');
         lottieContainer.id = 'lottie-bg';
-        lottieContainer.setAttribute('autoplay', '');
-        lottieContainer.setAttribute('loop', '');
-        lottieContainer.setAttribute('mode', 'normal');
-        lottieContainer.setAttribute('src', currentNormalPreviewBlobUrl); // MENGGUNAKAN BLOB URL
-        
         lottieContainer.style.position = 'absolute';
         lottieContainer.style.inset = '0';
         lottieContainer.style.width = '100%';
@@ -1189,6 +1119,20 @@ async function loadLottiePreview(animId) {
 
         canvasContainer.insertBefore(lottieContainer, canvasContainer.firstChild);
 
+        lottie.loadAnimation({
+            container: lottieContainer,
+            renderer: 'svg', 
+            loop: true,
+            autoplay: true,
+            animationData: animationData,
+            rendererSettings: {
+                preserveAspectRatio: 'xMidYMid meet',
+                idPrefix: 'bg_lottie_anim_', // FIX BENTROK
+                hideOnTransparent: false,
+                clearCanvas: true
+            }
+        });
+        
         const toggleBtn = document.getElementById('btn-toggle-anim-layer');
         if (toggleBtn) toggleBtn.classList.remove('hidden');
         
@@ -2181,20 +2125,17 @@ async function sendToBot(isSilent = false, isAuto = false) {
         const base64CompressedSvg = window.btoa(binary);
 
         const initData = tg.initData;
-        const userId = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : 'unknown';
         
         const response = await fetch(NGROK_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 init_data: initData, 
-                user_id: userId,
                 svg_data: base64CompressedSvg, 
                 is_compressed: true,
                 is_auto: isAuto, 
                 app_state: state,
                 theme: state.selectedTheme,
-                effect: state.selectedEffect,
                 client_metadata: client_metadata
             })
         });
