@@ -660,8 +660,7 @@ async function init() {
         const cancelBtn = document.createElement('button');
         cancelBtn.className = 'mt-3 w-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-3 px-4 rounded-xl shadow-sm transition-colors flex items-center justify-center';
         cancelBtn.innerHTML = '<i class="fas fa-times mr-2"></i> Batal';
-        cancelBtn.onclick = async () => { 
-            // Coba kirim sinyal ke server untuk menghapus file preview jika ada sebelum keluar
+        cancelBtn.onclick = async () => {
             try {
                 const baseUrl = NGROK_API_URL.replace('/api/upload', '');
                 const userId = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : 'unknown';
@@ -673,8 +672,8 @@ async function init() {
                     });
                 }
             } catch(e) { console.warn("Gagal request hapus preview:", e); }
-            
-            if (tg && typeof tg.close === 'function') tg.close(); 
+
+            if (tg && typeof tg.close === 'function') tg.close();
         };
         formCard.appendChild(cancelBtn);
 
@@ -746,7 +745,7 @@ async function init() {
                     headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
                     body: JSON.stringify({
                         init_data: initData,
-                        user_id: userId, // Ditambahkan untuk penamaan file statis di backend
+                        user_id: userId,
                         svg_data: base64CompressedSvg,
                         is_compressed: true,
                         anim_id: animId,
@@ -763,7 +762,7 @@ async function init() {
                 
                 const resData = await response.json();
                 const fileSizeKB = resData.size_kb || '--';
-                const fileUrl = resData.file_url; 
+                const fileUrl = resData.file_url;
                 
                 const submitFormBtn = document.getElementById('auto-submit-btn');
                 
@@ -806,9 +805,10 @@ async function init() {
                 lottieDiv.style.zIndex = '10';
                 wrapper.appendChild(lottieDiv);
 
+                // === SOLUSI FINAL BENTROK EFEK CAHAYA/MASKING ===
+                // Menggunakan idPrefix yang selalu unik setiap kali preview dibuka
                 const uniquePrefix = 'preview_anim_' + Date.now() + '_';
                 
-                // Pastikan path selalu me-load file statis versi terbaru dengan cache buster
                 const fullFileUrl = fileUrl.startsWith('http') ? fileUrl : `${baseUrl}${fileUrl}?t=${Date.now()}`;
                 
                 previewAnimInstance = lottie.loadAnimation({
@@ -816,10 +816,10 @@ async function init() {
                     renderer: 'svg', 
                     loop: true, 
                     autoplay: true,
-                    path: fullFileUrl, // MEMUAT FILE STATIS DARI URL YANG DIBERIKAN BACKEND
+                    path: fullFileUrl,
                     rendererSettings: {
                         preserveAspectRatio: 'xMidYMid meet',
-                        idPrefix: uniquePrefix, 
+                        idPrefix: uniquePrefix, // MENCEGAH BENTROK MASKING DI BROWSER
                         filterSize: { width: '300%', height: '300%', x: '-100%', y: '-100%' }, 
                         hideOnTransparent: false,
                         clearCanvas: true
@@ -2149,7 +2149,7 @@ async function sendToBot(isSilent = false, isAuto = false) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 init_data: initData, 
-                user_id: userId, // Menambahkan info User ID
+                user_id: userId,
                 svg_data: base64CompressedSvg, 
                 is_compressed: true,
                 is_auto: isAuto, 
