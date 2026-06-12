@@ -30,6 +30,10 @@
     <script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5"></script>
+    
+    <!-- TAMBAHAN WAJIB UNTUK LIVE PREVIEW (.TGS & KOMPRESI) -->
+    <script src="https://unpkg.com/@lottiefiles/tgs-player@latest/dist/tgs-player.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
 
     <link rel="stylesheet" href="style.css">
 </head>
@@ -54,12 +58,18 @@
         </p>
     </div>
 
+    <!-- LOADING OVERLAY UTAMA (DIPANGGIL OLEH APP.JS SAAT TARIK TEMPLATE) -->
+    <div id="loading-overlay" class="fixed inset-0 bg-white/90 dark:bg-gray-900/90 z-[300] hidden flex-col items-center justify-center backdrop-blur-sm transition-opacity">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-600 mb-4"></div>
+        <p class="text-gray-700 dark:text-gray-200 font-bold text-center px-4 tracking-wide">Memuat Template...</p>
+    </div>
+
     <div id="loader" class="fixed inset-0 bg-white/90 z-[200] flex flex-col items-center justify-center hidden">
         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
         <p class="text-gray-700 font-bold text-center px-4" id="loader-text">Memuat Font...</p>
     </div>
 
-    <!-- MODAL FONT PICKER BARU -->
+    <!-- MODAL FONT PICKER -->
     <div id="font-picker-modal" class="fixed inset-0 bg-black/70 z-[160] hidden flex-col items-center justify-end sm:justify-center p-0 sm:p-4 backdrop-blur-sm transition-opacity">
         <div class="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-md flex flex-col h-[85vh] sm:h-[75vh] animate-slide-up">
             <div class="flex justify-between items-center w-full p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl z-10">
@@ -88,6 +98,7 @@
         </div>
     </div>
 
+    <!-- MODAL WARNA -->
     <div id="color-picker-modal" class="fixed inset-0 bg-black/70 z-[100] hidden flex-col items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-gray-800 rounded-2xl p-6 shadow-2xl w-full max-w-xs flex flex-col items-center animate-fade-in">
             <div class="flex justify-between items-center w-full mb-6 text-white border-b border-gray-700 pb-3">
@@ -100,6 +111,7 @@
         </div>
     </div>
 
+    <!-- MODAL TEMPLATE -->
     <div id="template-modal" class="fixed inset-0 bg-black/70 z-[150] hidden flex-col items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-2xl w-full max-w-sm flex flex-col animate-fade-in">
             <div class="flex justify-between items-center w-full mb-4 border-b border-gray-200 dark:border-gray-700 pb-3">
@@ -112,841 +124,923 @@
         </div>
     </div>
 
-    <div class="bg-white p-2 border-b border-gray-200 shadow-sm z-40 shrink-0 flex flex-col items-center app-content transition-colors duration-300">
-        <div class="w-full max-w-sm flex justify-between items-center mb-1.5">
-            <button onclick="sendToBot()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded font-bold shadow-sm transition flex items-center gap-1.5">
-                <i class="fas fa-paper-plane"></i> Kirim ke Bot
+    <!-- ========================================== -->
+    <!-- KONTRIBUSI BARU: WADAH MODE OTOMATIS       -->
+    <!-- ========================================== -->
+    <div id="auto-ui-container" class="hidden flex-col h-full w-full bg-white dark:bg-gray-800 transition-colors duration-300">
+        <!-- Header -->
+        <div class="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-center items-center shadow-sm shrink-0">
+            <h2 class="text-lg font-bold text-gray-800 dark:text-white"><i class="fas fa-bolt text-yellow-500 mr-2"></i>Mode Otomatis</h2>
+        </div>
+        
+        <!-- Preview Container -->
+        <div class="w-full aspect-square max-h-72 p-4 shrink-0 flex items-center justify-center bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700 relative">
+            <div id="auto-anim-preview-container" class="w-full h-full max-w-sm relative rounded-2xl overflow-hidden shadow-inner flex items-center justify-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                <!-- tgs-player & spinner diinjeksikan oleh app.js -->
+            </div>
+        </div>
+        
+        <!-- Layer Inputs Container -->
+        <div class="flex-1 overflow-y-auto p-5 space-y-4 custom-scrollbar" id="auto-layer-inputs">
+            <!-- Form input text diinjeksikan oleh app.js berdasarkan status template -->
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="p-5 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+            <button id="add-anim-btn" class="hidden w-full mb-3 py-3.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-xl font-bold shadow-sm transition-colors border border-indigo-100 dark:border-indigo-800">
+                <i class="fas fa-plus mr-2"></i>Tambah Animasi Lagi
             </button>
-            <div class="flex gap-1.5">
-                <button onclick="toggleTheme()" class="px-2 py-1.5 bg-gray-100 border border-gray-200 rounded text-gray-600 text-xs transition hover:bg-gray-200">
-                    <i id="theme-icon" class="fas fa-moon"></i>
-                </button>
-                <button id="btn-undo" onclick="undo()" class="px-2 py-1.5 bg-gray-100 border border-gray-200 rounded text-gray-600 text-xs disabled:opacity-40 transition" disabled>
-                    <i class="fas fa-undo"></i>
-                </button>
-                <button id="btn-redo" onclick="redo()" class="px-2 py-1.5 bg-gray-100 border border-gray-200 rounded text-gray-600 text-xs disabled:opacity-40 transition" disabled>
-                    <i class="fas fa-redo"></i>
-                </button>
-            </div>
-        </div>
-        
-        <div class="w-full max-w-sm aspect-square relative shrink-0" id="canvas-container">
-            <svg id="svg-canvas" viewBox="0 0 512 512" class="w-full h-full bg-checkered" xmlns="http://www.w3.org/2000/svg"></svg>
-            <div class="absolute bottom-1 right-1 text-[10px] text-gray-500 bg-white/80 px-1.5 py-0.5 rounded shadow-sm font-mono pointer-events-none">512x512</div>
-        </div>
-        
-        <div id="canvas-drag-handle" class="w-full max-w-sm py-1.5 flex justify-center items-center cursor-ns-resize touch-none opacity-50 hover:opacity-100 active:opacity-100 transition-opacity">
-            <div class="w-12 h-1.5 bg-gray-400 rounded-full shadow-sm"></div>
-        </div>
-        
-        <div class="w-full max-w-sm bg-white border border-gray-100 p-1.5 rounded-lg shadow-sm flex flex-col items-center shrink-0 transition-colors duration-300">
-            <div class="flex bg-gray-100 rounded p-1 mb-1 w-full gap-1 transition-colors duration-300">
-                <button class="flex-1 py-1.5 text-[11px] font-bold text-gray-500 rounded hover:text-gray-700 transition" id="btn-induk-editor" onclick="switchInduk('editor')">Editor</button>
-                <button class="flex-1 py-1.5 text-[11px] font-bold bg-white shadow-sm rounded text-blue-600 transition" id="btn-induk-dpad" onclick="switchInduk('dpad')">D-Pad</button>
-            </div>
-
-            <div id="induk-dpad-content" class="w-full flex flex-col items-center hidden">
-                <div class="flex w-full justify-between items-center mb-1.5 px-3">
-                    <div class="text-[10px] text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-full" id="selected-info">Pilih objek</div>
-                    <button id="btn-toggle-anim-layer" onclick="toggleLottieLayer()" class="hidden text-[10px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 active:bg-indigo-200 px-2 py-0.5 rounded-full border border-indigo-200 transition-colors flex items-center shadow-sm">
-                        <i class="fas fa-layer-group mr-1"></i> <span id="anim-layer-text">Di Belakang</span>
-                    </button>
-                </div>
-
-                <div class="flex items-center justify-center gap-3 w-full transition-all duration-300">
-                    <button class="dpad-btn rot-btn" onclick="rotateSelected(-5)" id="btn-rot-l" disabled><i class="fas fa-rotate-left"></i></button>
-                    <div class="grid grid-cols-3 gap-1 w-max">
-                        <div></div>
-                        <button class="dpad-btn" onclick="moveSelected(0, -5)" id="btn-up" disabled><i class="fas fa-chevron-up"></i></button>
-                        <div></div>
-                        <button class="dpad-btn" onclick="moveSelected(-5, 0)" id="btn-left" disabled><i class="fas fa-chevron-left"></i></button>
-                        <button class="dpad-btn" onclick="moveSelected(0, 5)" id="btn-down" disabled><i class="fas fa-chevron-down"></i></button>
-                        <button class="dpad-btn" onclick="moveSelected(5, 0)" id="btn-right" disabled><i class="fas fa-chevron-right"></i></button>
-                    </div>
-                    <button class="dpad-btn rot-btn" onclick="rotateSelected(5)" id="btn-rot-r" disabled><i class="fas fa-rotate-right"></i></button>
-                </div>
-            </div>
+            <button id="submit-btn" class="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-xl font-bold text-base shadow-lg shadow-blue-500/30 transition transform active:scale-[0.98] flex items-center justify-center">
+                <i class="fas fa-play mr-2"></i> Lihat Live Preview
+            </button>
+            <button id="loading-btn" class="hidden w-full py-4 bg-gray-400 dark:bg-gray-600 text-white rounded-xl font-bold cursor-wait flex items-center justify-center shadow-md text-base" disabled>
+                <i class="fas fa-circle-notch fa-spin mr-2"></i> Memproses...
+            </button>
         </div>
     </div>
-    
-    <div class="flex-1 overflow-y-auto p-3 pb-12 app-content transition-colors duration-300">
-        
-        <div class="flex gap-2 w-full max-w-sm mx-auto mb-4">
-            <button onclick="saveCurrentAsTemplate()" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white text-[11px] font-bold py-2.5 rounded-xl shadow-sm transition flex items-center justify-center gap-1.5">
-                <i class="fas fa-save"></i> Simpan Template
-            </button>
-            <button onclick="showTemplateList()" class="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white text-[11px] font-bold py-2.5 rounded-xl shadow-sm transition flex items-center justify-center gap-1.5">
-                <i class="fas fa-folder-open"></i> Template Saya
-            </button>
-        </div>
 
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-3 overflow-hidden transition-colors duration-300">
-            <button onclick="toggleSection('sec-bg')" class="w-full p-3 flex justify-between items-center bg-gray-50 hover:bg-gray-100 transition">
-                <span class="font-bold text-gray-700 text-sm">1. Bentuk 1 (Latar Utama)</span>
-                <span id="icon-sec-bg" class="transform transition-transform text-xs">▼</span>
-            </button>
-            <div id="sec-bg" class="p-3 border-t border-gray-100 hidden">
-                <div class="flex items-center bg-blue-50 p-2 rounded-lg border border-blue-100 mb-3">
-                    <input type="checkbox" id="bg-active" class="w-4 h-4 text-blue-600 rounded">
-                    <label for="bg-active" class="ml-2 text-blue-800 font-bold text-xs">Tampilkan Bentuk 1</label>
-                </div>
-                
-                <div id="bg-controls" class="transition-opacity opacity-50 pointer-events-none">
-                    <div id="bg-tab-edit" class="space-y-3">
-                        <div>
-                            <label class="block text-[11px] font-bold text-gray-600 mb-1">Bentuk Latar</label>
-                            <select id="bg-shape" class="w-full border rounded-lg p-2 text-sm outline-blue-500 bg-gray-50 transition-colors">
-                                <option value="" disabled selected>Memuat Bentuk...</option>
-                            </select>
-                        </div>
-                        <div class="grid grid-cols-1 gap-3">
-                            <div>
-                                <div class="flex justify-between items-center mb-1">
-                                    <label class="block text-[11px] font-bold text-gray-600">Lebar (px)</label>
-                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="bg-w-val">400</span>
-                                </div>
-                                <input type="range" id="bg-w" min="10" max="1000" value="400" class="w-full accent-blue-600">
-                            </div>
-                            <div>
-                                <div class="flex justify-between items-center mb-1">
-                                    <label class="block text-[11px] font-bold text-gray-600">Tinggi (px)</label>
-                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="bg-h-val">150</span>
-                                </div>
-                                <input type="range" id="bg-h" min="10" max="1000" value="150" class="w-full accent-blue-600">
-                            </div>
-                        </div>
-                        
-                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
-                            <div class="flex justify-between items-center mb-2">
-                                <label class="text-[11px] font-bold text-gray-800">Tampilan Bentuk</label>
-                                <div class="flex items-center">
-                                    <input type="checkbox" id="bg-outlineOnly" class="w-3.5 h-3.5">
-                                    <label for="bg-outlineOnly" class="text-[10px] ml-1 text-gray-600">Hanya Garis Luar</label>
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <label class="block text-[11px] font-bold text-gray-600 mb-1">Ketebalan Garis Luar</label>
-                                <input type="range" id="bg-strokeW" min="1" max="30" value="8" class="w-full accent-blue-600">
-                            </div>
-                        </div>
-                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
-                            <label class="block text-[11px] font-bold text-gray-800 mb-1">Tipe Pewarnaan</label>
-                            <select id="bg-colorType" class="w-full border rounded-lg p-2 text-sm outline-blue-500 mb-3 bg-white transition-colors">
-                                <option value="solid">Solid</option>
-                                <option value="gradient">Gradien (3 Warna)</option>
-                                <option value="original">Warna Asli (Ilustrasi)</option>
-                            </select>
-                            
-                            <div id="bg-color-wrapper" class="transition-opacity">
-                                <label class="block text-[11px] font-bold text-gray-800 mb-2">Warna Latar</label>
-                                <div class="flex items-center gap-2">
-                                    <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="bg-color-btn" onclick="openColorPicker('bg.color', this)"></div>
-                                    <div id="bg-color2-container" class="items-center gap-2" style="display:none;">
-                                        <span class="text-[10px] text-gray-400">➜</span>
-                                        <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="bg-color2-btn" onclick="openColorPicker('bg.color2', this)"></div>
-                                    </div>
-                                    <div id="bg-color3-container" class="items-center gap-2" style="display:none;">
-                                        <span class="text-[10px] text-gray-400">➜</span>
-                                        <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="bg-color3-btn" onclick="openColorPicker('bg.color3', this)"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+
+    <!-- ========================================== -->
+    <!-- WADAH MODE MANUAL (UI LAMA DIBUNGKUS DISINI) -->
+    <!-- ========================================== -->
+    <div id="manual-ui-container" class="flex flex-col h-full w-full overflow-hidden transition-colors duration-300">
+        
+        <div class="bg-white p-2 border-b border-gray-200 shadow-sm z-40 shrink-0 flex flex-col items-center app-content transition-colors duration-300">
+            <div class="w-full max-w-sm flex justify-between items-center mb-1.5">
+                <button onclick="sendToBot()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded font-bold shadow-sm transition flex items-center gap-1.5">
+                    <i class="fas fa-paper-plane"></i> Kirim ke Bot
+                </button>
+                <div class="flex gap-1.5">
+                    <button onclick="toggleTheme()" class="px-2 py-1.5 bg-gray-100 border border-gray-200 rounded text-gray-600 text-xs transition hover:bg-gray-200">
+                        <i id="theme-icon" class="fas fa-moon"></i>
+                    </button>
+                    <button id="btn-undo" onclick="undo()" class="px-2 py-1.5 bg-gray-100 border border-gray-200 rounded text-gray-600 text-xs disabled:opacity-40 transition" disabled>
+                        <i class="fas fa-undo"></i>
+                    </button>
+                    <button id="btn-redo" onclick="redo()" class="px-2 py-1.5 bg-gray-100 border border-gray-200 rounded text-gray-600 text-xs disabled:opacity-40 transition" disabled>
+                        <i class="fas fa-redo"></i>
+                    </button>
                 </div>
             </div>
-        </div>
-
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-3 overflow-hidden transition-colors duration-300">
-            <button onclick="toggleSection('sec-bg2')" class="w-full p-3 flex justify-between items-center bg-gray-50 hover:bg-gray-100 transition">
-                <span class="font-bold text-gray-700 text-sm">2. Bentuk 2 (Hiasan / Ornamen)</span>
-                <span id="icon-sec-bg2" class="transform transition-transform text-xs">▼</span>
-            </button>
-            <div id="sec-bg2" class="p-3 border-t border-gray-100 hidden">
+            
+            <div class="w-full max-w-sm aspect-square relative shrink-0" id="canvas-container">
+                <svg id="svg-canvas" viewBox="0 0 512 512" class="w-full h-full bg-checkered" xmlns="http://www.w3.org/2000/svg"></svg>
+                <div class="absolute bottom-1 right-1 text-[10px] text-gray-500 bg-white/80 px-1.5 py-0.5 rounded shadow-sm font-mono pointer-events-none">512x512</div>
                 
-                <div class="flex flex-col gap-2 bg-blue-50/70 p-2.5 rounded-lg border border-blue-100 mb-3">
-                    <div class="flex items-center">
-                        <input type="checkbox" id="bg2-active" class="w-4 h-4 text-blue-600 rounded">
-                        <label for="bg2-active" class="ml-2 text-blue-800 font-bold text-xs">Tampilkan Bentuk 2</label>
-                    </div>
-                    <div class="flex items-center pt-2 border-t border-blue-100/50">
-                        <input type="checkbox" id="bg2-merge" class="w-4 h-4 text-indigo-600 rounded">
-                        <label for="bg2-merge" class="ml-2 text-indigo-800 font-bold text-[11px]">⚡ Gabung Animasi dgn Bentuk 1</label>
-                    </div>
+                <!-- PREVIEW CLOUD MANUAL (JIKA MENGGUNAKAN PRESET) -->
+                <div id="manual-cloud-preview-container" class="absolute inset-0 z-50 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm hidden flex-col items-center justify-center rounded-lg">
+                    <tgs-player id="manual-tgs-preview" autoplay loop mode="normal" class="w-[85%] h-[85%] drop-shadow-xl"></tgs-player>
+                    <button onclick="stopCloudPreview()" class="absolute top-2 right-2 bg-red-100 dark:bg-red-900/50 text-red-500 hover:bg-red-200 w-8 h-8 rounded-full flex items-center justify-center transition-colors shadow-sm">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
-                
-                <div id="bg2-controls" class="transition-opacity opacity-50 pointer-events-none">
-                    <div id="bg2-tab-edit" class="space-y-3">
-                        <div>
-                            <label class="block text-[11px] font-bold text-gray-600 mb-1">Bentuk Hiasan</label>
-                            <select id="bg2-shape" class="w-full border rounded-lg p-2 text-sm outline-blue-500 bg-gray-50 transition-colors">
-                                <option value="" disabled selected>Memuat Bentuk...</option>
-                            </select>
+            </div>
+            
+            <div id="canvas-drag-handle" class="w-full max-w-sm py-1.5 flex justify-center items-center cursor-ns-resize touch-none opacity-50 hover:opacity-100 active:opacity-100 transition-opacity">
+                <div class="w-12 h-1.5 bg-gray-400 rounded-full shadow-sm"></div>
+            </div>
+            
+            <div class="w-full max-w-sm bg-white border border-gray-100 p-1.5 rounded-lg shadow-sm flex flex-col items-center shrink-0 transition-colors duration-300">
+                <div class="flex bg-gray-100 rounded p-1 mb-1 w-full gap-1 transition-colors duration-300">
+                    <button class="flex-1 py-1.5 text-[11px] font-bold text-gray-500 rounded hover:text-gray-700 transition" id="btn-induk-editor" onclick="switchInduk('editor')">Editor</button>
+                    <button class="flex-1 py-1.5 text-[11px] font-bold bg-white shadow-sm rounded text-blue-600 transition" id="btn-induk-dpad" onclick="switchInduk('dpad')">D-Pad</button>
+                </div>
+
+                <div id="induk-dpad-content" class="w-full flex flex-col items-center hidden">
+                    <div class="flex w-full justify-between items-center mb-1.5 px-3">
+                        <div class="text-[10px] text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-full" id="selected-info">Pilih objek</div>
+                        <button id="btn-toggle-anim-layer" onclick="toggleLottieLayer()" class="hidden text-[10px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 active:bg-indigo-200 px-2 py-0.5 rounded-full border border-indigo-200 transition-colors flex items-center shadow-sm">
+                            <i class="fas fa-layer-group mr-1"></i> <span id="anim-layer-text">Di Belakang</span>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center justify-center gap-3 w-full transition-all duration-300">
+                        <button class="dpad-btn rot-btn" onclick="rotateSelected(-5)" id="btn-rot-l" disabled><i class="fas fa-rotate-left"></i></button>
+                        <div class="grid grid-cols-3 gap-1 w-max">
+                            <div></div>
+                            <button class="dpad-btn" onclick="moveSelected(0, -5)" id="btn-up" disabled><i class="fas fa-chevron-up"></i></button>
+                            <div></div>
+                            <button class="dpad-btn" onclick="moveSelected(-5, 0)" id="btn-left" disabled><i class="fas fa-chevron-left"></i></button>
+                            <button class="dpad-btn" onclick="moveSelected(0, 5)" id="btn-down" disabled><i class="fas fa-chevron-down"></i></button>
+                            <button class="dpad-btn" onclick="moveSelected(5, 0)" id="btn-right" disabled><i class="fas fa-chevron-right"></i></button>
                         </div>
-                        <div class="grid grid-cols-1 gap-3">
-                            <div>
-                                <div class="flex justify-between items-center mb-1">
-                                    <label class="block text-[11px] font-bold text-gray-600">Lebar (px)</label>
-                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="bg2-w-val">200</span>
-                                </div>
-                                <input type="range" id="bg2-w" min="10" max="1000" value="200" class="w-full accent-blue-600">
-                            </div>
-                            <div>
-                                <div class="flex justify-between items-center mb-1">
-                                    <label class="block text-[11px] font-bold text-gray-600">Tinggi (px)</label>
-                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="bg2-h-val">200</span>
-                                </div>
-                                <input type="range" id="bg2-h" min="10" max="1000" value="200" class="w-full accent-blue-600">
-                            </div>
-                        </div>
-                        
-                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
-                            <div class="flex justify-between items-center mb-2">
-                                <label class="text-[11px] font-bold text-gray-800">Tampilan Bentuk</label>
-                                <div class="flex items-center">
-                                    <input type="checkbox" id="bg2-outlineOnly" class="w-3.5 h-3.5">
-                                    <label for="bg2-outlineOnly" class="text-[10px] ml-1 text-gray-600">Hanya Garis Luar</label>
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <label class="block text-[11px] font-bold text-gray-600 mb-1">Ketebalan Garis Luar</label>
-                                <input type="range" id="bg2-strokeW" min="1" max="30" value="8" class="w-full accent-blue-600">
-                            </div>
-                        </div>
-                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
-                            <label class="block text-[11px] font-bold text-gray-800 mb-1">Tipe Pewarnaan</label>
-                            <select id="bg2-colorType" class="w-full border rounded-lg p-2 text-sm outline-blue-500 mb-3 bg-white transition-colors">
-                                <option value="solid">Solid</option>
-                                <option value="gradient">Gradien (3 Warna)</option>
-                                <option value="original">Warna Asli (Ilustrasi)</option>
-                            </select>
-                            
-                            <div id="bg2-color-wrapper" class="transition-opacity">
-                                <label class="block text-[11px] font-bold text-gray-800 mb-2">Warna Latar</label>
-                                <div class="flex items-center gap-2">
-                                    <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="bg2-color-btn" onclick="openColorPicker('bg2.color', this)"></div>
-                                    <div id="bg2-color2-container" class="items-center gap-2" style="display:none;">
-                                        <span class="text-[10px] text-gray-400">➜</span>
-                                        <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="bg2-color2-btn" onclick="openColorPicker('bg2.color2', this)"></div>
-                                    </div>
-                                    <div id="bg2-color3-container" class="items-center gap-2" style="display:none;">
-                                        <span class="text-[10px] text-gray-400">➜</span>
-                                        <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="bg2-color3-btn" onclick="openColorPicker('bg2.color3', this)"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <button class="dpad-btn rot-btn" onclick="rotateSelected(5)" id="btn-rot-r" disabled><i class="fas fa-rotate-right"></i></button>
                     </div>
                 </div>
             </div>
         </div>
         
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-3 overflow-hidden transition-colors duration-300">
-            <button onclick="toggleSection('sec-t1')" class="w-full p-3 flex justify-between items-center bg-gray-50 hover:bg-gray-100 transition">
-                <span class="font-bold text-gray-700 text-sm">3. Teks 1 (Atas)</span>
-                <span id="icon-sec-t1" class="transform transition-transform rotate-180 text-xs">▼</span>
-            </button>
-            <div id="sec-t1" class="p-3 border-t border-gray-100">
-                <div class="flex items-center bg-blue-50 p-2 rounded-lg border border-blue-100 mb-3">
-                    <input type="checkbox" id="t1-active" class="w-4 h-4 text-blue-600 rounded" checked>
-                    <label for="t1-active" class="ml-2 text-blue-800 font-bold text-xs">Tampilkan Teks Ini</label>
+        <div class="flex-1 overflow-y-auto p-3 pb-12 app-content transition-colors duration-300">
+            
+            <div class="flex gap-2 w-full max-w-sm mx-auto mb-4">
+                <button onclick="saveCurrentAsTemplate()" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white text-[11px] font-bold py-2.5 rounded-xl shadow-sm transition flex items-center justify-center gap-1.5">
+                    <i class="fas fa-save"></i> Simpan Template
+                </button>
+                <button onclick="showTemplateList()" class="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white text-[11px] font-bold py-2.5 rounded-xl shadow-sm transition flex items-center justify-center gap-1.5">
+                    <i class="fas fa-folder-open"></i> Template Saya
+                </button>
+            </div>
+
+            <!-- TEMA WARNA PINTAR (Di-inject oleh JS) -->
+            <div class="w-full max-w-sm mx-auto mb-4 bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                <label class="block text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-2"><i class="fas fa-palette text-pink-500 mr-1"></i> Tema Warna Pintar</label>
+                <div id="theme-buttons-container" class="flex overflow-x-auto gap-2 pb-2 custom-scrollbar">
+                    <!-- Dimuat oleh app.js -->
+                    <span class="text-xs text-gray-400">Memuat tema...</span>
                 </div>
-                
-                <div id="t1-controls" class="transition-opacity">
-                    <div id="t1-tab-edit" class="space-y-3">
-                        <div>
-                            <label class="block text-[11px] font-bold text-gray-600 mb-1">Teks / Kata</label>
-                            <input type="text" id="t1-text" value="HEX" class="w-full border rounded-lg p-2 outline-blue-500 font-bold bg-gray-50 transition-colors">
-                        </div>
+            </div>
 
-                        <div>
-                            <label class="block text-[11px] font-bold text-gray-600 mb-1">Pilih Font</label>
-                            <button type="button" id="btn-t1-font" onclick="openFontModal('t1')" class="w-full border rounded-lg p-2.5 text-sm outline-blue-500 bg-gray-50 hover:bg-gray-100 transition-colors flex justify-between items-center text-left border-gray-300 shadow-sm">
-                                <span id="t1-font-display" class="truncate font-medium">Memuat Font...</span>
-                                <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
-                            </button>
-                            <select id="t1-font" class="hidden"></select>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-3">
+            <!-- TABEL-TABEL LAYER BENTUK DAN TEKS (DIBAWAH INI ADALAH KODE ORI ANDA) -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-3 overflow-hidden transition-colors duration-300">
+                <button onclick="toggleSection('sec-bg')" class="w-full p-3 flex justify-between items-center bg-gray-50 hover:bg-gray-100 transition">
+                    <span class="font-bold text-gray-700 text-sm">1. Bentuk 1 (Latar Utama)</span>
+                    <span id="icon-sec-bg" class="transform transition-transform text-xs">▼</span>
+                </button>
+                <div id="sec-bg" class="p-3 border-t border-gray-100 hidden">
+                    <div class="flex items-center bg-blue-50 p-2 rounded-lg border border-blue-100 mb-3">
+                        <input type="checkbox" id="bg-active" class="w-4 h-4 text-blue-600 rounded">
+                        <label for="bg-active" class="ml-2 text-blue-800 font-bold text-xs">Tampilkan Bentuk 1</label>
+                    </div>
+                    
+                    <div id="bg-controls" class="transition-opacity opacity-50 pointer-events-none">
+                        <div id="bg-tab-edit" class="space-y-3">
                             <div>
-                                <div class="flex justify-between items-center mb-1">
-                                    <label class="block text-[11px] font-bold text-gray-600">Lebar</label>
-                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t1-w-val">250</span>
-                                </div>
-                                <input type="range" id="t1-w" min="10" max="800" value="250" class="w-full accent-blue-600">
+                                <label class="block text-[11px] font-bold text-gray-600 mb-1">Bentuk Latar</label>
+                                <select id="bg-shape" class="w-full border rounded-lg p-2 text-sm outline-blue-500 bg-gray-50 transition-colors">
+                                    <option value="" disabled selected>Memuat Bentuk...</option>
+                                </select>
                             </div>
-                            <div>
-                                <div class="flex justify-between items-center mb-1">
-                                    <label class="block text-[11px] font-bold text-gray-600">Tinggi</label>
-                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t1-h-val">80</span>
+                            <div class="grid grid-cols-1 gap-3">
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block text-[11px] font-bold text-gray-600">Lebar (px)</label>
+                                        <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="bg-w-val">400</span>
+                                    </div>
+                                    <input type="range" id="bg-w" min="10" max="1000" value="400" class="w-full accent-blue-600">
                                 </div>
-                                <input type="range" id="t1-h" min="10" max="800" value="80" class="w-full accent-blue-600">
-                            </div>
-                        </div>
-
-                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
-                            <div class="mb-3">
-                                <div class="flex justify-between items-center mb-1">
-                                    <label class="block text-[11px] font-bold text-gray-800">Spasi Antar Huruf</label>
-                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t1-spacing-val">0</span>
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block text-[11px] font-bold text-gray-600">Tinggi (px)</label>
+                                        <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="bg-h-val">150</span>
+                                    </div>
+                                    <input type="range" id="bg-h" min="10" max="1000" value="150" class="w-full accent-blue-600">
                                 </div>
-                                <input type="range" id="t1-spacing" min="-50" max="150" value="0" class="w-full accent-blue-600">
                             </div>
                             
-                            <div class="mb-3">
-                                <div class="flex justify-between items-center mb-1">
-                                    <label class="block text-[11px] font-bold text-gray-800">Lengkungan (Curve)</label>
-                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t1-curve-val">0</span>
-                                </div>
-                                <div class="flex justify-between text-[9px] text-gray-400 px-1 mb-1">
-                                    <span>Melengkung ke Bawah</span>
-                                    <span>Lurus</span>
-                                    <span>Melengkung ke Atas</span>
-                                </div>
-                                <input type="range" id="t1-curve" min="-100" max="100" value="0" class="w-full accent-blue-600">
-                            </div>
-
-                            <div>
-                                <div class="flex justify-between items-center mb-1">
-                                    <label class="block text-[11px] font-bold text-gray-800">Rotasi Miring</label>
-                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t1-rotate-val">0°</span>
-                                </div>
-                                <input type="range" id="t1-rotate" min="-180" max="180" value="0" class="w-full accent-blue-600">
-                            </div>
-                        </div>
-
-                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
-                            <div class="flex justify-between items-center mb-1">
-                                <label class="text-[11px] font-bold text-gray-800">Tipe Warna Teks</label>
-                                <div class="flex items-center">
-                                    <input type="checkbox" id="t1-fill-none" class="w-3.5 h-3.5">
-                                    <label for="t1-fill-none" class="text-[10px] ml-1 text-gray-600">Kosong (Tembus)</label>
-                                </div>
-                            </div>
-                            <select id="t1-fillType" class="w-full border rounded-lg p-2 text-sm outline-blue-500 mb-3 bg-white transition-colors">
-                                <option value="solid">Solid</option>
-                                <option value="gradient">Gradien (3 Warna)</option>
-                            </select>
-                            <div class="flex items-center gap-2">
-                                <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="t1-fill-btn" onclick="openColorPicker('t1.fill', this)"></div>
-                                <div id="t1-fill2-container" class="items-center gap-2" style="display:none;">
-                                    <span class="text-[10px] text-gray-400">➜</span>
-                                    <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="t1-fill2-btn" onclick="openColorPicker('t1.fill2', this)"></div>
-                                </div>
-                                <div id="t1-fill3-container" class="items-center gap-2" style="display:none;">
-                                    <span class="text-[10px] text-gray-400">➜</span>
-                                    <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="t1-fill3-btn" onclick="openColorPicker('t1.fill3', this)"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
-                            <div class="flex justify-between items-center mb-2">
-                                <label class="text-[11px] font-bold text-gray-800">Warna Garis Luar (Stroke)</label>
-                                <div class="flex items-center">
-                                    <input type="checkbox" id="t1-stroke-none" class="w-3.5 h-3.5"> 
-                                    <label for="t1-stroke-none" class="text-[10px] ml-1 text-gray-600">Tanpa Garis</label>
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="t1-stroke-btn" onclick="openColorPicker('t1.stroke', this)"></div>
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-gray-800 mb-1">Ketebalan Garis</label>
-                                <input type="range" id="t1-strokeW" min="0" max="20" value="8" class="w-full accent-blue-600">
-                            </div>
-                        </div>
-                        
-                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 mt-3 transition-colors">
-                            <label class="block text-[11px] font-bold text-gray-800 mb-1">Gaya Visual (Efek Tambahan)</label>
-                            <select id="t1-effect" class="w-full border rounded-lg p-2 text-sm outline-blue-500 bg-white transition-colors">
-                                <option value="none">Normal (Tanpa Efek)</option>
-                                <option value="border">Border Stiker Putih Tebal</option>
-                                <option value="shadow">Drop Shadow (Bayangan Hitam)</option>
-                                <option value="extrude">Timbul 3D (Extrude)</option>
-                            </select>
-
-                            <div id="t1-3d-controls" style="display: none;" class="mt-3 pt-3 border-t border-gray-200 transition-colors">
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label class="block text-[10px] font-bold text-gray-600 mb-1">Tebal 3D</label>
-                                        <input type="range" id="t1-depth3d" min="1" max="100" value="30" class="w-full accent-blue-600">
-                                    </div>
-                                    <div>
-                                        <label class="block text-[10px] font-bold text-gray-600 mb-1">Sudut Arah</label>
-                                        <input type="range" id="t1-angle3d" min="0" max="360" value="45" class="w-full accent-blue-600">
+                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
+                                <div class="flex justify-between items-center mb-2">
+                                    <label class="text-[11px] font-bold text-gray-800">Tampilan Bentuk</label>
+                                    <div class="flex items-center">
+                                        <input type="checkbox" id="bg-outlineOnly" class="w-3.5 h-3.5">
+                                        <label for="bg-outlineOnly" class="text-[10px] ml-1 text-gray-600">Hanya Garis Luar</label>
                                     </div>
                                 </div>
-                                <div class="mt-3 flex items-center gap-2">
-                                    <div class="w-6 h-6 rounded border border-gray-300 cursor-pointer shadow-sm" id="t1-color3d-btn" onclick="openColorPicker('t1.color3d', this)"></div>
-                                    <label class="text-[10px] font-bold text-gray-800">Warna Blok 3D</label>
+                                <div class="mb-3">
+                                    <label class="block text-[11px] font-bold text-gray-600 mb-1">Ketebalan Garis Luar</label>
+                                    <input type="range" id="bg-strokeW" min="1" max="30" value="8" class="w-full accent-blue-600">
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
+                                <label class="block text-[11px] font-bold text-gray-800 mb-1">Tipe Pewarnaan</label>
+                                <select id="bg-colorType" class="w-full border rounded-lg p-2 text-sm outline-blue-500 mb-3 bg-white transition-colors">
+                                    <option value="solid">Solid</option>
+                                    <option value="gradient">Gradien (3 Warna)</option>
+                                    <option value="original">Warna Asli (Ilustrasi)</option>
+                                </select>
+                                
+                                <div id="bg-color-wrapper" class="transition-opacity">
+                                    <label class="block text-[11px] font-bold text-gray-800 mb-2">Warna Latar</label>
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="bg-color-btn" onclick="openColorPicker('bg.color', this)"></div>
+                                        <div id="bg-color2-container" class="items-center gap-2" style="display:none;">
+                                            <span class="text-[10px] text-gray-400">➜</span>
+                                            <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="bg-color2-btn" onclick="openColorPicker('bg.color2', this)"></div>
+                                        </div>
+                                        <div id="bg-color3-container" class="items-center gap-2" style="display:none;">
+                                            <span class="text-[10px] text-gray-400">➜</span>
+                                            <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="bg-color3-btn" onclick="openColorPicker('bg.color3', this)"></div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-3 overflow-hidden transition-colors duration-300">
-            <button onclick="toggleSection('sec-t2')" class="w-full p-3 flex justify-between items-center bg-gray-50 hover:bg-gray-100 transition">
-                <span class="font-bold text-gray-700 text-sm">4. Teks 2 (Tengah)</span>
-                <span id="icon-sec-t2" class="transform transition-transform text-xs">▼</span>
-            </button>
-            <div id="sec-t2" class="p-3 border-t border-gray-100 hidden">
-                
-                <div class="flex flex-col gap-2 bg-blue-50/70 p-2.5 rounded-lg border border-blue-100 mb-3">
-                    <div class="flex items-center">
-                        <input type="checkbox" id="t2-active" class="w-4 h-4 text-blue-600 rounded">
-                        <label for="t2-active" class="ml-2 text-blue-800 font-bold text-xs">Tampilkan Teks Ini</label>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-3 overflow-hidden transition-colors duration-300">
+                <button onclick="toggleSection('sec-bg2')" class="w-full p-3 flex justify-between items-center bg-gray-50 hover:bg-gray-100 transition">
+                    <span class="font-bold text-gray-700 text-sm">2. Bentuk 2 (Hiasan / Ornamen)</span>
+                    <span id="icon-sec-bg2" class="transform transition-transform text-xs">▼</span>
+                </button>
+                <div id="sec-bg2" class="p-3 border-t border-gray-100 hidden">
+                    
+                    <div class="flex flex-col gap-2 bg-blue-50/70 p-2.5 rounded-lg border border-blue-100 mb-3">
+                        <div class="flex items-center">
+                            <input type="checkbox" id="bg2-active" class="w-4 h-4 text-blue-600 rounded">
+                            <label for="bg2-active" class="ml-2 text-blue-800 font-bold text-xs">Tampilkan Bentuk 2</label>
+                        </div>
+                        <div class="flex items-center pt-2 border-t border-blue-100/50">
+                            <input type="checkbox" id="bg2-merge" class="w-4 h-4 text-indigo-600 rounded">
+                            <label for="bg2-merge" class="ml-2 text-indigo-800 font-bold text-[11px]">⚡ Gabung Animasi dgn Bentuk 1</label>
+                        </div>
                     </div>
-                    <div class="flex items-center pt-2 border-t border-blue-100/50">
-                        <input type="checkbox" id="t2-merge" class="w-4 h-4 text-indigo-600 rounded">
-                        <label for="t2-merge" class="ml-2 text-indigo-800 font-bold text-[11px]">⚡ Gabung Animasi dgn Teks 1</label>
-                    </div>
-                </div>
-                
-                <div id="t2-controls" class="transition-opacity opacity-50 pointer-events-none">
-                    <div id="t2-tab-edit" class="space-y-3">
-                        <div>
-                            <label class="block text-[11px] font-bold text-gray-600 mb-1">Teks / Kata</label>
-                            <input type="text" id="t2-text" value="TERBATAS!" class="w-full border rounded-lg p-2 outline-blue-500 font-bold bg-gray-50 transition-colors">
-                        </div>
-
-                        <div>
-                            <label class="block text-[11px] font-bold text-gray-600 mb-1">Pilih Font</label>
-                            <button type="button" id="btn-t2-font" onclick="openFontModal('t2')" class="w-full border rounded-lg p-2.5 text-sm outline-blue-500 bg-gray-50 hover:bg-gray-100 transition-colors flex justify-between items-center text-left border-gray-300 shadow-sm">
-                                <span id="t2-font-display" class="truncate font-medium">Memuat Font...</span>
-                                <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
-                            </button>
-                            <select id="t2-font" class="hidden"></select>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-3">
+                    
+                    <div id="bg2-controls" class="transition-opacity opacity-50 pointer-events-none">
+                        <div id="bg2-tab-edit" class="space-y-3">
                             <div>
-                                <div class="flex justify-between items-center mb-1">
-                                    <label class="block text-[11px] font-bold text-gray-600">Lebar</label>
-                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t2-w-val">200</span>
-                                </div>
-                                <input type="range" id="t2-w" min="10" max="800" value="200" class="w-full accent-blue-600">
+                                <label class="block text-[11px] font-bold text-gray-600 mb-1">Bentuk Hiasan</label>
+                                <select id="bg2-shape" class="w-full border rounded-lg p-2 text-sm outline-blue-500 bg-gray-50 transition-colors">
+                                    <option value="" disabled selected>Memuat Bentuk...</option>
+                                </select>
                             </div>
-                            <div>
-                                <div class="flex justify-between items-center mb-1">
-                                    <label class="block text-[11px] font-bold text-gray-600">Tinggi</label>
-                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t2-h-val">60</span>
+                            <div class="grid grid-cols-1 gap-3">
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block text-[11px] font-bold text-gray-600">Lebar (px)</label>
+                                        <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="bg2-w-val">200</span>
+                                    </div>
+                                    <input type="range" id="bg2-w" min="10" max="1000" value="200" class="w-full accent-blue-600">
                                 </div>
-                                <input type="range" id="t2-h" min="10" max="800" value="60" class="w-full accent-blue-600">
-                            </div>
-                        </div>
-
-                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
-                            <div class="mb-3">
-                                <div class="flex justify-between items-center mb-1">
-                                    <label class="block text-[11px] font-bold text-gray-800">Spasi Antar Huruf</label>
-                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t2-spacing-val">0</span>
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block text-[11px] font-bold text-gray-600">Tinggi (px)</label>
+                                        <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="bg2-h-val">200</span>
+                                    </div>
+                                    <input type="range" id="bg2-h" min="10" max="1000" value="200" class="w-full accent-blue-600">
                                 </div>
-                                <input type="range" id="t2-spacing" min="-50" max="150" value="0" class="w-full accent-blue-600">
                             </div>
                             
-                            <div class="mb-3">
-                                <div class="flex justify-between items-center mb-1">
-                                    <label class="block text-[11px] font-bold text-gray-800">Lengkungan (Curve)</label>
-                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t2-curve-val">0</span>
-                                </div>
-                                <div class="flex justify-between text-[9px] text-gray-400 px-1 mb-1">
-                                    <span>Melengkung ke Bawah</span>
-                                    <span>Lurus</span>
-                                    <span>Melengkung ke Atas</span>
-                                </div>
-                                <input type="range" id="t2-curve" min="-100" max="100" value="0" class="w-full accent-blue-600">
-                            </div>
-
-                            <div>
-                                <div class="flex justify-between items-center mb-1">
-                                    <label class="block text-[11px] font-bold text-gray-800">Rotasi Miring</label>
-                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t2-rotate-val">0°</span>
-                                </div>
-                                <input type="range" id="t2-rotate" min="-180" max="180" value="0" class="w-full accent-blue-600">
-                            </div>
-                        </div>
-
-                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
-                            <div class="flex justify-between items-center mb-1">
-                                <label class="text-[11px] font-bold text-gray-800">Tipe Warna Teks</label>
-                                <div class="flex items-center">
-                                    <input type="checkbox" id="t2-fill-none" class="w-3.5 h-3.5">
-                                    <label for="t2-fill-none" class="text-[10px] ml-1 text-gray-600">Kosong</label>
-                                </div>
-                            </div>
-                            <select id="t2-fillType" class="w-full border rounded-lg p-2 text-sm outline-blue-500 mb-3 bg-white transition-colors">
-                                <option value="solid">Solid</option>
-                                <option value="gradient">Gradien (3 Warna)</option>
-                            </select>
-                            <div class="flex items-center gap-2">
-                                <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="t2-fill-btn" onclick="openColorPicker('t2.fill', this)"></div>
-                                <div id="t2-fill2-container" class="items-center gap-2" style="display:none;">
-                                    <span class="text-[10px] text-gray-400">➜</span>
-                                    <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="t2-fill2-btn" onclick="openColorPicker('t2.fill2', this)"></div>
-                                </div>
-                                <div id="t2-fill3-container" class="items-center gap-2" style="display:none;">
-                                    <span class="text-[10px] text-gray-400">➜</span>
-                                    <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="t2-fill3-btn" onclick="openColorPicker('t2.fill3', this)"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
-                            <div class="flex justify-between items-center mb-2">
-                                <label class="text-[11px] font-bold text-gray-800">Warna Garis Luar (Stroke)</label>
-                                <div class="flex items-center">
-                                    <input type="checkbox" id="t2-stroke-none" class="w-3.5 h-3.5"> 
-                                    <label for="t2-stroke-none" class="text-[10px] ml-1 text-gray-600">Tanpa Garis</label>
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="t2-stroke-btn" onclick="openColorPicker('t2.stroke', this)"></div>
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-gray-800 mb-1">Ketebalan Garis</label>
-                                <input type="range" id="t2-strokeW" min="0" max="20" value="4" class="w-full accent-blue-600">
-                            </div>
-                        </div>
-                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 mt-3 transition-colors">
-                            <label class="block text-[11px] font-bold text-gray-800 mb-1">Gaya Visual (Efek Tambahan)</label>
-                            <select id="t2-effect" class="w-full border rounded-lg p-2 text-sm outline-blue-500 bg-white transition-colors">
-                                <option value="none">Normal (Tanpa Efek)</option>
-                                <option value="border">Border Stiker Putih Tebal</option>
-                                <option value="shadow">Drop Shadow (Bayangan Hitam)</option>
-                                <option value="extrude">Timbul 3D (Extrude)</option>
-                            </select>
-
-                            <div id="t2-3d-controls" style="display: none;" class="mt-3 pt-3 border-t border-gray-200 transition-colors">
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label class="block text-[10px] font-bold text-gray-600 mb-1">Tebal 3D</label>
-                                        <input type="range" id="t2-depth3d" min="1" max="100" value="30" class="w-full accent-blue-600">
-                                    </div>
-                                    <div>
-                                        <label class="block text-[10px] font-bold text-gray-600 mb-1">Sudut Arah</label>
-                                        <input type="range" id="t2-angle3d" min="0" max="360" value="45" class="w-full accent-blue-600">
+                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
+                                <div class="flex justify-between items-center mb-2">
+                                    <label class="text-[11px] font-bold text-gray-800">Tampilan Bentuk</label>
+                                    <div class="flex items-center">
+                                        <input type="checkbox" id="bg2-outlineOnly" class="w-3.5 h-3.5">
+                                        <label for="bg2-outlineOnly" class="text-[10px] ml-1 text-gray-600">Hanya Garis Luar</label>
                                     </div>
                                 </div>
-                                <div class="mt-3 flex items-center gap-2">
-                                    <div class="w-6 h-6 rounded border border-gray-300 cursor-pointer shadow-sm" id="t2-color3d-btn" onclick="openColorPicker('t2.color3d', this)"></div>
-                                    <label class="text-[10px] font-bold text-gray-800">Warna Blok 3D</label>
+                                <div class="mb-3">
+                                    <label class="block text-[11px] font-bold text-gray-600 mb-1">Ketebalan Garis Luar</label>
+                                    <input type="range" id="bg2-strokeW" min="1" max="30" value="8" class="w-full accent-blue-600">
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
+                                <label class="block text-[11px] font-bold text-gray-800 mb-1">Tipe Pewarnaan</label>
+                                <select id="bg2-colorType" class="w-full border rounded-lg p-2 text-sm outline-blue-500 mb-3 bg-white transition-colors">
+                                    <option value="solid">Solid</option>
+                                    <option value="gradient">Gradien (3 Warna)</option>
+                                    <option value="original">Warna Asli (Ilustrasi)</option>
+                                </select>
+                                
+                                <div id="bg2-color-wrapper" class="transition-opacity">
+                                    <label class="block text-[11px] font-bold text-gray-800 mb-2">Warna Latar</label>
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="bg2-color-btn" onclick="openColorPicker('bg2.color', this)"></div>
+                                        <div id="bg2-color2-container" class="items-center gap-2" style="display:none;">
+                                            <span class="text-[10px] text-gray-400">➜</span>
+                                            <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="bg2-color2-btn" onclick="openColorPicker('bg2.color2', this)"></div>
+                                        </div>
+                                        <div id="bg2-color3-container" class="items-center gap-2" style="display:none;">
+                                            <span class="text-[10px] text-gray-400">➜</span>
+                                            <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="bg2-color3-btn" onclick="openColorPicker('bg2.color3', this)"></div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-3 overflow-hidden transition-colors duration-300">
-            <button onclick="toggleSection('sec-t3')" class="w-full p-3 flex justify-between items-center bg-gray-50 hover:bg-gray-100 transition">
-                <span class="font-bold text-gray-700 text-sm">5. Teks 3 (Bawah)</span>
-                <span id="icon-sec-t3" class="transform transition-transform text-xs">▼</span>
-            </button>
-            <div id="sec-t3" class="p-3 border-t border-gray-100 hidden">
-                
-                <div class="flex flex-col gap-2 bg-blue-50/70 p-2.5 rounded-lg border border-blue-100 mb-3">
-                    <div class="flex items-center">
-                        <input type="checkbox" id="t3-active" class="w-4 h-4 text-blue-600 rounded">
-                        <label for="t3-active" class="ml-2 text-blue-800 font-bold text-xs">Tampilkan Teks Ini</label>
+            
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-3 overflow-hidden transition-colors duration-300">
+                <button onclick="toggleSection('sec-t1')" class="w-full p-3 flex justify-between items-center bg-gray-50 hover:bg-gray-100 transition">
+                    <span class="font-bold text-gray-700 text-sm">3. Teks 1 (Atas)</span>
+                    <span id="icon-sec-t1" class="transform transition-transform rotate-180 text-xs">▼</span>
+                </button>
+                <div id="sec-t1" class="p-3 border-t border-gray-100">
+                    <div class="flex items-center bg-blue-50 p-2 rounded-lg border border-blue-100 mb-3">
+                        <input type="checkbox" id="t1-active" class="w-4 h-4 text-blue-600 rounded" checked>
+                        <label for="t1-active" class="ml-2 text-blue-800 font-bold text-xs">Tampilkan Teks Ini</label>
                     </div>
-                    <div class="flex items-center pt-2 border-t border-blue-100/50">
-                        <input type="checkbox" id="t3-merge" class="w-4 h-4 text-indigo-600 rounded">
-                        <label for="t3-merge" class="ml-2 text-indigo-800 font-bold text-[11px]">⚡ Gabung Animasi dgn Teks 1</label>
-                    </div>
-                </div>
-                
-                <div id="t3-controls" class="transition-opacity opacity-50 pointer-events-none">
-                    <div id="t3-tab-edit" class="space-y-3">
-                        <div>
-                            <label class="block text-[11px] font-bold text-gray-600 mb-1">Teks / Kata</label>
-                            <input type="text" id="t3-text" value="SPESIAL!" class="w-full border rounded-lg p-2 outline-blue-500 font-bold bg-gray-50 transition-colors">
-                        </div>
-
-                        <div>
-                            <label class="block text-[11px] font-bold text-gray-600 mb-1">Pilih Font</label>
-                            <button type="button" id="btn-t3-font" onclick="openFontModal('t3')" class="w-full border rounded-lg p-2.5 text-sm outline-blue-500 bg-gray-50 hover:bg-gray-100 transition-colors flex justify-between items-center text-left border-gray-300 shadow-sm">
-                                <span id="t3-font-display" class="truncate font-medium">Memuat Font...</span>
-                                <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
-                            </button>
-                            <select id="t3-font" class="hidden"></select>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-3">
+                    
+                    <div id="t1-controls" class="transition-opacity">
+                        <div id="t1-tab-edit" class="space-y-3">
                             <div>
-                                <div class="flex justify-between items-center mb-1">
-                                    <label class="block text-[11px] font-bold text-gray-600">Lebar</label>
-                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t3-w-val">200</span>
-                                </div>
-                                <input type="range" id="t3-w" min="10" max="800" value="200" class="w-full accent-blue-600">
+                                <label class="block text-[11px] font-bold text-gray-600 mb-1">Teks / Kata</label>
+                                <input type="text" id="t1-text" value="HEX" class="w-full border rounded-lg p-2 outline-blue-500 font-bold bg-gray-50 transition-colors">
                             </div>
-                            <div>
-                                <div class="flex justify-between items-center mb-1">
-                                    <label class="block text-[11px] font-bold text-gray-600">Tinggi</label>
-                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t3-h-val">60</span>
-                                </div>
-                                <input type="range" id="t3-h" min="10" max="800" value="60" class="w-full accent-blue-600">
-                            </div>
-                        </div>
 
-                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
-                            <div class="mb-3">
-                                <div class="flex justify-between items-center mb-1">
-                                    <label class="block text-[11px] font-bold text-gray-800">Spasi Antar Huruf</label>
-                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t3-spacing-val">0</span>
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-600 mb-1">Pilih Font</label>
+                                <button type="button" id="btn-t1-font" onclick="openFontModal('t1')" class="w-full border rounded-lg p-2.5 text-sm outline-blue-500 bg-gray-50 hover:bg-gray-100 transition-colors flex justify-between items-center text-left border-gray-300 shadow-sm">
+                                    <span id="t1-font-display" class="truncate font-medium">Memuat Font...</span>
+                                    <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+                                </button>
+                                <select id="t1-font" class="hidden"></select>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block text-[11px] font-bold text-gray-600">Lebar</label>
+                                        <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t1-w-val">250</span>
+                                    </div>
+                                    <input type="range" id="t1-w" min="10" max="800" value="250" class="w-full accent-blue-600">
                                 </div>
-                                <input type="range" id="t3-spacing" min="-50" max="150" value="0" class="w-full accent-blue-600">
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block text-[11px] font-bold text-gray-600">Tinggi</label>
+                                        <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t1-h-val">80</span>
+                                    </div>
+                                    <input type="range" id="t1-h" min="10" max="800" value="80" class="w-full accent-blue-600">
+                                </div>
+                            </div>
+
+                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
+                                <div class="mb-3">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block text-[11px] font-bold text-gray-800">Spasi Antar Huruf</label>
+                                        <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t1-spacing-val">0</span>
+                                    </div>
+                                    <input type="range" id="t1-spacing" min="-50" max="150" value="0" class="w-full accent-blue-600">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block text-[11px] font-bold text-gray-800">Lengkungan (Curve)</label>
+                                        <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t1-curve-val">0</span>
+                                    </div>
+                                    <div class="flex justify-between text-[9px] text-gray-400 px-1 mb-1">
+                                        <span>Melengkung ke Bawah</span>
+                                        <span>Lurus</span>
+                                        <span>Melengkung ke Atas</span>
+                                    </div>
+                                    <input type="range" id="t1-curve" min="-100" max="100" value="0" class="w-full accent-blue-600">
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block text-[11px] font-bold text-gray-800">Rotasi Miring</label>
+                                        <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t1-rotate-val">0°</span>
+                                    </div>
+                                    <input type="range" id="t1-rotate" min="-180" max="180" value="0" class="w-full accent-blue-600">
+                                </div>
+                            </div>
+
+                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="text-[11px] font-bold text-gray-800">Tipe Warna Teks</label>
+                                    <div class="flex items-center">
+                                        <input type="checkbox" id="t1-fill-none" class="w-3.5 h-3.5">
+                                        <label for="t1-fill-none" class="text-[10px] ml-1 text-gray-600">Kosong (Tembus)</label>
+                                    </div>
+                                </div>
+                                <select id="t1-fillType" class="w-full border rounded-lg p-2 text-sm outline-blue-500 mb-3 bg-white transition-colors">
+                                    <option value="solid">Solid</option>
+                                    <option value="gradient">Gradien (3 Warna)</option>
+                                </select>
+                                <div class="flex items-center gap-2">
+                                    <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="t1-fill-btn" onclick="openColorPicker('t1.fill', this)"></div>
+                                    <div id="t1-fill2-container" class="items-center gap-2" style="display:none;">
+                                        <span class="text-[10px] text-gray-400">➜</span>
+                                        <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="t1-fill2-btn" onclick="openColorPicker('t1.fill2', this)"></div>
+                                    </div>
+                                    <div id="t1-fill3-container" class="items-center gap-2" style="display:none;">
+                                        <span class="text-[10px] text-gray-400">➜</span>
+                                        <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="t1-fill3-btn" onclick="openColorPicker('t1.fill3', this)"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
+                                <div class="flex justify-between items-center mb-2">
+                                    <label class="text-[11px] font-bold text-gray-800">Warna Garis Luar (Stroke)</label>
+                                    <div class="flex items-center">
+                                        <input type="checkbox" id="t1-stroke-none" class="w-3.5 h-3.5"> 
+                                        <label for="t1-stroke-none" class="text-[10px] ml-1 text-gray-600">Tanpa Garis</label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="t1-stroke-btn" onclick="openColorPicker('t1.stroke', this)"></div>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-800 mb-1">Ketebalan Garis</label>
+                                    <input type="range" id="t1-strokeW" min="0" max="20" value="8" class="w-full accent-blue-600">
+                                </div>
                             </div>
                             
-                            <div class="mb-3">
-                                <div class="flex justify-between items-center mb-1">
-                                    <label class="block text-[11px] font-bold text-gray-800">Lengkungan (Curve)</label>
-                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t3-curve-val">0</span>
-                                </div>
-                                <div class="flex justify-between text-[9px] text-gray-400 px-1 mb-1">
-                                    <span>Melengkung ke Bawah</span>
-                                    <span>Lurus</span>
-                                    <span>Melengkung ke Atas</span>
-                                </div>
-                                <input type="range" id="t3-curve" min="-100" max="100" value="0" class="w-full accent-blue-600">
-                            </div>
+                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 mt-3 transition-colors">
+                                <label class="block text-[11px] font-bold text-gray-800 mb-1">Gaya Visual (Efek Tambahan)</label>
+                                <select id="t1-effect" class="w-full border rounded-lg p-2 text-sm outline-blue-500 bg-white transition-colors">
+                                    <option value="none">Normal (Tanpa Efek)</option>
+                                    <option value="border">Border Stiker Putih Tebal</option>
+                                    <option value="shadow">Drop Shadow (Bayangan Hitam)</option>
+                                    <option value="extrude">Timbul 3D (Extrude)</option>
+                                </select>
 
-                            <div>
-                                <div class="flex justify-between items-center mb-1">
-                                    <label class="block text-[11px] font-bold text-gray-800">Rotasi Miring</label>
-                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t3-rotate-val">0°</span>
-                                </div>
-                                <input type="range" id="t3-rotate" min="-180" max="180" value="0" class="w-full accent-blue-600">
-                            </div>
-                        </div>
-
-                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
-                            <div class="flex justify-between items-center mb-1">
-                                <label class="text-[11px] font-bold text-gray-800">Tipe Warna Teks</label>
-                                <div class="flex items-center">
-                                    <input type="checkbox" id="t3-fill-none" class="w-3.5 h-3.5">
-                                    <label for="t3-fill-none" class="text-[10px] ml-1 text-gray-600">Kosong</label>
-                                </div>
-                            </div>
-                            <select id="t3-fillType" class="w-full border rounded-lg p-2 text-sm outline-blue-500 mb-3 bg-white transition-colors">
-                                <option value="solid">Solid</option>
-                                <option value="gradient">Gradien (3 Warna)</option>
-                            </select>
-                            <div class="flex items-center gap-2">
-                                <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="t3-fill-btn" onclick="openColorPicker('t3.fill', this)"></div>
-                                <div id="t3-fill2-container" class="items-center gap-2" style="display:none;">
-                                    <span class="text-[10px] text-gray-400">➜</span>
-                                    <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="t3-fill2-btn" onclick="openColorPicker('t3.fill2', this)"></div>
-                                </div>
-                                <div id="t3-fill3-container" class="items-center gap-2" style="display:none;">
-                                    <span class="text-[10px] text-gray-400">➜</span>
-                                    <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="t3-fill3-btn" onclick="openColorPicker('t3.fill3', this)"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
-                            <div class="flex justify-between items-center mb-2">
-                                <label class="text-[11px] font-bold text-gray-800">Warna Garis Luar (Stroke)</label>
-                                <div class="flex items-center">
-                                    <input type="checkbox" id="t3-stroke-none" class="w-3.5 h-3.5"> 
-                                    <label for="t3-stroke-none" class="text-[10px] ml-1 text-gray-600">Tanpa Garis</label>
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="t3-stroke-btn" onclick="openColorPicker('t3.stroke', this)"></div>
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-gray-800 mb-1">Ketebalan Garis</label>
-                                <input type="range" id="t3-strokeW" min="0" max="20" value="4" class="w-full accent-blue-600">
-                            </div>
-                        </div>
-                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 mt-3 transition-colors">
-                            <label class="block text-[11px] font-bold text-gray-800 mb-1">Gaya Visual (Efek Tambahan)</label>
-                            <select id="t3-effect" class="w-full border rounded-lg p-2 text-sm outline-blue-500 bg-white transition-colors">
-                                <option value="none">Normal (Tanpa Efek)</option>
-                                <option value="border">Border Stiker Putih Tebal</option>
-                                <option value="shadow">Drop Shadow (Bayangan Hitam)</option>
-                                <option value="extrude">Timbul 3D (Extrude)</option>
-                            </select>
-
-                            <div id="t3-3d-controls" style="display: none;" class="mt-3 pt-3 border-t border-gray-200 transition-colors">
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label class="block text-[10px] font-bold text-gray-600 mb-1">Tebal 3D</label>
-                                        <input type="range" id="t3-depth3d" min="1" max="100" value="30" class="w-full accent-blue-600">
+                                <div id="t1-3d-controls" style="display: none;" class="mt-3 pt-3 border-t border-gray-200 transition-colors">
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-gray-600 mb-1">Tebal 3D</label>
+                                            <input type="range" id="t1-depth3d" min="1" max="100" value="30" class="w-full accent-blue-600">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-gray-600 mb-1">Sudut Arah</label>
+                                            <input type="range" id="t1-angle3d" min="0" max="360" value="45" class="w-full accent-blue-600">
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label class="block text-[10px] font-bold text-gray-600 mb-1">Sudut Arah</label>
-                                        <input type="range" id="t3-angle3d" min="0" max="360" value="45" class="w-full accent-blue-600">
+                                    <div class="mt-3 flex items-center gap-2">
+                                        <div class="w-6 h-6 rounded border border-gray-300 cursor-pointer shadow-sm" id="t1-color3d-btn" onclick="openColorPicker('t1.color3d', this)"></div>
+                                        <label class="text-[10px] font-bold text-gray-800">Warna Blok 3D</label>
                                     </div>
-                                </div>
-                                <div class="mt-3 flex items-center gap-2">
-                                    <div class="w-6 h-6 rounded border border-gray-300 cursor-pointer shadow-sm" id="t3-color3d-btn" onclick="openColorPicker('t3.color3d', this)"></div>
-                                    <label class="text-[10px] font-bold text-gray-800">Warna Blok 3D</label>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-3 overflow-hidden transition-colors duration-300">
-            <button onclick="toggleSection('sec-t4')" class="w-full p-3 flex justify-between items-center bg-gray-50 hover:bg-gray-100 transition">
-                <span class="font-bold text-gray-700 text-sm">6. Teks 4 (Ekstra)</span>
-                <span id="icon-sec-t4" class="transform transition-transform text-xs">▼</span>
-            </button>
-            <div id="sec-t4" class="p-3 border-t border-gray-100 hidden">
-                
-                <div class="flex flex-col gap-2 bg-blue-50/70 p-2.5 rounded-lg border border-blue-100 mb-3">
-                    <div class="flex items-center">
-                        <input type="checkbox" id="t4-active" class="w-4 h-4 text-blue-600 rounded">
-                        <label for="t4-active" class="ml-2 text-blue-800 font-bold text-xs">Tampilkan Teks Ini</label>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-3 overflow-hidden transition-colors duration-300">
+                <button onclick="toggleSection('sec-t2')" class="w-full p-3 flex justify-between items-center bg-gray-50 hover:bg-gray-100 transition">
+                    <span class="font-bold text-gray-700 text-sm">4. Teks 2 (Tengah)</span>
+                    <span id="icon-sec-t2" class="transform transition-transform text-xs">▼</span>
+                </button>
+                <div id="sec-t2" class="p-3 border-t border-gray-100 hidden">
+                    
+                    <div class="flex flex-col gap-2 bg-blue-50/70 p-2.5 rounded-lg border border-blue-100 mb-3">
+                        <div class="flex items-center">
+                            <input type="checkbox" id="t2-active" class="w-4 h-4 text-blue-600 rounded">
+                            <label for="t2-active" class="ml-2 text-blue-800 font-bold text-xs">Tampilkan Teks Ini</label>
+                        </div>
+                        <div class="flex items-center pt-2 border-t border-blue-100/50">
+                            <input type="checkbox" id="t2-merge" class="w-4 h-4 text-indigo-600 rounded">
+                            <label for="t2-merge" class="ml-2 text-indigo-800 font-bold text-[11px]">⚡ Gabung Animasi dgn Teks 1</label>
+                        </div>
                     </div>
-                    <div class="flex items-center pt-2 border-t border-blue-100/50">
-                        <input type="checkbox" id="t4-merge" class="w-4 h-4 text-indigo-600 rounded">
-                        <label for="t4-merge" class="ml-2 text-indigo-800 font-bold text-[11px]">⚡ Gabung Animasi dgn Teks 1</label>
-                    </div>
-                </div>
-                
-                <div id="t4-controls" class="transition-opacity opacity-50 pointer-events-none">
-                    <div id="t4-tab-edit" class="space-y-3">
-                        <div>
-                            <label class="block text-[11px] font-bold text-gray-600 mb-1">Teks / Kata</label>
-                            <input type="text" id="t4-text" value="EKSTRA!" class="w-full border rounded-lg p-2 outline-blue-500 font-bold bg-gray-50 transition-colors">
-                        </div>
-
-                        <div>
-                            <label class="block text-[11px] font-bold text-gray-600 mb-1">Pilih Font</label>
-                            <button type="button" id="btn-t4-font" onclick="openFontModal('t4')" class="w-full border rounded-lg p-2.5 text-sm outline-blue-500 bg-gray-50 hover:bg-gray-100 transition-colors flex justify-between items-center text-left border-gray-300 shadow-sm">
-                                <span id="t4-font-display" class="truncate font-medium">Memuat Font...</span>
-                                <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
-                            </button>
-                            <select id="t4-font" class="hidden"></select>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-3">
+                    
+                    <div id="t2-controls" class="transition-opacity opacity-50 pointer-events-none">
+                        <div id="t2-tab-edit" class="space-y-3">
                             <div>
-                                <div class="flex justify-between items-center mb-1">
-                                    <label class="block text-[11px] font-bold text-gray-600">Lebar</label>
-                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t4-w-val">200</span>
-                                </div>
-                                <input type="range" id="t4-w" min="10" max="800" value="200" class="w-full accent-blue-600">
-                            </div>
-                            <div>
-                                <div class="flex justify-between items-center mb-1">
-                                    <label class="block text-[11px] font-bold text-gray-600">Tinggi</label>
-                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t4-h-val">60</span>
-                                </div>
-                                <input type="range" id="t4-h" min="10" max="800" value="60" class="w-full accent-blue-600">
-                            </div>
-                        </div>
-
-                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
-                            <div class="mb-3">
-                                <div class="flex justify-between items-center mb-1">
-                                    <label class="block text-[11px] font-bold text-gray-800">Spasi Antar Huruf</label>
-                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t4-spacing-val">0</span>
-                                </div>
-                                <input type="range" id="t4-spacing" min="-50" max="150" value="0" class="w-full accent-blue-600">
-                            </div>
-                            
-                            <div class="mb-3">
-                                <div class="flex justify-between items-center mb-1">
-                                    <label class="block text-[11px] font-bold text-gray-800">Lengkungan (Curve)</label>
-                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t4-curve-val">0</span>
-                                </div>
-                                <div class="flex justify-between text-[9px] text-gray-400 px-1 mb-1">
-                                    <span>Melengkung ke Bawah</span>
-                                    <span>Lurus</span>
-                                    <span>Melengkung ke Atas</span>
-                                </div>
-                                <input type="range" id="t4-curve" min="-100" max="100" value="0" class="w-full accent-blue-600">
+                                <label class="block text-[11px] font-bold text-gray-600 mb-1">Teks / Kata</label>
+                                <input type="text" id="t2-text" value="TERBATAS!" class="w-full border rounded-lg p-2 outline-blue-500 font-bold bg-gray-50 transition-colors">
                             </div>
 
                             <div>
-                                <div class="flex justify-between items-center mb-1">
-                                    <label class="block text-[11px] font-bold text-gray-800">Rotasi Miring</label>
-                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t4-rotate-val">0°</span>
-                                </div>
-                                <input type="range" id="t4-rotate" min="-180" max="180" value="0" class="w-full accent-blue-600">
+                                <label class="block text-[11px] font-bold text-gray-600 mb-1">Pilih Font</label>
+                                <button type="button" id="btn-t2-font" onclick="openFontModal('t2')" class="w-full border rounded-lg p-2.5 text-sm outline-blue-500 bg-gray-50 hover:bg-gray-100 transition-colors flex justify-between items-center text-left border-gray-300 shadow-sm">
+                                    <span id="t2-font-display" class="truncate font-medium">Memuat Font...</span>
+                                    <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+                                </button>
+                                <select id="t2-font" class="hidden"></select>
                             </div>
-                        </div>
 
-                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
-                            <div class="flex justify-between items-center mb-1">
-                                <label class="text-[11px] font-bold text-gray-800">Tipe Warna Teks</label>
-                                <div class="flex items-center">
-                                    <input type="checkbox" id="t4-fill-none" class="w-3.5 h-3.5">
-                                    <label for="t4-fill-none" class="text-[10px] ml-1 text-gray-600">Kosong</label>
-                                </div>
-                            </div>
-                            <select id="t4-fillType" class="w-full border rounded-lg p-2 text-sm outline-blue-500 mb-3 bg-white transition-colors">
-                                <option value="solid">Solid</option>
-                                <option value="gradient">Gradien (3 Warna)</option>
-                            </select>
-                            <div class="flex items-center gap-2">
-                                <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="t4-fill-btn" onclick="openColorPicker('t4.fill', this)"></div>
-                                <div id="t4-fill2-container" class="items-center gap-2" style="display:none;">
-                                    <span class="text-[10px] text-gray-400">➜</span>
-                                    <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="t4-fill2-btn" onclick="openColorPicker('t4.fill2', this)"></div>
-                                </div>
-                                <div id="t4-fill3-container" class="items-center gap-2" style="display:none;">
-                                    <span class="text-[10px] text-gray-400">➜</span>
-                                    <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="t4-fill3-btn" onclick="openColorPicker('t4.fill3', this)"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
-                            <div class="flex justify-between items-center mb-2">
-                                <label class="text-[11px] font-bold text-gray-800">Warna Garis Luar (Stroke)</label>
-                                <div class="flex items-center">
-                                    <input type="checkbox" id="t4-stroke-none" class="w-3.5 h-3.5"> 
-                                    <label for="t4-stroke-none" class="text-[10px] ml-1 text-gray-600">Tanpa Garis</label>
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="t4-stroke-btn" onclick="openColorPicker('t4.stroke', this)"></div>
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-gray-800 mb-1">Ketebalan Garis</label>
-                                <input type="range" id="t4-strokeW" min="0" max="20" value="4" class="w-full accent-blue-600">
-                            </div>
-                        </div>
-                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 mt-3 transition-colors">
-                            <label class="block text-[11px] font-bold text-gray-800 mb-1">Gaya Visual (Efek Tambahan)</label>
-                            <select id="t4-effect" class="w-full border rounded-lg p-2 text-sm outline-blue-500 bg-white transition-colors">
-                                <option value="none">Normal (Tanpa Efek)</option>
-                                <option value="border">Border Stiker Putih Tebal</option>
-                                <option value="shadow">Drop Shadow (Bayangan Hitam)</option>
-                                <option value="extrude">Timbul 3D (Extrude)</option>
-                            </select>
-
-                            <div id="t4-3d-controls" style="display: none;" class="mt-3 pt-3 border-t border-gray-200 transition-colors">
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label class="block text-[10px] font-bold text-gray-600 mb-1">Tebal 3D</label>
-                                        <input type="range" id="t4-depth3d" min="1" max="100" value="30" class="w-full accent-blue-600">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block text-[11px] font-bold text-gray-600">Lebar</label>
+                                        <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t2-w-val">200</span>
                                     </div>
-                                    <div>
-                                        <label class="block text-[10px] font-bold text-gray-600 mb-1">Sudut Arah</label>
-                                        <input type="range" id="t4-angle3d" min="0" max="360" value="45" class="w-full accent-blue-600">
+                                    <input type="range" id="t2-w" min="10" max="800" value="200" class="w-full accent-blue-600">
+                                </div>
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block text-[11px] font-bold text-gray-600">Tinggi</label>
+                                        <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t2-h-val">60</span>
+                                    </div>
+                                    <input type="range" id="t2-h" min="10" max="800" value="60" class="w-full accent-blue-600">
+                                </div>
+                            </div>
+
+                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
+                                <div class="mb-3">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block text-[11px] font-bold text-gray-800">Spasi Antar Huruf</label>
+                                        <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t2-spacing-val">0</span>
+                                    </div>
+                                    <input type="range" id="t2-spacing" min="-50" max="150" value="0" class="w-full accent-blue-600">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block text-[11px] font-bold text-gray-800">Lengkungan (Curve)</label>
+                                        <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t2-curve-val">0</span>
+                                    </div>
+                                    <div class="flex justify-between text-[9px] text-gray-400 px-1 mb-1">
+                                        <span>Melengkung ke Bawah</span>
+                                        <span>Lurus</span>
+                                        <span>Melengkung ke Atas</span>
+                                    </div>
+                                    <input type="range" id="t2-curve" min="-100" max="100" value="0" class="w-full accent-blue-600">
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block text-[11px] font-bold text-gray-800">Rotasi Miring</label>
+                                        <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t2-rotate-val">0°</span>
+                                    </div>
+                                    <input type="range" id="t2-rotate" min="-180" max="180" value="0" class="w-full accent-blue-600">
+                                </div>
+                            </div>
+
+                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="text-[11px] font-bold text-gray-800">Tipe Warna Teks</label>
+                                    <div class="flex items-center">
+                                        <input type="checkbox" id="t2-fill-none" class="w-3.5 h-3.5">
+                                        <label for="t2-fill-none" class="text-[10px] ml-1 text-gray-600">Kosong</label>
                                     </div>
                                 </div>
-                                <div class="mt-3 flex items-center gap-2">
-                                    <div class="w-6 h-6 rounded border border-gray-300 cursor-pointer shadow-sm" id="t4-color3d-btn" onclick="openColorPicker('t4.color3d', this)"></div>
-                                    <label class="text-[10px] font-bold text-gray-800">Warna Blok 3D</label>
+                                <select id="t2-fillType" class="w-full border rounded-lg p-2 text-sm outline-blue-500 mb-3 bg-white transition-colors">
+                                    <option value="solid">Solid</option>
+                                    <option value="gradient">Gradien (3 Warna)</option>
+                                </select>
+                                <div class="flex items-center gap-2">
+                                    <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="t2-fill-btn" onclick="openColorPicker('t2.fill', this)"></div>
+                                    <div id="t2-fill2-container" class="items-center gap-2" style="display:none;">
+                                        <span class="text-[10px] text-gray-400">➜</span>
+                                        <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="t2-fill2-btn" onclick="openColorPicker('t2.fill2', this)"></div>
+                                    </div>
+                                    <div id="t2-fill3-container" class="items-center gap-2" style="display:none;">
+                                        <span class="text-[10px] text-gray-400">➜</span>
+                                        <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="t2-fill3-btn" onclick="openColorPicker('t2.fill3', this)"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
+                                <div class="flex justify-between items-center mb-2">
+                                    <label class="text-[11px] font-bold text-gray-800">Warna Garis Luar (Stroke)</label>
+                                    <div class="flex items-center">
+                                        <input type="checkbox" id="t2-stroke-none" class="w-3.5 h-3.5"> 
+                                        <label for="t2-stroke-none" class="text-[10px] ml-1 text-gray-600">Tanpa Garis</label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="t2-stroke-btn" onclick="openColorPicker('t2.stroke', this)"></div>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-800 mb-1">Ketebalan Garis</label>
+                                    <input type="range" id="t2-strokeW" min="0" max="20" value="4" class="w-full accent-blue-600">
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 mt-3 transition-colors">
+                                <label class="block text-[11px] font-bold text-gray-800 mb-1">Gaya Visual (Efek Tambahan)</label>
+                                <select id="t2-effect" class="w-full border rounded-lg p-2 text-sm outline-blue-500 bg-white transition-colors">
+                                    <option value="none">Normal (Tanpa Efek)</option>
+                                    <option value="border">Border Stiker Putih Tebal</option>
+                                    <option value="shadow">Drop Shadow (Bayangan Hitam)</option>
+                                    <option value="extrude">Timbul 3D (Extrude)</option>
+                                </select>
+
+                                <div id="t2-3d-controls" style="display: none;" class="mt-3 pt-3 border-t border-gray-200 transition-colors">
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-gray-600 mb-1">Tebal 3D</label>
+                                            <input type="range" id="t2-depth3d" min="1" max="100" value="30" class="w-full accent-blue-600">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-gray-600 mb-1">Sudut Arah</label>
+                                            <input type="range" id="t2-angle3d" min="0" max="360" value="45" class="w-full accent-blue-600">
+                                        </div>
+                                    </div>
+                                    <div class="mt-3 flex items-center gap-2">
+                                        <div class="w-6 h-6 rounded border border-gray-300 cursor-pointer shadow-sm" id="t2-color3d-btn" onclick="openColorPicker('t2.color3d', this)"></div>
+                                        <label class="text-[10px] font-bold text-gray-800">Warna Blok 3D</label>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-3 overflow-hidden transition-colors duration-300">
+                <button onclick="toggleSection('sec-t3')" class="w-full p-3 flex justify-between items-center bg-gray-50 hover:bg-gray-100 transition">
+                    <span class="font-bold text-gray-700 text-sm">5. Teks 3 (Bawah)</span>
+                    <span id="icon-sec-t3" class="transform transition-transform text-xs">▼</span>
+                </button>
+                <div id="sec-t3" class="p-3 border-t border-gray-100 hidden">
+                    
+                    <div class="flex flex-col gap-2 bg-blue-50/70 p-2.5 rounded-lg border border-blue-100 mb-3">
+                        <div class="flex items-center">
+                            <input type="checkbox" id="t3-active" class="w-4 h-4 text-blue-600 rounded">
+                            <label for="t3-active" class="ml-2 text-blue-800 font-bold text-xs">Tampilkan Teks Ini</label>
+                        </div>
+                        <div class="flex items-center pt-2 border-t border-blue-100/50">
+                            <input type="checkbox" id="t3-merge" class="w-4 h-4 text-indigo-600 rounded">
+                            <label for="t3-merge" class="ml-2 text-indigo-800 font-bold text-[11px]">⚡ Gabung Animasi dgn Teks 1</label>
+                        </div>
+                    </div>
+                    
+                    <div id="t3-controls" class="transition-opacity opacity-50 pointer-events-none">
+                        <div id="t3-tab-edit" class="space-y-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-600 mb-1">Teks / Kata</label>
+                                <input type="text" id="t3-text" value="SPESIAL!" class="w-full border rounded-lg p-2 outline-blue-500 font-bold bg-gray-50 transition-colors">
+                            </div>
+
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-600 mb-1">Pilih Font</label>
+                                <button type="button" id="btn-t3-font" onclick="openFontModal('t3')" class="w-full border rounded-lg p-2.5 text-sm outline-blue-500 bg-gray-50 hover:bg-gray-100 transition-colors flex justify-between items-center text-left border-gray-300 shadow-sm">
+                                    <span id="t3-font-display" class="truncate font-medium">Memuat Font...</span>
+                                    <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+                                </button>
+                                <select id="t3-font" class="hidden"></select>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block text-[11px] font-bold text-gray-600">Lebar</label>
+                                        <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t3-w-val">200</span>
+                                    </div>
+                                    <input type="range" id="t3-w" min="10" max="800" value="200" class="w-full accent-blue-600">
+                                </div>
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block text-[11px] font-bold text-gray-600">Tinggi</label>
+                                        <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t3-h-val">60</span>
+                                    </div>
+                                    <input type="range" id="t3-h" min="10" max="800" value="60" class="w-full accent-blue-600">
+                                </div>
+                            </div>
+
+                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
+                                <div class="mb-3">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block text-[11px] font-bold text-gray-800">Spasi Antar Huruf</label>
+                                        <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t3-spacing-val">0</span>
+                                    </div>
+                                    <input type="range" id="t3-spacing" min="-50" max="150" value="0" class="w-full accent-blue-600">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block text-[11px] font-bold text-gray-800">Lengkungan (Curve)</label>
+                                        <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t3-curve-val">0</span>
+                                    </div>
+                                    <div class="flex justify-between text-[9px] text-gray-400 px-1 mb-1">
+                                        <span>Melengkung ke Bawah</span>
+                                        <span>Lurus</span>
+                                        <span>Melengkung ke Atas</span>
+                                    </div>
+                                    <input type="range" id="t3-curve" min="-100" max="100" value="0" class="w-full accent-blue-600">
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block text-[11px] font-bold text-gray-800">Rotasi Miring</label>
+                                        <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t3-rotate-val">0°</span>
+                                    </div>
+                                    <input type="range" id="t3-rotate" min="-180" max="180" value="0" class="w-full accent-blue-600">
+                                </div>
+                            </div>
+
+                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="text-[11px] font-bold text-gray-800">Tipe Warna Teks</label>
+                                    <div class="flex items-center">
+                                        <input type="checkbox" id="t3-fill-none" class="w-3.5 h-3.5">
+                                        <label for="t3-fill-none" class="text-[10px] ml-1 text-gray-600">Kosong</label>
+                                    </div>
+                                </div>
+                                <select id="t3-fillType" class="w-full border rounded-lg p-2 text-sm outline-blue-500 mb-3 bg-white transition-colors">
+                                    <option value="solid">Solid</option>
+                                    <option value="gradient">Gradien (3 Warna)</option>
+                                </select>
+                                <div class="flex items-center gap-2">
+                                    <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="t3-fill-btn" onclick="openColorPicker('t3.fill', this)"></div>
+                                    <div id="t3-fill2-container" class="items-center gap-2" style="display:none;">
+                                        <span class="text-[10px] text-gray-400">➜</span>
+                                        <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="t3-fill2-btn" onclick="openColorPicker('t3.fill2', this)"></div>
+                                    </div>
+                                    <div id="t3-fill3-container" class="items-center gap-2" style="display:none;">
+                                        <span class="text-[10px] text-gray-400">➜</span>
+                                        <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="t3-fill3-btn" onclick="openColorPicker('t3.fill3', this)"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
+                                <div class="flex justify-between items-center mb-2">
+                                    <label class="text-[11px] font-bold text-gray-800">Warna Garis Luar (Stroke)</label>
+                                    <div class="flex items-center">
+                                        <input type="checkbox" id="t3-stroke-none" class="w-3.5 h-3.5"> 
+                                        <label for="t3-stroke-none" class="text-[10px] ml-1 text-gray-600">Tanpa Garis</label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="t3-stroke-btn" onclick="openColorPicker('t3.stroke', this)"></div>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-800 mb-1">Ketebalan Garis</label>
+                                    <input type="range" id="t3-strokeW" min="0" max="20" value="4" class="w-full accent-blue-600">
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 mt-3 transition-colors">
+                                <label class="block text-[11px] font-bold text-gray-800 mb-1">Gaya Visual (Efek Tambahan)</label>
+                                <select id="t3-effect" class="w-full border rounded-lg p-2 text-sm outline-blue-500 bg-white transition-colors">
+                                    <option value="none">Normal (Tanpa Efek)</option>
+                                    <option value="border">Border Stiker Putih Tebal</option>
+                                    <option value="shadow">Drop Shadow (Bayangan Hitam)</option>
+                                    <option value="extrude">Timbul 3D (Extrude)</option>
+                                </select>
+
+                                <div id="t3-3d-controls" style="display: none;" class="mt-3 pt-3 border-t border-gray-200 transition-colors">
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-gray-600 mb-1">Tebal 3D</label>
+                                            <input type="range" id="t3-depth3d" min="1" max="100" value="30" class="w-full accent-blue-600">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-gray-600 mb-1">Sudut Arah</label>
+                                            <input type="range" id="t3-angle3d" min="0" max="360" value="45" class="w-full accent-blue-600">
+                                        </div>
+                                    </div>
+                                    <div class="mt-3 flex items-center gap-2">
+                                        <div class="w-6 h-6 rounded border border-gray-300 cursor-pointer shadow-sm" id="t3-color3d-btn" onclick="openColorPicker('t3.color3d', this)"></div>
+                                        <label class="text-[10px] font-bold text-gray-800">Warna Blok 3D</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-3 overflow-hidden transition-colors duration-300">
+                <button onclick="toggleSection('sec-t4')" class="w-full p-3 flex justify-between items-center bg-gray-50 hover:bg-gray-100 transition">
+                    <span class="font-bold text-gray-700 text-sm">6. Teks 4 (Ekstra)</span>
+                    <span id="icon-sec-t4" class="transform transition-transform text-xs">▼</span>
+                </button>
+                <div id="sec-t4" class="p-3 border-t border-gray-100 hidden">
+                    
+                    <div class="flex flex-col gap-2 bg-blue-50/70 p-2.5 rounded-lg border border-blue-100 mb-3">
+                        <div class="flex items-center">
+                            <input type="checkbox" id="t4-active" class="w-4 h-4 text-blue-600 rounded">
+                            <label for="t4-active" class="ml-2 text-blue-800 font-bold text-xs">Tampilkan Teks Ini</label>
+                        </div>
+                        <div class="flex items-center pt-2 border-t border-blue-100/50">
+                            <input type="checkbox" id="t4-merge" class="w-4 h-4 text-indigo-600 rounded">
+                            <label for="t4-merge" class="ml-2 text-indigo-800 font-bold text-[11px]">⚡ Gabung Animasi dgn Teks 1</label>
+                        </div>
+                    </div>
+                    
+                    <div id="t4-controls" class="transition-opacity opacity-50 pointer-events-none">
+                        <div id="t4-tab-edit" class="space-y-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-600 mb-1">Teks / Kata</label>
+                                <input type="text" id="t4-text" value="EKSTRA!" class="w-full border rounded-lg p-2 outline-blue-500 font-bold bg-gray-50 transition-colors">
+                            </div>
+
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-600 mb-1">Pilih Font</label>
+                                <button type="button" id="btn-t4-font" onclick="openFontModal('t4')" class="w-full border rounded-lg p-2.5 text-sm outline-blue-500 bg-gray-50 hover:bg-gray-100 transition-colors flex justify-between items-center text-left border-gray-300 shadow-sm">
+                                    <span id="t4-font-display" class="truncate font-medium">Memuat Font...</span>
+                                    <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+                                </button>
+                                <select id="t4-font" class="hidden"></select>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block text-[11px] font-bold text-gray-600">Lebar</label>
+                                        <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t4-w-val">200</span>
+                                    </div>
+                                    <input type="range" id="t4-w" min="10" max="800" value="200" class="w-full accent-blue-600">
+                                </div>
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block text-[11px] font-bold text-gray-600">Tinggi</label>
+                                        <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t4-h-val">60</span>
+                                    </div>
+                                    <input type="range" id="t4-h" min="10" max="800" value="60" class="w-full accent-blue-600">
+                                </div>
+                            </div>
+
+                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
+                                <div class="mb-3">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block text-[11px] font-bold text-gray-800">Spasi Antar Huruf</label>
+                                        <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t4-spacing-val">0</span>
+                                    </div>
+                                    <input type="range" id="t4-spacing" min="-50" max="150" value="0" class="w-full accent-blue-600">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block text-[11px] font-bold text-gray-800">Lengkungan (Curve)</label>
+                                        <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t4-curve-val">0</span>
+                                    </div>
+                                    <div class="flex justify-between text-[9px] text-gray-400 px-1 mb-1">
+                                        <span>Melengkung ke Bawah</span>
+                                        <span>Lurus</span>
+                                        <span>Melengkung ke Atas</span>
+                                    </div>
+                                    <input type="range" id="t4-curve" min="-100" max="100" value="0" class="w-full accent-blue-600">
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block text-[11px] font-bold text-gray-800">Rotasi Miring</label>
+                                        <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="t4-rotate-val">0°</span>
+                                    </div>
+                                    <input type="range" id="t4-rotate" min="-180" max="180" value="0" class="w-full accent-blue-600">
+                                </div>
+                            </div>
+
+                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="text-[11px] font-bold text-gray-800">Tipe Warna Teks</label>
+                                    <div class="flex items-center">
+                                        <input type="checkbox" id="t4-fill-none" class="w-3.5 h-3.5">
+                                        <label for="t4-fill-none" class="text-[10px] ml-1 text-gray-600">Kosong</label>
+                                    </div>
+                                </div>
+                                <select id="t4-fillType" class="w-full border rounded-lg p-2 text-sm outline-blue-500 mb-3 bg-white transition-colors">
+                                    <option value="solid">Solid</option>
+                                    <option value="gradient">Gradien (3 Warna)</option>
+                                </select>
+                                <div class="flex items-center gap-2">
+                                    <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="t4-fill-btn" onclick="openColorPicker('t4.fill', this)"></div>
+                                    <div id="t4-fill2-container" class="items-center gap-2" style="display:none;">
+                                        <span class="text-[10px] text-gray-400">➜</span>
+                                        <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="t4-fill2-btn" onclick="openColorPicker('t4.fill2', this)"></div>
+                                    </div>
+                                    <div id="t4-fill3-container" class="items-center gap-2" style="display:none;">
+                                        <span class="text-[10px] text-gray-400">➜</span>
+                                        <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="t4-fill3-btn" onclick="openColorPicker('t4.fill3', this)"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
+                                <div class="flex justify-between items-center mb-2">
+                                    <label class="text-[11px] font-bold text-gray-800">Warna Garis Luar (Stroke)</label>
+                                    <div class="flex items-center">
+                                        <input type="checkbox" id="t4-stroke-none" class="w-3.5 h-3.5"> 
+                                        <label for="t4-stroke-none" class="text-[10px] ml-1 text-gray-600">Tanpa Garis</label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="t4-stroke-btn" onclick="openColorPicker('t4.stroke', this)"></div>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-800 mb-1">Ketebalan Garis</label>
+                                    <input type="range" id="t4-strokeW" min="0" max="20" value="4" class="w-full accent-blue-600">
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 mt-3 transition-colors">
+                                <label class="block text-[11px] font-bold text-gray-800 mb-1">Gaya Visual (Efek Tambahan)</label>
+                                <select id="t4-effect" class="w-full border rounded-lg p-2 text-sm outline-blue-500 bg-white transition-colors">
+                                    <option value="none">Normal (Tanpa Efek)</option>
+                                    <option value="border">Border Stiker Putih Tebal</option>
+                                    <option value="shadow">Drop Shadow (Bayangan Hitam)</option>
+                                    <option value="extrude">Timbul 3D (Extrude)</option>
+                                </select>
+
+                                <div id="t4-3d-controls" style="display: none;" class="mt-3 pt-3 border-t border-gray-200 transition-colors">
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-gray-600 mb-1">Tebal 3D</label>
+                                            <input type="range" id="t4-depth3d" min="1" max="100" value="30" class="w-full accent-blue-600">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-gray-600 mb-1">Sudut Arah</label>
+                                            <input type="range" id="t4-angle3d" min="0" max="360" value="45" class="w-full accent-blue-600">
+                                        </div>
+                                    </div>
+                                    <div class="mt-3 flex items-center gap-2">
+                                        <div class="w-6 h-6 rounded border border-gray-300 cursor-pointer shadow-sm" id="t4-color3d-btn" onclick="openColorPicker('t4.color3d', this)"></div>
+                                        <label class="text-[10px] font-bold text-gray-800">Warna Blok 3D</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- POLYFILL: Mencegah app.js null crash (PENTING) -->
+    <!-- ========================================== -->
+    <div style="display:none;">
+        <input type="text" id="canvas_color" value="#000000">
+        <input type="text" id="canvas_opacity" value="0">
+        <input type="checkbox" id="toggle_layer_t1">
+        <input type="checkbox" id="toggle_layer_t2">
+        <input type="checkbox" id="toggle_layer_t3">
+        <input type="checkbox" id="toggle_layer_t4">
+        <input type="checkbox" id="toggle_layer_bg">
+        <input type="checkbox" id="toggle_layer_bg2">
+        <input type="text" id="text">
+        <input type="text" id="font">
+        <input type="text" id="layer_bg_shape">
+        <input type="text" id="layer_bg2_shape">
+        <input type="text" id="fill">
+        <input type="text" id="stroke">
+        <input type="text" id="strokeWidth">
     </div>
 
     <script src="app.js"></script>
