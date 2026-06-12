@@ -208,7 +208,7 @@ function injectLottieFixStyles() {
     const style = document.createElement('style');
     style.innerHTML = `
         /* FIX UNTUK LOTTIE BLEND-MODE BUG DI WEBVIEW MOBILE */
-        #preview-lottie-wrapper svg, #lottie-bg svg {
+        #preview-lottie-wrapper svg, #lottie-bg svg, #preview-lottie-wrapper canvas, #lottie-bg canvas {
             isolation: isolate !important;
             transform: translate3d(0,0,0) !important;
             will-change: transform !important;
@@ -805,10 +805,6 @@ async function init() {
                 lottieDiv.style.zIndex = '10';
                 wrapper.appendChild(lottieDiv);
 
-                // === SOLUSI FINAL BENTROK EFEK CAHAYA/MASKING ===
-                // Menggunakan idPrefix yang selalu unik setiap kali preview dibuka
-                const uniquePrefix = 'preview_anim_' + Date.now() + '_';
-                
                 // === CACHE BUSTING & PAKO DECOMPRESSION UNTUK LIVE PREVIEW ===
                 let fullFileUrl = fileUrl.startsWith('http') ? fileUrl : `${baseUrl}${fileUrl}`;
                 fullFileUrl += (fullFileUrl.includes('?') ? '&' : '?') + `t=${Date.now()}`;
@@ -824,17 +820,16 @@ async function init() {
                 const decompressedStr = new TextDecoder('utf-8').decode(decompressedArr);
                 const finalAnimData = JSON.parse(decompressedStr);
                 
+                // === SOLUSI FINAL BENTROK EFEK CAHAYA/MASKING ===
+                // Mengubah mode renderer dari 'svg' menjadi 'canvas'
                 previewAnimInstance = lottie.loadAnimation({
                     container: lottieDiv,
-                    renderer: 'svg', 
+                    renderer: 'canvas', 
                     loop: true, 
                     autoplay: true,
-                    animationData: finalAnimData, // Menggunakan animationData hasil dekompresi Pako
+                    animationData: finalAnimData, 
                     rendererSettings: {
                         preserveAspectRatio: 'xMidYMid meet',
-                        idPrefix: uniquePrefix, // MENCEGAH BENTROK MASKING DI BROWSER
-                        filterSize: { width: '300%', height: '300%', x: '-100%', y: '-100%' }, 
-                        hideOnTransparent: false,
                         clearCanvas: true
                     }
                 });
@@ -1033,11 +1028,11 @@ async function loadShapeData(shapeId) {
                     try {
                         const anim = lottie.loadAnimation({
                             container: hiddenDiv,
-                            renderer: 'svg',
+                            renderer: 'svg', // INI TETAP SVG KARENA KITA BUTUH NODE DOM-NYA
                             loop: false,
                             autoplay: false,
                             animationData: cShape,
-                            rendererSettings: { idPrefix: 'shape_load_' + shapeId + '_' } // FIX BENTROK
+                            rendererSettings: { idPrefix: 'shape_load_' + shapeId + '_' }
                         });
 
                         await new Promise(resolve => {
@@ -1149,16 +1144,15 @@ async function loadLottiePreview(animId) {
 
         canvasContainer.insertBefore(lottieContainer, canvasContainer.firstChild);
 
+        // Mengubah mode renderer dari 'svg' ke 'canvas' di layar editor
         lottie.loadAnimation({
             container: lottieContainer,
-            renderer: 'svg', 
+            renderer: 'canvas', 
             loop: true,
             autoplay: true,
             animationData: animationData,
             rendererSettings: {
                 preserveAspectRatio: 'xMidYMid meet',
-                idPrefix: 'bg_lottie_anim_', // FIX BENTROK
-                hideOnTransparent: false,
                 clearCanvas: true
             }
         });
