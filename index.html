@@ -140,18 +140,38 @@
             </div>
         </div>
         
-        <!-- Layer Inputs Container -->
-        <div class="flex-1 overflow-y-auto p-5 space-y-4 custom-scrollbar" id="auto-layer-inputs">
-            <!-- Form input text diinjeksikan oleh app.js berdasarkan status template -->
+        <!-- Layer Inputs & Finishing Options Container -->
+        <div class="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar">
+            <!-- Form input text diinjeksikan oleh app.js -->
+            <div id="auto-layer-inputs" class="space-y-4"></div>
+
+            <!-- TEMA WARNA PINTAR (Di-inject oleh JS) -->
+            <div class="w-full mx-auto bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                <label class="block text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-2"><i class="fas fa-palette text-pink-500 mr-1"></i> Tema Warna Pintar</label>
+                <div id="theme-buttons-container" class="flex overflow-x-auto gap-2 pb-2 custom-scrollbar">
+                    <span class="text-xs text-gray-400">Memuat tema...</span>
+                </div>
+            </div>
+
+            <!-- EFEK ANIMASI TAMBAHAN (Di-inject oleh JS) -->
+            <div class="w-full mx-auto bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                <label class="block text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-2"><i class="fas fa-magic text-indigo-500 mr-1"></i> Efek Animasi</label>
+                <div id="effect-buttons-container" class="flex overflow-x-auto gap-2 pb-2 custom-scrollbar">
+                    <span class="text-xs text-gray-400">Memuat efek...</span>
+                </div>
+            </div>
         </div>
         
         <!-- Action Buttons -->
         <div class="p-5 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+            <button id="update-preview-btn" onclick="triggerLivePreview(true)" class="w-full mb-3 py-3 bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 rounded-xl font-bold shadow-sm transition-colors border border-blue-100 dark:border-blue-800 flex items-center justify-center">
+                <i class="fas fa-sync-alt mr-2"></i> Perbarui Teks Animasi
+            </button>
             <button id="add-anim-btn" class="hidden w-full mb-3 py-3.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-xl font-bold shadow-sm transition-colors border border-indigo-100 dark:border-indigo-800">
                 <i class="fas fa-plus mr-2"></i>Tambah Animasi Lagi
             </button>
-            <button id="submit-btn" class="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-xl font-bold text-base shadow-lg shadow-blue-500/30 transition transform active:scale-[0.98] flex items-center justify-center">
-                <i class="fas fa-play mr-2"></i> Lihat Live Preview
+            <button id="submit-btn" onclick="sendToBot()" class="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-xl font-bold text-base shadow-lg shadow-blue-500/30 transition transform active:scale-[0.98] flex items-center justify-center">
+                <i class="fas fa-paper-plane mr-2"></i> Simpan ke Bot
             </button>
             <button id="loading-btn" class="hidden w-full py-4 bg-gray-400 dark:bg-gray-600 text-white rounded-xl font-bold cursor-wait flex items-center justify-center shadow-md text-base" disabled>
                 <i class="fas fa-circle-notch fa-spin mr-2"></i> Memproses...
@@ -241,11 +261,10 @@
                 </button>
             </div>
 
-            <!-- TEMA WARNA PINTAR (Di-inject oleh JS) -->
+            <!-- TEMA WARNA PINTAR MANUAL MODE (Di-inject oleh JS) -->
             <div class="w-full max-w-sm mx-auto mb-4 bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                 <label class="block text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-2"><i class="fas fa-palette text-pink-500 mr-1"></i> Tema Warna Pintar</label>
-                <div id="theme-buttons-container" class="flex overflow-x-auto gap-2 pb-2 custom-scrollbar">
-                    <!-- Dimuat oleh app.js -->
+                <div id="manual-theme-buttons-container" class="flex overflow-x-auto gap-2 pb-2 custom-scrollbar">
                     <span class="text-xs text-gray-400">Memuat tema...</span>
                 </div>
             </div>
