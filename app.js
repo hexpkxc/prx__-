@@ -36,6 +36,7 @@ try { tg = window.Telegram.WebApp; tg.expand(); } catch (e) { console.warn("Tele
 const API_BASE_URL = 'https://sought-topical-lark.ngrok-free.app';
 let availableShapes = {};
 let availableThemes = [];
+
 // --- VARIABEL BARU UNTUK EFEK CAHAYA ---
 let availableLightEffects = {};
 
@@ -45,13 +46,72 @@ const PREVIEW_UPDATE_DELAY = 300;
 
 // State Aplikasi
 let state = {
-    canvas: { width: 512, height: 512, backgroundColor: '#ffffff', transparentBg: true },
-    layers: { bg: { type: 'shape', isVisible: true, itemType: 'preset', itemValue: 'basic_square', position: { x: 256, y: 256 }, rotation: 0, scale: 1, strokeWidth: 0, strokeColor: '#000000', fillColor: '#ff0000', svgContent: '', aspectRatio: 1, width: 200, height: 200 }, bg2: { type: 'shape', isVisible: false, itemType: 'preset', itemValue: 'basic_circle', position: { x: 256, y: 256 }, rotation: 0, scale: 1, strokeWidth: 0, strokeColor: '#000000', fillColor: '#00ff00', svgContent: '', aspectRatio: 1, width: 200, height: 200 }, t1: { type: 'text', isVisible: true, text: 'TEXT 1', fontId: 'BebasNeue', position: { x: 256, y: 256 }, rotation: 0, scale: 1, strokeWidth: 0, strokeColor: '#000000', fillColor: '#0000ff' }, t2: { type: 'text', isVisible: false, text: 'TEXT 2', fontId: 'TitanOne', position: { x: 256, y: 350 }, rotation: 0, scale: 1, strokeWidth: 0, strokeColor: '#000000', fillColor: '#ffff00' }, t3: { type: 'text', isVisible: false, text: 'TEXT 3', fontId: 'PermanentMarker', position: { x: 256, y: 450 }, rotation: 0, scale: 1, strokeWidth: 0, strokeColor: '#000000', fillColor: '#ff00ff' }, t4: { type: 'text', isVisible: false, text: 'TEXT 4', fontId: 'BebasNeue', position: { x: 256, y: 150 }, rotation: 0, scale: 1, strokeWidth: 0, strokeColor: '#000000', fillColor: '#00ffff' } }
+    canvas: { 
+        width: 512, 
+        height: 512, 
+        backgroundColor: '#ffffff', 
+        transparentBg: true 
+    },
+    layers: { 
+        bg: { 
+            type: 'shape', 
+            isVisible: true, 
+            itemType: 'preset', 
+            itemValue: 'basic_square', 
+            position: { x: 256, y: 256 }, 
+            rotation: 0, 
+            scale: 1, 
+            strokeWidth: 0, 
+            strokeColor: '#000000', 
+            fillColor: '#ff0000', 
+            svgContent: '', 
+            aspectRatio: 1, 
+            width: 200, 
+            height: 200 
+        }, 
+        bg2: { 
+            type: 'shape', 
+            isVisible: false, 
+            itemType: 'preset', 
+            itemValue: 'basic_circle', 
+            position: { x: 256, y: 256 }, 
+            rotation: 0, 
+            scale: 1, 
+            strokeWidth: 0, 
+            strokeColor: '#000000', 
+            fillColor: '#00ff00', 
+            svgContent: '', 
+            aspectRatio: 1, 
+            width: 200, 
+            height: 200 
+        }, 
+        t1: { type: 'text', isVisible: true, text: 'TEXT 1', fontId: 'BebasNeue', position: { x: 256, y: 256 }, rotation: 0, scale: 1, strokeWidth: 0, strokeColor: '#000000', fillColor: '#0000ff' }, 
+        t2: { type: 'text', isVisible: false, text: 'TEXT 2', fontId: 'TitanOne', position: { x: 256, y: 350 }, rotation: 0, scale: 1, strokeWidth: 0, strokeColor: '#000000', fillColor: '#ffff00' }, 
+        t3: { type: 'text', isVisible: false, text: 'TEXT 3', fontId: 'PermanentMarker', position: { x: 256, y: 450 }, rotation: 0, scale: 1, strokeWidth: 0, strokeColor: '#000000', fillColor: '#ff00ff' }, 
+        t4: { type: 'text', isVisible: false, text: 'TEXT 4', fontId: 'BebasNeue', position: { x: 256, y: 150 }, rotation: 0, scale: 1, strokeWidth: 0, strokeColor: '#000000', fillColor: '#00ffff' } 
+    }
 };
 
-const SHAPE_PRESETS = { 'basic_square': '<rect x="-100" y="-100" width="200" height="200"/>', 'basic_circle': '<circle cx="0" cy="0" r="100"/>', 'basic_triangle': '<polygon points="0,-100 100,100 -100,100"/>', 'basic_star': '<polygon points="0,-100 22,-31 95,-31 36,12 59,81 0,38 -59,81 -36,12 -95,-31 -22,-31"/>', 'basic_heart': '<path d="M0,30 C0,30 -100,-30 -100,-80 C-100,-130 -40,-150 0,-100 C40,-150 100,-130 100,-80 C100,-30 0,30 0,30 Z"/>' };
+const SHAPE_PRESETS = { 
+    'basic_square': '<rect x="-100" y="-100" width="200" height="200"/>', 
+    'basic_circle': '<circle cx="0" cy="0" r="100"/>', 
+    'basic_triangle': '<polygon points="0,-100 100,100 -100,100"/>', 
+    'basic_star': '<polygon points="0,-100 22,-31 95,-31 36,12 59,81 0,38 -59,81 -36,12 -95,-31 -22,-31"/>', 
+    'basic_heart': '<path d="M0,30 C0,30 -100,-30 -100,-80 C-100,-130 -40,-150 0,-100 C40,-150 100,-130 100,-80 C100,-30 0,30 0,30 Z"/>' 
+};
 
-const fonts = [ { id: 'TitanOne', name: 'Titan One', file: 'fonts/TitanOne.woff' }, { id: 'BebasNeue', name: 'Bebas Neue', file: 'fonts/BebasNeue.woff' }, { id: 'PermanentMarker', name: 'Permanent Marker', file: 'fonts/PermanentMarker.woff' }, { id: 'Anton', name: 'Anton', file: 'fonts/Anton.woff' }, { id: 'Righteous', name: 'Righteous', file: 'fonts/Righteous.woff' }, { id: 'CarterOne', name: 'Carter One', file: 'fonts/CarterOne.woff' }, { id: 'FredokaOne', name: 'Fredoka One', file: 'fonts/FredokaOne.woff' }, { id: 'Bangers', name: 'Bangers', file: 'fonts/Bangers.woff' }, { id: 'Lobster', name: 'Lobster', file: 'fonts/Lobster.woff' }, { id: 'SigmarOne', name: 'Sigmar One', file: 'fonts/SigmarOne.woff' } ];
+const fonts = [ 
+    { id: 'TitanOne', name: 'Titan One', file: 'fonts/TitanOne.woff' }, 
+    { id: 'BebasNeue', name: 'Bebas Neue', file: 'fonts/BebasNeue.woff' }, 
+    { id: 'PermanentMarker', name: 'Permanent Marker', file: 'fonts/PermanentMarker.woff' }, 
+    { id: 'Anton', name: 'Anton', file: 'fonts/Anton.woff' }, 
+    { id: 'Righteous', name: 'Righteous', file: 'fonts/Righteous.woff' }, 
+    { id: 'CarterOne', name: 'Carter One', file: 'fonts/CarterOne.woff' }, 
+    { id: 'FredokaOne', name: 'Fredoka One', file: 'fonts/FredokaOne.woff' }, 
+    { id: 'Bangers', name: 'Bangers', file: 'fonts/Bangers.woff' }, 
+    { id: 'Lobster', name: 'Lobster', file: 'fonts/Lobster.woff' }, 
+    { id: 'SigmarOne', name: 'Sigmar One', file: 'fonts/SigmarOne.woff' } 
+];
 
 let history = [];
 let historyIndex = -1;
@@ -68,7 +128,7 @@ async function init() {
     showLoading("Memuat Data & Font...");
     await fetchShapesList();
     await fetchThemesList();
-    await fetchLightEffects(); // --- PANGGIL FUNGSI FETCH EFEK CAHAYA ---
+    await fetchLightEffects(); // --- FETCH EFEK CAHAYA ---
     
     // Auto Mode Check
     const urlParams = new URLSearchParams(window.location.search);
@@ -184,7 +244,7 @@ async function fetchThemesList() {
     } catch (e) { console.warn("Gagal ambil daftar tema:", e); }
 }
 
-// --- FUNGSI FETCH EFEK CAHAYA BARU ---
+// --- FUNGSI FETCH EFEK CAHAYA ---
 async function fetchLightEffects() {
     try {
         const response = await fetch(`${API_BASE_URL}/api/effects`, { headers: { "ngrok-skip-browser-warning": "69420" }});
@@ -1215,6 +1275,8 @@ document.getElementById('auto-submit-btn').addEventListener('click', async (e) =
         
         // --- TANGKAP NILAI EFEK DARI AUTO MODE ---
         const autoTheme = document.getElementById('auto-theme-select') ? document.getElementById('auto-theme-select').value : 'none';
+        
+        // --- JIKA NANTINYA ANDA MENAMBAHKAN DROPDOWN EFEK DI HTML MODE OTOMATIS ---
         const autoEffect = document.getElementById('auto-effect-select') ? document.getElementById('auto-effect-select').value : 'none';
 
         const payload = {
