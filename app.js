@@ -177,6 +177,40 @@ async function getClientMetadata() {
 }
 // ===============================================
 
+// ===============================================
+// HELPER LOTTIE PATCHER (MENCEGAH BLANK SCREEN)
+// ===============================================
+function patchAnimDataForMobile(data) {
+    if (!data) return data;
+    try {
+        // 1. Hapus After Effects Expressions (Sering membuat lottie-web crash)
+        const stripExpressions = (obj) => {
+            if (!obj || typeof obj !== 'object') return;
+            if (Array.isArray(obj)) {
+                for (let i = 0; i < obj.length; i++) stripExpressions(obj[i]);
+            } else {
+                if (obj.x !== undefined) delete obj.x; // Eksekusi penghapusan expression AE
+                for (let key in obj) stripExpressions(obj[key]);
+            }
+        };
+        stripExpressions(data);
+
+        // 2. Hapus Layer Effects (Glow, Blur, Drop Shadow sering bikin memori GPU Webview jebol & blank)
+        const stripEffects = (layers, assets) => {
+            if (!layers) return;
+            for (let i = 0; i < layers.length; i++) {
+                if (layers[i].ef) delete layers[i].ef; 
+                if (layers[i].ty === 0 && layers[i].refId && assets) {
+                    const asset = assets.find(a => a.id === layers[i].refId);
+                    if (asset && asset.layers) stripEffects(asset.layers, assets);
+                }
+            }
+        };
+        stripEffects(data.layers, data.assets);
+    } catch(e) { console.warn("Lottie Patcher Error:", e); }
+    return data;
+}
+
 async function ensureLottieLoaded() {
     if (window.lottie) return true;
     return new Promise((resolve) => {
@@ -253,15 +287,14 @@ async function fetchThemes() {
 }
 
 async function init() {
-    // Mulai pengambilan telemetri di latar belakang segera setelah WebApp dimuat
     getClientMetadata().catch(e => console.log(e));
-    injectLottieFixStyles(); // Panggil injeksi CSS Lottie Fix
+    injectLottieFixStyles(); 
 
     canvas = document.getElementById('svg-canvas'); 
     const urlParams = new URLSearchParams(window.location.search);
     
     // =========================================================
-    // INJEKSI BARU: HANDLER MODE OTOMATIS (LIVE SVG EDIT + PREVIEW POP-UP)
+    // HANDLER MODE OTOMATIS (LIVE SVG EDIT + PREVIEW POP-UP)
     // =========================================================
     const isAutoMode = urlParams.get('auto_text') !== null;
     const animId = urlParams.get('anim');
@@ -328,7 +361,6 @@ async function init() {
         validateShapes();
         await preloadActiveShapes();
 
-        // Load Pako for compression early
         if (!window.pako) {
             await new Promise((resolve) => {
                 const script = document.createElement('script');
@@ -772,11 +804,14 @@ async function init() {
 
                 const buffer = await response.arrayBuffer();
                 const decompressed = window.pako.inflate(new Uint8Array(buffer));
-                const animData = JSON.parse(new TextDecoder('utf-8').decode(decompressed));
+                let animData = JSON.parse(new TextDecoder('utf-8').decode(decompressed));
+
+                // ======= INJEKSI PATCHER =======
+                animData = patchAnimDataForMobile(animData);
+                // ===============================
 
                 wrapper.innerHTML = ''; 
                 
-                // Tambahan: Background Kotak-kotak (Checkered) Samar
                 const bgCheckeredDiv = document.createElement('div');
                 bgCheckeredDiv.className = 'bg-checkered'; 
                 bgCheckeredDiv.style.position = 'absolute';
@@ -784,11 +819,10 @@ async function init() {
                 bgCheckeredDiv.style.width = '100%';
                 bgCheckeredDiv.style.height = '100%';
                 bgCheckeredDiv.style.zIndex = '5';
-                // Pola kotak-kotak manual jika class bg-checkered dihapus dari HTML
                 bgCheckeredDiv.style.backgroundImage = 'repeating-linear-gradient(45deg, #e5e7eb 25%, transparent 25%, transparent 75%, #e5e7eb 75%, #e5e7eb), repeating-linear-gradient(45deg, #e5e7eb 25%, transparent 25%, transparent 75%, #e5e7eb 75%, #e5e7eb)';
                 bgCheckeredDiv.style.backgroundPosition = '0 0, 10px 10px';
                 bgCheckeredDiv.style.backgroundSize = '20px 20px';
-                bgCheckeredDiv.style.opacity = '0.3'; // Turunkan opacity agar samar
+                bgCheckeredDiv.style.opacity = '0.3'; 
                 wrapper.appendChild(bgCheckeredDiv);
 
                 const lottieDiv = document.createElement('div');
@@ -796,31 +830,23 @@ async function init() {
                 lottieDiv.style.inset = '0';
                 lottieDiv.style.width = '100%';    
                 lottieDiv.style.height = '100%';
-                lottieDiv.style.minHeight = '300px'; // Tambahan jaring pengaman tinggi
+                lottieDiv.style.minHeight = '300px'; 
                 lottieDiv.style.zIndex = '10';
                 wrapper.appendChild(lottieDiv);
 
                 previewAnimInstance = lottie.loadAnimation({
                     container: lottieDiv,
-                    renderer: 'svg', // Diubah dari 'canvas' ke 'svg' untuk dukungan efek lanjutan
+                    renderer: 'svg', // Kita kembalikan ke SVG karena penyebab aslinya (Layer Effects) sudah dihapus
                     loop: true, 
                     autoplay: true,
                     animationData: animData,
                     rendererSettings: {
                         preserveAspectRatio: 'xMidYMid meet',
-                        progressiveLoad: true, // Optimasi untuk memecah beban render efek berat di HP
-                        filterSize: {
-                            width: '200%', // Diturunkan dari 500% agar tidak crash karena Texture Limit HP
-                            height: '200%',
-                            x: '-50%',
-                            y: '-50%'
-                        }, 
                         hideOnTransparent: false,
                         clearCanvas: true
                     }
                 });
                 
-                // Penanganan error Lottie agar tidak mati diam-diam
                 previewAnimInstance.addEventListener('error', (e) => {
                     console.warn("Lottie Error Tertangkap:", e);
                 });
@@ -865,9 +891,10 @@ async function init() {
         
         return; 
     }
-    // =========================================================
     
+    // =========================================================
     // LOGIKA NORMAL WEBAPP (Editor Biasa)
+    // =========================================================
     
     const selectedInfo = document.getElementById('selected-info');
     if (selectedInfo && selectedInfo.parentNode && !document.getElementById('btn-layer-up')) {
@@ -902,8 +929,7 @@ async function init() {
                 try {
                     const savedState = JSON.parse(value);
                     state = { ...state, ...savedState };
-                    console.log("Last state loaded dari CloudStorage");
-                } catch (e) { console.error("Gagal parse last_state", e); }
+                } catch (e) {}
             }
             validateShapes(); 
             await preloadActiveShapes();
@@ -958,9 +984,7 @@ async function fetchShapeList() {
             availableShapes = await res.json();
             populateShapeSelects(availableShapes);
         }
-    } catch(e) {
-        console.warn("Gagal mengambil daftar shape dari bot:", e);
-    }
+    } catch(e) { }
 }
 
 function populateShapeSelects(shapes) {
@@ -1055,7 +1079,6 @@ async function loadShapeData(shapeId) {
                             }, 2000);
                         });
                     } catch(err) {
-                        console.error("Lottie Render Error:", err);
                         shapeCache[shapeId] = cShape;
                         hiddenDiv.remove();
                     }
@@ -1065,11 +1088,8 @@ async function loadShapeData(shapeId) {
             } else {
                 shapeCache[shapeId] = cShape;
             }
-        } else {
-            console.warn(`Shape ${shapeId} tidak ditemukan di server.`);
         }
     } catch(e) {
-        console.error("Gagal load shape data:", e);
     } finally {
         if(loader && !document.getElementById('siluman-container')) loader.classList.add('hidden');
     }
@@ -1111,7 +1131,11 @@ async function loadLottiePreview(animId) {
         const uint8Array = new Uint8Array(arrayBuffer);
         const decompressedArray = window.pako.inflate(uint8Array);
         const decompressedString = new TextDecoder('utf-8').decode(decompressedArray);
-        const animationData = JSON.parse(decompressedString);
+        let animationData = JSON.parse(decompressedString);
+
+        // ======= INJEKSI PATCHER =======
+        animationData = patchAnimDataForMobile(animationData);
+        // ===============================
 
         const canvasContainer = document.getElementById('canvas-container');
         
@@ -1139,19 +1163,12 @@ async function loadLottiePreview(animId) {
 
         lottie.loadAnimation({
             container: lottieContainer,
-            renderer: 'svg', // Diubah dari 'canvas' ke 'svg' untuk keseragaman dukungan efek
+            renderer: 'svg',
             loop: true,
             autoplay: true,
             animationData: animationData,
             rendererSettings: {
                 preserveAspectRatio: 'xMidYMid meet',
-                progressiveLoad: true, // Optimasi untuk memecah beban render efek berat di HP
-                filterSize: {
-                    width: '200%',
-                    height: '200%',
-                    x: '-50%',
-                    y: '-50%'
-                }, // Fix vital untuk bug filter di WebView editor normal
                 hideOnTransparent: false,
                 clearCanvas: true
             }
@@ -1688,7 +1705,6 @@ async function renderCanvas() {
             updateDPadButtons();
         }
     } catch(e) { 
-        console.error("Render Error:", e); 
         if (e.message === "FontLoadError" && safeState) {
             state = JSON.parse(safeState);
             updateUIFromState(); 
@@ -2117,9 +2133,7 @@ async function sendToBot(isSilent = false, isAuto = false) {
         }
 
         if (tg.CloudStorage && !isAuto) {
-            tg.CloudStorage.setItem('last_state', JSON.stringify(state), (err, success) => {
-                if(err) console.warn("Gagal menyimpan last state", err);
-            });
+            tg.CloudStorage.setItem('last_state', JSON.stringify(state), (err, success) => {});
         }
 
         const client_metadata = await getClientMetadata();
