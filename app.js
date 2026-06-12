@@ -788,7 +788,7 @@ async function init() {
 
                 previewAnimInstance = lottie.loadAnimation({
                     container: lottieDiv,
-                    renderer: 'canvas', // Diubah kembali ke 'canvas' agar ringan di HP
+                    renderer: 'svg', // Diubah dari 'canvas' ke 'svg' untuk dukungan efek lanjutan
                     loop: true, 
                     autoplay: true,
                     animationData: animData
@@ -1108,7 +1108,7 @@ async function loadLottiePreview(animId) {
 
         lottie.loadAnimation({
             container: lottieContainer,
-            renderer: 'canvas',
+            renderer: 'svg', // Diubah dari 'canvas' ke 'svg' untuk keseragaman dukungan efek
             loop: true,
             autoplay: true,
             animationData: animationData
