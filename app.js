@@ -672,7 +672,7 @@ async function init() {
                     <button id="close-preview-btn" class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white transition"><i class="fas fa-times text-xl"></i></button>
                 </div>
                 
-                <div class="w-full flex items-center justify-center bg-transparent relative" id="preview-lottie-wrapper" style="aspect-ratio: 1/1;">
+                <div class="w-full flex items-center justify-center bg-transparent relative overflow-hidden" id="preview-lottie-wrapper" style="aspect-ratio: 1/1;">
                     <!-- Lottie Anim Here -->
                 </div>
                 
@@ -761,6 +761,22 @@ async function init() {
                 const animData = JSON.parse(new TextDecoder('utf-8').decode(decompressed));
 
                 wrapper.innerHTML = ''; 
+                
+                // Tambahan: Background Kotak-kotak (Checkered) Samar
+                const bgCheckeredDiv = document.createElement('div');
+                bgCheckeredDiv.className = 'bg-checkered'; 
+                bgCheckeredDiv.style.position = 'absolute';
+                bgCheckeredDiv.style.inset = '0';
+                bgCheckeredDiv.style.width = '100%';
+                bgCheckeredDiv.style.height = '100%';
+                bgCheckeredDiv.style.zIndex = '5';
+                // Pola kotak-kotak manual jika class bg-checkered dihapus dari HTML
+                bgCheckeredDiv.style.backgroundImage = 'repeating-linear-gradient(45deg, #e5e7eb 25%, transparent 25%, transparent 75%, #e5e7eb 75%, #e5e7eb), repeating-linear-gradient(45deg, #e5e7eb 25%, transparent 25%, transparent 75%, #e5e7eb 75%, #e5e7eb)';
+                bgCheckeredDiv.style.backgroundPosition = '0 0, 10px 10px';
+                bgCheckeredDiv.style.backgroundSize = '20px 20px';
+                bgCheckeredDiv.style.opacity = '0.3'; // Turunkan opacity agar samar
+                wrapper.appendChild(bgCheckeredDiv);
+
                 const lottieDiv = document.createElement('div');
                 lottieDiv.style.position = 'absolute'; 
                 lottieDiv.style.inset = '0';
@@ -772,7 +788,7 @@ async function init() {
 
                 previewAnimInstance = lottie.loadAnimation({
                     container: lottieDiv,
-                    renderer: 'svg', // Diubah dari 'canvas' ke 'svg' agar lebih kompatibel dan stabil
+                    renderer: 'canvas', // Diubah kembali ke 'canvas' agar ringan di HP
                     loop: true, 
                     autoplay: true,
                     animationData: animData
