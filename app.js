@@ -191,6 +191,21 @@ async function ensureLottieLoaded() {
     });
 }
 
+// LIBRARY PLAYER RESMI TELEGRAM
+async function ensureTgsPlayerLoaded() {
+    if (customElements.get('tgs-player')) return true;
+    return new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = "https://unpkg.com/@lottiefiles/tgs-player@latest/dist/tgs-player.js";
+        script.onload = () => resolve(true);
+        script.onerror = () => {
+            console.warn("Gagal meload TGS Player");
+            resolve(false);
+        };
+        document.head.appendChild(script);
+    });
+}
+
 function validateShapes() {
     if (Object.keys(availableShapes).length > 0) {
         if (state.bg.shape && !availableShapes[state.bg.shape]) {
@@ -707,14 +722,7 @@ async function init() {
         `;
         document.body.appendChild(previewModal);
 
-        let previewAnimInstance = null;
-
         async function applyLivePreview(theme = 'none') {
-            if (previewAnimInstance) {
-                previewAnimInstance.destroy();
-                previewAnimInstance = null;
-            }
-
             const wrapper = document.getElementById('preview-lottie-wrapper');
             const sizeBadge = document.getElementById('live-preview-size-badge');
             
@@ -723,7 +731,6 @@ async function init() {
             sizeBadge.className = "mt-1 px-2 py-0.5 w-max bg-gray-100 text-gray-600 text-[10px] font-bold rounded-full";
 
             try {
-                await ensureLottieLoaded();
                 if(!currentSvgCode || currentSvgCode.trim() === "") throw new Error("Desain SVG kosong.");
 
                 const client_metadata = await getClientMetadata();
@@ -796,47 +803,27 @@ async function init() {
                 bgCheckeredDiv.style.opacity = '0.4'; 
                 wrapper.appendChild(bgCheckeredDiv);
 
-                const lottieDiv = document.createElement('div');
-                lottieDiv.style.position = 'absolute'; 
-                lottieDiv.style.inset = '0';
-                lottieDiv.style.width = '100%';    
-                lottieDiv.style.height = '100%';
-                lottieDiv.style.minHeight = '300px'; 
-                lottieDiv.style.zIndex = '10';
-                wrapper.appendChild(lottieDiv);
-
-                // === CACHE BUSTING & PAKO DECOMPRESSION UNTUK LIVE PREVIEW ===
+                // === CACHE BUSTING UNTUK LIVE PREVIEW ===
                 let fullFileUrl = fileUrl.startsWith('http') ? fileUrl : `${baseUrl}${fileUrl}`;
                 fullFileUrl += (fullFileUrl.includes('?') ? '&' : '?') + `t=${Date.now()}`;
                 
-                const animFileRes = await fetch(fullFileUrl, {
-                    headers: { "ngrok-skip-browser-warning": "true", "Cache-Control": "no-cache" }
-                });
+                // Pastikan library tgs-player termuat
+                await ensureTgsPlayerLoaded();
                 
-                if (!animFileRes.ok) throw new Error("Gagal mengambil file animasi final dari server.");
+                // === MENGGUNAKAN TGS-PLAYER (ANTI BUG CAHAYA & MASKING) ===
+                const tgsEl = document.createElement('tgs-player');
+                tgsEl.setAttribute('autoplay', '');
+                tgsEl.setAttribute('loop', '');
+                tgsEl.setAttribute('mode', 'normal');
+                tgsEl.setAttribute('src', fullFileUrl);
+                tgsEl.style.position = 'absolute';
+                tgsEl.style.inset = '0';
+                tgsEl.style.width = '100%';
+                tgsEl.style.height = '100%';
+                tgsEl.style.zIndex = '10';
+
+                wrapper.appendChild(tgsEl);
                 
-                const arrayBuffer = await animFileRes.arrayBuffer();
-                const decompressedArr = window.pako.inflate(new Uint8Array(arrayBuffer));
-                const decompressedStr = new TextDecoder('utf-8').decode(decompressedArr);
-                const finalAnimData = JSON.parse(decompressedStr);
-                
-                // === SOLUSI FINAL BENTROK EFEK CAHAYA/MASKING ===
-                // Mengubah mode renderer dari 'svg' menjadi 'canvas'
-                previewAnimInstance = lottie.loadAnimation({
-                    container: lottieDiv,
-                    renderer: 'canvas', 
-                    loop: true, 
-                    autoplay: true,
-                    animationData: finalAnimData, 
-                    rendererSettings: {
-                        preserveAspectRatio: 'xMidYMid meet',
-                        clearCanvas: true
-                    }
-                });
-                
-                previewAnimInstance.addEventListener('error', (e) => {
-                    console.warn("Lottie Error Tertangkap:", e);
-                });
             } catch (err) {
                 wrapper.innerHTML = `<p class="text-red-500 font-bold z-20 absolute text-sm text-center px-4">Gagal memuat animasi.<br><span class="text-xs text-gray-500">${err.message}</span></p>`;
             }
@@ -866,7 +853,6 @@ async function init() {
         }
 
         function closePreview() {
-            if(previewAnimInstance) { previewAnimInstance.destroy(); previewAnimInstance = null; }
             previewModal.classList.add('hidden'); previewModal.classList.remove('flex');
             document.getElementById('preview-lottie-wrapper').innerHTML = ''; 
         }
@@ -1019,6 +1005,7 @@ async function loadShapeData(shapeId) {
             const cShape = await res.json();
             
             if (cShape.v && (cShape.layers || cShape.assets)) {
+                // TETAP MENGGUNAKAN LOTTIE-WEB KHUSUS UNTUK LOAD SHAPE KARENA KITA BUTUH KOORDINAT RAW SVG
                 const lottieReady = await ensureLottieLoaded();
                 if (lottieReady) {
                     const hiddenDiv = document.createElement('div');
@@ -1028,7 +1015,7 @@ async function loadShapeData(shapeId) {
                     try {
                         const anim = lottie.loadAnimation({
                             container: hiddenDiv,
-                            renderer: 'svg', // INI TETAP SVG KARENA KITA BUTUH NODE DOM-NYA
+                            renderer: 'svg', 
                             loop: false,
                             autoplay: false,
                             animationData: cShape,
@@ -1087,46 +1074,27 @@ async function preloadActiveShapes() {
     if(state.bg2.active && state.bg2.shape) await loadShapeData(state.bg2.shape);
 }
 
+// UPDATE JUGA FUNGSI PREVIEW NORMAL MENGGUNAKAN TGS-PLAYER
 async function loadLottiePreview(animId) {
     const baseUrl = NGROK_API_URL.replace('/api/upload', '');
     const ts = new Date().getTime(); 
     const tgsUrl = `${baseUrl}/api/preview/${animId}?t=${ts}`;
-    
-    const loadScript = (src) => new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = src;
-        script.onload = resolve;
-        script.onerror = reject;
-        document.head.appendChild(script);
-    });
 
     try {
-        await loadScript("https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js");
-        await ensureLottieLoaded();
-
-        const response = await fetch(tgsUrl, {
-            method: 'GET',
-            headers: {
-                "ngrok-skip-browser-warning": "true"
-            }
-        });
-        
-        if (!response.ok) throw new Error("File TGS tidak ditemukan di server lokal.");
-        
-        const arrayBuffer = await response.arrayBuffer();
-        
-        const uint8Array = new Uint8Array(arrayBuffer);
-        const decompressedArray = window.pako.inflate(uint8Array);
-        const decompressedString = new TextDecoder('utf-8').decode(decompressedArray);
-        let animationData = JSON.parse(decompressedString);
+        await ensureTgsPlayerLoaded();
 
         const canvasContainer = document.getElementById('canvas-container');
         
         const oldLottie = document.getElementById('lottie-bg');
         if (oldLottie) oldLottie.remove();
 
-        let lottieContainer = document.createElement('div');
+        let lottieContainer = document.createElement('tgs-player');
         lottieContainer.id = 'lottie-bg';
+        lottieContainer.setAttribute('autoplay', '');
+        lottieContainer.setAttribute('loop', '');
+        lottieContainer.setAttribute('mode', 'normal');
+        lottieContainer.setAttribute('src', tgsUrl);
+        
         lottieContainer.style.position = 'absolute';
         lottieContainer.style.inset = '0';
         lottieContainer.style.width = '100%';
@@ -1144,19 +1112,6 @@ async function loadLottiePreview(animId) {
 
         canvasContainer.insertBefore(lottieContainer, canvasContainer.firstChild);
 
-        // Mengubah mode renderer dari 'svg' ke 'canvas' di layar editor
-        lottie.loadAnimation({
-            container: lottieContainer,
-            renderer: 'canvas', 
-            loop: true,
-            autoplay: true,
-            animationData: animationData,
-            rendererSettings: {
-                preserveAspectRatio: 'xMidYMid meet',
-                clearCanvas: true
-            }
-        });
-        
         const toggleBtn = document.getElementById('btn-toggle-anim-layer');
         if (toggleBtn) toggleBtn.classList.remove('hidden');
         
