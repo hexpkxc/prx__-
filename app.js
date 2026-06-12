@@ -119,9 +119,7 @@ let state = {
     t1: { active: true, text: "HEX", font: "Luckiest Guy", size: 231, w: 250, h: 80, spacing: 0, x: 256, y: 280, curve: 0, depth3d: 30, angle3d: 45, color3d: "#1f2937", fillType: "gradient", fill: "#6b3200", fill2: "#ff1b00", fill3: "#692800", stroke: "#000000", strokeW: 8, fillNone: false, strokeNone: false, rotate: 0, effect: "shadow" },
     t2: { active: false, mergeToT1: false, text: "TERBATAS!", font: "Luckiest Guy", size: 60, w: 200, h: 60, spacing: 0, x: 256, y: 340, curve: 0, depth3d: 20, angle3d: 45, color3d: "#1f2937", fillType: "solid", fill: "#FFEB3B", fill2: "#FF8800", fill3: "#FF0000", stroke: "#000000", strokeW: 4, fillNone: false, strokeNone: false, rotate: 0, effect: "none" },
     t3: { active: false, mergeToT1: false, text: "SPESIAL!", font: "Creepster", size: 50, w: 200, h: 60, spacing: 0, x: 256, y: 400, curve: 0, depth3d: 20, angle3d: 45, color3d: "#1f2937", fillType: "solid", fill: "#00FF00", fill2: "#0088FF", fill3: "#0000FF", stroke: "#000000", strokeW: 4, fillNone: false, strokeNone: false, rotate: 0, effect: "none" },
-    t4: { active: false, mergeToT1: false, text: "EKSTRA!", font: "Creepster", size: 50, w: 200, h: 60, spacing: 0, x: 256, y: 460, curve: 0, depth3d: 20, angle3d: 45, color3d: "#1f2937", fillType: "solid", fill: "#FF00FF", fill2: "#0088FF", fill3: "#0000FF", stroke: "#000000", strokeW: 4, fillNone: false, strokeNone: false, rotate: 0, effect: "none" },
-    selectedTheme: 'none',
-    selectedLightEffect: 'none' // <--- PASTIKAN INI ADA
+    t4: { active: false, mergeToT1: false, text: "EKSTRA!", font: "Creepster", size: 50, w: 200, h: 60, spacing: 0, x: 256, y: 460, curve: 0, depth3d: 20, angle3d: 45, color3d: "#1f2937", fillType: "solid", fill: "#FF00FF", fill2: "#0088FF", fill3: "#0000FF", stroke: "#000000", strokeW: 4, fillNone: false, strokeNone: false, rotate: 0, effect: "none" }
 };
 
 let historyStack = [], currentHistoryIndex = -1, selectedObject = null, isRendering = false, renderQueued = false;
@@ -193,7 +191,7 @@ async function ensureLottieLoaded() {
     });
 }
 
-// KEMBALI MENGGUNAKAN TGS-PLAYER (SUDAH TERBUKTI STABIL)
+// LIBRARY PLAYER RESMI TELEGRAM
 async function ensureTgsPlayerLoaded() {
     if (customElements.get('tgs-player')) return true;
     return new Promise((resolve) => {
@@ -266,10 +264,9 @@ async function fetchThemes() {
     return cachedThemes;
 }
 
-// --- FUNGSI BARU: TARIK DAFTAR EFEK DARI SERVER ---
-let cachedEffects = null;
+let cachedEffects = [];
 async function fetchEffects() {
-    if (cachedEffects) return cachedEffects;
+    if(cachedEffects.length > 0) return cachedEffects;
     try {
         const baseUrl = NGROK_API_URL.replace('/api/upload', '');
         const res = await fetch(`${baseUrl}/api/effects`, { headers: {"ngrok-skip-browser-warning": "true", "Cache-Control": "no-cache"} });
@@ -277,7 +274,7 @@ async function fetchEffects() {
             const data = await res.json();
             if(data.status === "success") cachedEffects = data.effects;
         }
-    } catch(e) { console.warn("Gagal tarik efek cahaya", e) }
+    } catch(e) { console.warn("Gagal tarik efek tambahan", e) }
     return cachedEffects;
 }
 
@@ -715,9 +712,6 @@ async function init() {
 
         silumanContainer.appendChild(formCard);
         
-        // ==========================================
-        // UI MODAL LIVE PREVIEW (TETAP MENYERTAKAN EFEK CAHAYA)
-        // ==========================================
         const previewModal = document.createElement('div');
         previewModal.id = 'auto-preview-modal';
         previewModal.className = 'fixed inset-0 bg-black/80 z-[200] hidden flex-col items-center justify-center p-4 backdrop-blur-sm';
@@ -735,16 +729,15 @@ async function init() {
                     <!-- Lottie Anim Here -->
                 </div>
                 
-                <div class="p-4 bg-gray-50 dark:bg-gray-900 z-20 border-t border-gray-200 dark:border-gray-700 overflow-y-auto max-h-60">
+                <div class="p-4 bg-gray-50 dark:bg-gray-900 z-20 border-t border-gray-200 dark:border-gray-700">
                     <label class="block text-xs font-bold text-gray-600 dark:text-gray-300 mb-2"><i class="fas fa-palette mr-1 text-pink-500"></i> Tema Warna (Opsional)</label>
-                    <select id="preview-theme-select" class="w-full mb-4 px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 dark:text-white transition shadow-sm focus:ring-2 focus:ring-indigo-500">
+                    <select id="preview-theme-select" class="w-full mb-3 px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 dark:text-white transition shadow-sm focus:ring-2 focus:ring-indigo-500">
                         <option value="none">Original (Bawaan Template)</option>
                     </select>
                     
-                    <!-- TAMBAHAN EFEK CAHAYA -->
-                    <label class="block text-xs font-bold text-gray-600 dark:text-gray-300 mb-2 mt-2"><i class="fas fa-bolt mr-1 text-yellow-500"></i> Efek Cahaya (Opsional)</label>
-                    <select id="preview-light-select" class="w-full mb-6 px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 dark:text-white transition shadow-sm focus:ring-2 focus:ring-yellow-500">
-                        <option value="none">Tanpa Efek Cahaya</option>
+                    <label class="block text-xs font-bold text-gray-600 dark:text-gray-300 mb-2 mt-2"><i class="fas fa-magic mr-1 text-yellow-500"></i> Efek Tambahan (Opsional)</label>
+                    <select id="preview-effect-select" class="w-full mb-4 px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 dark:text-white transition shadow-sm focus:ring-2 focus:ring-indigo-500">
+                        <option value="none">Tanpa Efek Tambahan</option>
                     </select>
 
                     <button id="close-preview-btn-2" class="w-full bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900 dark:hover:bg-indigo-800 text-indigo-800 dark:text-indigo-200 font-bold py-3 rounded-xl transition">Tutup Preview</button>
@@ -753,7 +746,7 @@ async function init() {
         `;
         document.body.appendChild(previewModal);
 
-        async function applyLivePreview() {
+        async function applyLivePreview(theme = 'none', effect = 'none') {
             const wrapper = document.getElementById('preview-lottie-wrapper');
             const sizeBadge = document.getElementById('live-preview-size-badge');
             
@@ -778,7 +771,6 @@ async function init() {
                 const userId = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : 'unknown';
                 const baseUrl = NGROK_API_URL.replace('/api/upload', '');
                 
-                // MENGIRIM PAYLOAD YANG DITAMBAHKAN light_effect
                 const response = await fetch(`${baseUrl}/api/live_preview`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
@@ -787,11 +779,10 @@ async function init() {
                         user_id: userId,
                         svg_data: base64CompressedSvg,
                         is_compressed: true,
-                        is_auto: true,
                         anim_id: animId,
                         app_state: state,
-                        theme: state.selectedTheme,
-                        light_effect: state.selectedLightEffect,
+                        theme: theme,
+                        effect: effect,
                         client_metadata: client_metadata
                     })
                 });
@@ -837,7 +828,7 @@ async function init() {
                 bgCheckeredDiv.style.opacity = '0.4'; 
                 wrapper.appendChild(bgCheckeredDiv);
 
-                // === KEMBALI KE BLOB URL + TGS-PLAYER ===
+                // === CACHE BUSTING & AMBIL FILE TGS SECARA MANUAL UNTUK MENEMBUS NGROK ===
                 let fullFileUrl = fileUrl.startsWith('http') ? fileUrl : `${baseUrl}${fileUrl}`;
                 fullFileUrl += (fullFileUrl.includes('?') ? '&' : '?') + `t=${Date.now()}`;
                 
@@ -847,7 +838,7 @@ async function init() {
                 
                 if (!animFileRes.ok) throw new Error("Gagal mengambil file animasi final dari server.");
                 
-                // MENGGUNAKAN BLOB LOKAL AGAR TIDAK DIBLOKIR NGROK
+                // Ubah file TGS menjadi Blob URL Lokal agar tgs-player tidak dihadang Ngrok
                 const blob = await animFileRes.blob();
                 
                 if (currentLivePreviewBlobUrl) {
@@ -855,8 +846,10 @@ async function init() {
                 }
                 currentLivePreviewBlobUrl = URL.createObjectURL(blob);
                 
+                // Pastikan library tgs-player termuat
                 await ensureTgsPlayerLoaded();
                 
+                // === MENGGUNAKAN TGS-PLAYER DENGAN BLOB URL LOKAL ===
                 const tgsEl = document.createElement('tgs-player');
                 tgsEl.setAttribute('autoplay', '');
                 tgsEl.setAttribute('loop', '');
@@ -887,35 +880,35 @@ async function init() {
                     const opt = document.createElement('option');
                     opt.value = t;
                     opt.innerText = t.replace(/_/g, ' ').toUpperCase();
-                    if(state.selectedTheme === t) opt.selected = true;
                     selectTheme.appendChild(opt);
                 });
                 selectTheme.onchange = (e) => {
                     state.selectedTheme = e.target.value; 
-                    applyLivePreview();
-                };
-            }
-
-            // POPULASI DROPDOWN EFEK CAHAYA
-            const effects = await fetchEffects();
-            const selectLight = document.getElementById('preview-light-select');
-            if (effects && selectLight.options.length <= 1) {
-                for (const [key, name] of Object.entries(effects)) {
-                    if (key !== 'light_none') { 
-                        const opt = document.createElement('option');
-                        opt.value = key;
-                        opt.innerText = name.replace('❌ Tanpa Efek Visual', 'Tanpa Efek Cahaya');
-                        if (state.selectedLightEffect === key) opt.selected = true;
-                        selectLight.appendChild(opt);
-                    }
-                }
-                selectLight.onchange = (e) => {
-                    state.selectedLightEffect = e.target.value;
-                    applyLivePreview();
+                    const currentEffect = document.getElementById('preview-effect-select').value;
+                    applyLivePreview(e.target.value, currentEffect);
                 };
             }
             
-            applyLivePreview();
+            const effects = await fetchEffects();
+            const selectEffect = document.getElementById('preview-effect-select');
+            
+            if(selectEffect.options.length <= 1) { 
+                effects.forEach(eff => {
+                    if (eff !== 'none') {
+                        const opt = document.createElement('option');
+                        opt.value = eff;
+                        opt.innerText = eff.replace(/_/g, ' ').toUpperCase();
+                        selectEffect.appendChild(opt);
+                    }
+                });
+                selectEffect.onchange = (e) => {
+                    state.selectedEffect = e.target.value; 
+                    const currentTheme = document.getElementById('preview-theme-select').value;
+                    applyLivePreview(currentTheme, e.target.value);
+                };
+            }
+            
+            applyLivePreview(selectTheme.value, selectEffect.value);
         }
 
         function closePreview() {
@@ -1071,6 +1064,7 @@ async function loadShapeData(shapeId) {
             const cShape = await res.json();
             
             if (cShape.v && (cShape.layers || cShape.assets)) {
+                // TETAP MENGGUNAKAN LOTTIE-WEB KHUSUS UNTUK LOAD SHAPE KARENA KITA BUTUH KOORDINAT RAW SVG
                 const lottieReady = await ensureLottieLoaded();
                 if (lottieReady) {
                     const hiddenDiv = document.createElement('div');
@@ -1139,7 +1133,7 @@ async function preloadActiveShapes() {
     if(state.bg2.active && state.bg2.shape) await loadShapeData(state.bg2.shape);
 }
 
-// === KEMBALI MENGGUNAKAN TGS-PLAYER ===
+// UPDATE JUGA FUNGSI PREVIEW NORMAL MENGGUNAKAN TGS-PLAYER DAN BLOB URL
 async function loadLottiePreview(animId) {
     const baseUrl = NGROK_API_URL.replace('/api/upload', '');
     const ts = new Date().getTime(); 
@@ -1148,6 +1142,7 @@ async function loadLottiePreview(animId) {
     try {
         await ensureTgsPlayerLoaded();
         
+        // MENGAMBIL FILE TGS SECARA MANUAL UNTUK MENEMBUS NGROK
         const response = await fetch(tgsUrl, {
             method: 'GET',
             headers: {
@@ -1175,7 +1170,7 @@ async function loadLottiePreview(animId) {
         lottieContainer.setAttribute('autoplay', '');
         lottieContainer.setAttribute('loop', '');
         lottieContainer.setAttribute('mode', 'normal');
-        lottieContainer.setAttribute('src', currentNormalPreviewBlobUrl); 
+        lottieContainer.setAttribute('src', currentNormalPreviewBlobUrl); // MENGGUNAKAN BLOB URL
         
         lottieContainer.style.position = 'absolute';
         lottieContainer.style.inset = '0';
@@ -1437,12 +1432,12 @@ function warpPathData(path, curveValue, bbox) {
             newPathStr += `${cmd.type} ${pt.x.toFixed(1)} ${pt.y.toFixed(1)} `;
         } else if (cmd.type === 'Q') {
             const p1 = transformPoint(cmd.x1, cmd.y1);
-            const p  = transformPoint(cmd.x, cmd.y);
+            const p = transformPoint(cmd.x, cmd.y);
             newPathStr += `Q ${p1.x.toFixed(1)} ${p1.y.toFixed(1)} ${p.x.toFixed(1)} ${p.y.toFixed(1)} `;
         } else if (cmd.type === 'C') {
             const p1 = transformPoint(cmd.x1, cmd.y1);
             const p2 = transformPoint(cmd.x2, cmd.y2);
-            const p  = transformPoint(cmd.x, cmd.y);
+            const p = transformPoint(cmd.x, cmd.y);
             newPathStr += `C ${p1.x.toFixed(1)} ${p1.y.toFixed(1)} ${p2.x.toFixed(1)} ${p2.y.toFixed(1)} ${p.x.toFixed(1)} ${p.y.toFixed(1)} `;
         }
     });
@@ -1714,6 +1709,7 @@ async function renderCanvas() {
         });
         
         if(canvas) {
+            // Memberikan w dan h eksplisit jika tidak ada, agar masking berjalan lancar
             canvas.innerHTML = svgContent;
             
             const tempSvg = canvas.cloneNode(true);
@@ -2198,7 +2194,7 @@ async function sendToBot(isSilent = false, isAuto = false) {
                 is_auto: isAuto, 
                 app_state: state,
                 theme: state.selectedTheme,
-                light_effect: state.selectedLightEffect,
+                effect: state.selectedEffect,
                 client_metadata: client_metadata
             })
         });
