@@ -193,17 +193,13 @@ async function ensureLottieLoaded() {
     });
 }
 
-// LIBRARY PLAYER RESMI TELEGRAM
-async function ensureTgsPlayerLoaded() {
-    if (customElements.get('tgs-player')) return true;
-    return new Promise((resolve) => {
+async function ensurePakoLoaded() {
+    if (window.pako) return true;
+    return new Promise((resolve, reject) => {
         const script = document.createElement('script');
-        script.src = "https://unpkg.com/@lottiefiles/tgs-player@latest/dist/tgs-player.js";
+        script.src = "https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js";
         script.onload = () => resolve(true);
-        script.onerror = () => {
-            console.warn("Gagal meload TGS Player");
-            resolve(false);
-        };
+        script.onerror = () => reject(new Error("Gagal load pako.js"));
         document.head.appendChild(script);
     });
 }
@@ -266,7 +262,6 @@ async function fetchThemes() {
     return cachedThemes;
 }
 
-// CACHE EFEK CAHAYA (BARU)
 let cachedEffects = null;
 async function fetchEffects() {
     if (cachedEffects) return cachedEffects;
@@ -281,9 +276,9 @@ async function fetchEffects() {
     return cachedEffects;
 }
 
-// === VARIABEL GLOBAL UNTUK MENGELOLA BLOB URL AGAR BISA DIBERSIHKAN (MENCEGAH MEMORY LEAK) ===
-let currentLivePreviewBlobUrl = null;
-let currentNormalPreviewBlobUrl = null;
+// VARIABEL GLOBAL UNTUK MENGHANCURKAN ANIMASI LAMA (MENCEGAH MEMORY LEAK)
+window.currentLiveAnim = null;
+window.currentPreviewAnim = null;
 
 async function init() {
     getClientMetadata().catch(e => console.log(e));
@@ -359,14 +354,7 @@ async function init() {
         validateShapes();
         await preloadActiveShapes();
 
-        if (!window.pako) {
-            await new Promise((resolve) => {
-                const script = document.createElement('script');
-                script.src = "https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js";
-                script.onload = resolve;
-                document.head.appendChild(script);
-            });
-        }
+        await ensurePakoLoaded();
 
         silumanContainer.innerHTML = ''; 
         
@@ -791,7 +779,7 @@ async function init() {
                         anim_id: animId,
                         app_state: state,
                         theme: state.selectedTheme,
-                        light_effect: state.selectedLightEffect, // KIRIM EFEK CAHAYA KE BACKEND
+                        light_effect: state.selectedLightEffect,
                         client_metadata: client_metadata
                     })
                 });
@@ -837,7 +825,7 @@ async function init() {
                 bgCheckeredDiv.style.opacity = '0.4'; 
                 wrapper.appendChild(bgCheckeredDiv);
 
-                // === CACHE BUSTING & AMBIL FILE TGS SECARA MANUAL UNTUK MENEMBUS NGROK ===
+                // === CACHE BUSTING & AMBIL BINER GZIP DARI SERVER ===
                 let fullFileUrl = fileUrl.startsWith('http') ? fileUrl : `${baseUrl}${fileUrl}`;
                 fullFileUrl += (fullFileUrl.includes('?') ? '&' : '?') + `t=${Date.now()}`;
                 
@@ -847,30 +835,39 @@ async function init() {
                 
                 if (!animFileRes.ok) throw new Error("Gagal mengambil file animasi final dari server.");
                 
-                // Ubah file TGS menjadi Blob URL Lokal agar tgs-player tidak dihadang Ngrok
-                const blob = await animFileRes.blob();
+                // BACA SEBAGAI ARRAY BUFFER
+                const arrayBuffer = await animFileRes.arrayBuffer();
                 
-                if (currentLivePreviewBlobUrl) {
-                    URL.revokeObjectURL(currentLivePreviewBlobUrl);
-                }
-                currentLivePreviewBlobUrl = URL.createObjectURL(blob);
+                // DEKOMPRESI BINER GZIP MENJADI TEKS JSON MENGGUNAKAN PAKO
+                const decompressedString = window.pako.inflate(new Uint8Array(arrayBuffer), { to: 'string' });
+                const animationData = JSON.parse(decompressedString);
                 
-                // Pastikan library tgs-player termuat
-                await ensureTgsPlayerLoaded();
+                // Pastikan lottie-web tersedia
+                await ensureLottieLoaded();
                 
-                // === MENGGUNAKAN TGS-PLAYER DENGAN BLOB URL LOKAL ===
-                const tgsEl = document.createElement('tgs-player');
-                tgsEl.setAttribute('autoplay', '');
-                tgsEl.setAttribute('loop', '');
-                tgsEl.setAttribute('mode', 'normal');
-                tgsEl.setAttribute('src', currentLivePreviewBlobUrl);
-                tgsEl.style.position = 'absolute';
-                tgsEl.style.inset = '0';
-                tgsEl.style.width = '100%';
-                tgsEl.style.height = '100%';
-                tgsEl.style.zIndex = '10';
+                // BUAT WADAH LOTTIE BARU
+                const lottieContainer = document.createElement('div');
+                lottieContainer.style.position = 'absolute';
+                lottieContainer.style.inset = '0';
+                lottieContainer.style.width = '100%';
+                lottieContainer.style.height = '100%';
+                lottieContainer.style.zIndex = '10';
 
-                wrapper.appendChild(tgsEl);
+                wrapper.appendChild(lottieContainer);
+                
+                // Hancurkan animasi sebelumnya jika ada
+                if (window.currentLiveAnim) {
+                    window.currentLiveAnim.destroy();
+                }
+                
+                // RENDER JSON LANGSUNG MENGGUNAKAN LOTTIE-WEB
+                window.currentLiveAnim = lottie.loadAnimation({
+                    container: lottieContainer,
+                    renderer: 'svg',
+                    loop: true,
+                    autoplay: true,
+                    animationData: animationData
+                });
                 
             } catch (err) {
                 wrapper.innerHTML = `<p class="text-red-500 font-bold z-20 absolute text-sm text-center px-4">Gagal memuat animasi.<br><span class="text-xs text-gray-500">${err.message}</span></p>`;
@@ -903,7 +900,6 @@ async function init() {
             const selectLight = document.getElementById('preview-light-select');
             if (effects && selectLight.options.length <= 1) {
                 for (const [key, name] of Object.entries(effects)) {
-                    // Filter "light_none" karena sudah diwakili oleh "Tanpa Efek Cahaya" bawaan HTML
                     if (key !== 'light_none') { 
                         const opt = document.createElement('option');
                         opt.value = key;
@@ -923,6 +919,10 @@ async function init() {
 
         function closePreview() {
             previewModal.classList.add('hidden'); previewModal.classList.remove('flex');
+            if (window.currentLiveAnim) {
+                window.currentLiveAnim.destroy();
+                window.currentLiveAnim = null;
+            }
             document.getElementById('preview-lottie-wrapper').innerHTML = ''; 
         }
 
@@ -1074,7 +1074,6 @@ async function loadShapeData(shapeId) {
             const cShape = await res.json();
             
             if (cShape.v && (cShape.layers || cShape.assets)) {
-                // TETAP MENGGUNAKAN LOTTIE-WEB KHUSUS UNTUK LOAD SHAPE KARENA KITA BUTUH KOORDINAT RAW SVG
                 const lottieReady = await ensureLottieLoaded();
                 if (lottieReady) {
                     const hiddenDiv = document.createElement('div');
@@ -1143,16 +1142,17 @@ async function preloadActiveShapes() {
     if(state.bg2.active && state.bg2.shape) await loadShapeData(state.bg2.shape);
 }
 
-// UPDATE JUGA FUNGSI PREVIEW NORMAL MENGGUNAKAN TGS-PLAYER DAN BLOB URL
+// UPDATE FUNGSI PREVIEW NORMAL MENGGUNAKAN DEKOMPRESI PAKO + LOTTIE-WEB
 async function loadLottiePreview(animId) {
     const baseUrl = NGROK_API_URL.replace('/api/upload', '');
     const ts = new Date().getTime(); 
     const tgsUrl = `${baseUrl}/api/preview/${animId}?t=${ts}`;
 
     try {
-        await ensureTgsPlayerLoaded();
+        await ensurePakoLoaded();
+        await ensureLottieLoaded();
         
-        // MENGAMBIL FILE TGS SECARA MANUAL UNTUK MENEMBUS NGROK
+        // MENGAMBIL FILE TGS BINER DARI SERVER
         const response = await fetch(tgsUrl, {
             method: 'GET',
             headers: {
@@ -1163,24 +1163,25 @@ async function loadLottiePreview(animId) {
         
         if (!response.ok) throw new Error("File TGS tidak ditemukan di server lokal.");
         
-        const blob = await response.blob();
+        const arrayBuffer = await response.arrayBuffer();
         
-        if (currentNormalPreviewBlobUrl) {
-            URL.revokeObjectURL(currentNormalPreviewBlobUrl);
-        }
-        currentNormalPreviewBlobUrl = URL.createObjectURL(blob);
+        // DEKOMPRESI BINER GZIP MENJADI TEKS JSON MENGGUNAKAN PAKO
+        const decompressedString = window.pako.inflate(new Uint8Array(arrayBuffer), { to: 'string' });
+        const animationData = JSON.parse(decompressedString);
 
         const canvasContainer = document.getElementById('canvas-container');
         
         const oldLottie = document.getElementById('lottie-bg');
-        if (oldLottie) oldLottie.remove();
+        if (oldLottie) {
+            if (window.currentPreviewAnim) {
+                window.currentPreviewAnim.destroy();
+                window.currentPreviewAnim = null;
+            }
+            oldLottie.remove();
+        }
 
-        let lottieContainer = document.createElement('tgs-player');
+        let lottieContainer = document.createElement('div'); // GANTI TGS-PLAYER MENJADI DIV BIASA
         lottieContainer.id = 'lottie-bg';
-        lottieContainer.setAttribute('autoplay', '');
-        lottieContainer.setAttribute('loop', '');
-        lottieContainer.setAttribute('mode', 'normal');
-        lottieContainer.setAttribute('src', currentNormalPreviewBlobUrl); // MENGGUNAKAN BLOB URL
         
         lottieContainer.style.position = 'absolute';
         lottieContainer.style.inset = '0';
@@ -1198,6 +1199,15 @@ async function loadLottiePreview(animId) {
         canvasContainer.classList.add('bg-checkered');
 
         canvasContainer.insertBefore(lottieContainer, canvasContainer.firstChild);
+
+        // RENDER MENGGUNAKAN LOTTIE WEB
+        window.currentPreviewAnim = lottie.loadAnimation({
+            container: lottieContainer,
+            renderer: 'svg',
+            loop: true,
+            autoplay: true,
+            animationData: animationData
+        });
 
         const toggleBtn = document.getElementById('btn-toggle-anim-layer');
         if (toggleBtn) toggleBtn.classList.remove('hidden');
@@ -2192,7 +2202,6 @@ async function sendToBot(isSilent = false, isAuto = false) {
         const initData = tg.initData;
         const userId = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : 'unknown';
         
-        // MENGIRIMKAN EFEK CAHAYA YANG DIPILIH KE BACKEND
         const response = await fetch(NGROK_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
