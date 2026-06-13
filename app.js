@@ -119,9 +119,7 @@ let state = {
     t1: { active: true, text: "HEX", font: "Luckiest Guy", size: 231, w: 250, h: 80, spacing: 0, x: 256, y: 280, curve: 0, depth3d: 30, angle3d: 45, color3d: "#1f2937", fillType: "gradient", fill: "#6b3200", fill2: "#ff1b00", fill3: "#692800", stroke: "#000000", strokeW: 8, fillNone: false, strokeNone: false, rotate: 0, effect: "shadow" },
     t2: { active: false, mergeToT1: false, text: "TERBATAS!", font: "Luckiest Guy", size: 60, w: 200, h: 60, spacing: 0, x: 256, y: 340, curve: 0, depth3d: 20, angle3d: 45, color3d: "#1f2937", fillType: "solid", fill: "#FFEB3B", fill2: "#FF8800", fill3: "#FF0000", stroke: "#000000", strokeW: 4, fillNone: false, strokeNone: false, rotate: 0, effect: "none" },
     t3: { active: false, mergeToT1: false, text: "SPESIAL!", font: "Creepster", size: 50, w: 200, h: 60, spacing: 0, x: 256, y: 400, curve: 0, depth3d: 20, angle3d: 45, color3d: "#1f2937", fillType: "solid", fill: "#00FF00", fill2: "#0088FF", fill3: "#0000FF", stroke: "#000000", strokeW: 4, fillNone: false, strokeNone: false, rotate: 0, effect: "none" },
-    t4: { active: false, mergeToT1: false, text: "EKSTRA!", font: "Creepster", size: 50, w: 200, h: 60, spacing: 0, x: 256, y: 460, curve: 0, depth3d: 20, angle3d: 45, color3d: "#1f2937", fillType: "solid", fill: "#FF00FF", fill2: "#0088FF", fill3: "#0000FF", stroke: "#000000", strokeW: 4, fillNone: false, strokeNone: false, rotate: 0, effect: "none" },
-    selectedTheme: "none",
-    selectedEffect: "light_none"
+    t4: { active: false, mergeToT1: false, text: "EKSTRA!", font: "Creepster", size: 50, w: 200, h: 60, spacing: 0, x: 256, y: 460, curve: 0, depth3d: 20, angle3d: 45, color3d: "#1f2937", fillType: "solid", fill: "#FF00FF", fill2: "#0088FF", fill3: "#0000FF", stroke: "#000000", strokeW: 4, fillNone: false, strokeNone: false, rotate: 0, effect: "none" }
 };
 
 let historyStack = [], currentHistoryIndex = -1, selectedObject = null, isRendering = false, renderQueued = false;
@@ -681,42 +679,14 @@ async function init() {
                 </div>
                 
                 <div class="w-full flex items-center justify-center bg-transparent relative overflow-hidden" id="preview-lottie-wrapper" style="aspect-ratio: 1/1;">
-                    <!-- Lottie Anim Here -->
+                    <!-- Lottie / WebP Anim Here -->
                 </div>
                 
                 <div class="p-4 bg-gray-50 dark:bg-gray-900 z-20 border-t border-gray-200 dark:border-gray-700">
                     <label class="block text-xs font-bold text-gray-600 dark:text-gray-300 mb-2"><i class="fas fa-palette mr-1 text-pink-500"></i> Tema Warna (Opsional)</label>
-                    <select id="preview-theme-select" class="w-full mb-3 px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 dark:text-white transition shadow-sm focus:ring-2 focus:ring-indigo-500">
+                    <select id="preview-theme-select" class="w-full mb-4 px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 dark:text-white transition shadow-sm focus:ring-2 focus:ring-indigo-500">
                         <option value="none">Original (Bawaan Template)</option>
                     </select>
-
-                    <label class="block text-xs font-bold text-gray-600 dark:text-gray-300 mt-2 mb-2"><i class="fas fa-sparkles mr-1 text-yellow-500"></i> Efek Cahaya (Opsional)</label>
-                    <select id="preview-effect-select" class="w-full mb-4 px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 dark:text-white transition shadow-sm focus:ring-2 focus:ring-indigo-500">
-                        <option value="light_none">Tanpa Efek (Bawaan)</option>
-                        <option value="light_sweep_web">Light Sweep Web</option>
-                        <option value="light_god_rays">God Rays</option>
-                        <option value="light_spotlight_reveal">Spotlight Reveal</option>
-                        <option value="light_rgb_split_glitch">RGB Split Glitch</option>
-                        <option value="light_glitch">Glitch Standard</option>
-                        <option value="light_reveal">Sweep Reveal</option>
-                        <option value="light_shadow">Drop Shadow</option>
-                        <option value="light_plasma_grid">Plasma Grid</option>
-                        <option value="light_magnetic_ripple">Magnetic Ripple</option>
-                        <option value="light_iridescent_chrome">Iridescent Chrome</option>
-                        <option value="light_flashbang_motion">Flashbang Putih</option>
-                        <option value="light_flashbang_rgb">Flashbang RGB</option>
-                        <option value="light_infrared_bloom">Infrared Bloom</option>
-                        <option value="light_neon_flicker">Neon Flicker</option>
-                        <option value="light_luxury_chrome">Luxury Chrome</option>
-                        <option value="light_rgb_aberration_wave">RGB Aberration Wave</option>
-                        <option value="light_kaleidoscopic_mandala">Kaleidoscopic Mandala</option>
-                        <option value="light_chromatic_implosion">Chromatic Implosion</option>
-                        <option value="light_blinking_border">Blinking Border Putih</option>
-                        <option value="light_blinking_border_rgb">Blinking Border RGB</option>
-                        <option value="light_fast_blink">Fast Blink</option>
-                        <option value="light_neon_frame">Neon Frame</option>
-                    </select>
-
                     <button id="close-preview-btn-2" class="w-full bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900 dark:hover:bg-indigo-800 text-indigo-800 dark:text-indigo-200 font-bold py-3 rounded-xl transition">Tutup Preview</button>
                 </div>
             </div>
@@ -725,7 +695,7 @@ async function init() {
 
         let previewAnimInstance = null;
 
-        async function applyLivePreview(theme = 'none', effect = 'light_none') {
+        async function applyLivePreview(theme = 'none') {
             if (previewAnimInstance) {
                 previewAnimInstance.destroy();
                 previewAnimInstance = null;
@@ -739,7 +709,7 @@ async function init() {
             sizeBadge.className = "mt-1 px-2 py-0.5 w-max bg-gray-100 text-gray-600 text-[10px] font-bold rounded-full";
 
             try {
-                await ensureLottieLoaded();
+                await ensureLottieLoaded(); // Tetap panggil untuk berjaga jika kita fallback ke TGS
                 if(!currentSvgCode || currentSvgCode.trim() === "") throw new Error("Desain SVG kosong.");
 
                 const client_metadata = await getClientMetadata();
@@ -755,7 +725,6 @@ async function init() {
                 const initData = tg && tg.initData ? tg.initData : "";
                 const baseUrl = NGROK_API_URL.replace('/api/upload', '');
                 
-                // === FETCH TAHAP 1: KIRIM KE BACKEND ===
                 const response = await fetch(`${baseUrl}/api/live_preview`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
@@ -766,7 +735,6 @@ async function init() {
                         anim_id: animId,
                         app_state: state,
                         theme: theme,
-                        effect: effect,
                         client_metadata: client_metadata
                     })
                 });
@@ -775,15 +743,12 @@ async function init() {
                     const errObj = await response.json().catch(() => ({}));
                     throw new Error(errObj.error || "Gagal memproses render instan di server.");
                 }
-                
-                const responseData = await response.json();
-                if (responseData.status !== "success") {
-                    throw new Error(responseData.error || "Gagal memproses render instan di server.");
-                }
 
-                const previewFilename = responseData.preview_file;
-                const fileSizeKB = responseData.file_size_kb || '--';
+                // Membaca respons JSON terbaru
+                const resData = await response.json();
+                if (resData.error) throw new Error(resData.error);
                 
+                const fileSizeKB = resData.file_size_kb || '--';
                 const submitFormBtn = document.getElementById('auto-submit-btn');
                 
                 if (parseFloat(fileSizeKB) > 64) {
@@ -800,22 +765,6 @@ async function init() {
                     }
                 }
                 sizeBadge.innerHTML = `<i class="fas fa-weight-hanging mr-1"></i> ${fileSizeKB} KB`;
-
-                // === FETCH TAHAP 2: AMBIL TGS DARI PREVIEW URL ===
-                // Endpoint api_get_preview di backend mengharapkan anim_id tanpa '.tgs'
-                const tgsUrl = `${baseUrl}/api/preview/${previewFilename.replace('.tgs', '')}?t=${new Date().getTime()}`;
-                const tgsResponse = await fetch(tgsUrl, {
-                    method: 'GET',
-                    headers: { "ngrok-skip-browser-warning": "true" }
-                });
-
-                if (!tgsResponse.ok) {
-                    throw new Error("Gagal mengunduh file hasil preview dari server.");
-                }
-
-                const buffer = await tgsResponse.arrayBuffer();
-                const decompressed = window.pako.inflate(new Uint8Array(buffer));
-                let animData = JSON.parse(new TextDecoder('utf-8').decode(decompressed));
 
                 wrapper.innerHTML = ''; 
                 
@@ -839,26 +788,51 @@ async function init() {
                 lottieDiv.style.height = '100%';
                 lottieDiv.style.minHeight = '300px'; 
                 lottieDiv.style.zIndex = '10';
+                lottieDiv.style.display = 'flex';
+                lottieDiv.style.alignItems = 'center';
+                lottieDiv.style.justifyContent = 'center';
                 wrapper.appendChild(lottieDiv);
 
-                // KITA KEMBALIKAN KE SVG KARENA BACKEND WEBANIM.PY SUDAH MENYEMBUHKAN BUG MASKING
-                previewAnimInstance = lottie.loadAnimation({
-                    container: lottieDiv,
-                    renderer: 'svg', 
-                    loop: true, 
-                    autoplay: true,
-                    animationData: animData,
-                    rendererSettings: {
-                        preserveAspectRatio: 'xMidYMid meet',
-                        idPrefix: 'live_preview_' + Date.now() + '_', // Mencegah bentrok ID DOM SVG jika preview di-load berkali-kali
-                        hideOnTransparent: false,
-                        clearCanvas: true
-                    }
-                });
-                
-                previewAnimInstance.addEventListener('error', (e) => {
-                    console.warn("Lottie Error Tertangkap:", e);
-                });
+                const fileUrl = `${baseUrl}/api/preview/${resData.preview_file}?t=${Date.now()}`;
+
+                if (resData.format === 'webp') {
+                    // Jika sukses di-render sebagai WebP, langsung tampilkan dengan tag img
+                    const img = document.createElement('img');
+                    img.src = fileUrl;
+                    img.style.maxWidth = '100%';
+                    img.style.maxHeight = '100%';
+                    img.style.objectFit = 'contain';
+                    lottieDiv.appendChild(img);
+                } else {
+                    // Fallback jika dikembalikan format .tgs (Lottie biasa)
+                    const tgsResp = await fetch(fileUrl, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+                    if (!tgsResp.ok) throw new Error("Gagal mengambil file pratinjau TGS.");
+                    
+                    const arrayBuffer = await tgsResp.arrayBuffer();
+                    const decompressedArray = window.pako.inflate(new Uint8Array(arrayBuffer));
+                    const animData = JSON.parse(new TextDecoder('utf-8').decode(decompressedArray));
+                    
+                    const uniquePrefix = 'preview_anim_' + Date.now() + '_';
+                    
+                    previewAnimInstance = lottie.loadAnimation({
+                        container: lottieDiv,
+                        renderer: 'svg', 
+                        loop: true, 
+                        autoplay: true,
+                        animationData: animData,
+                        rendererSettings: {
+                            preserveAspectRatio: 'xMidYMid meet',
+                            idPrefix: uniquePrefix,
+                            filterSize: { width: '300%', height: '300%', x: '-100%', y: '-100%' }, 
+                            hideOnTransparent: false,
+                            clearCanvas: true
+                        }
+                    });
+                    
+                    previewAnimInstance.addEventListener('error', (e) => {
+                        console.warn("Lottie Error Tertangkap:", e);
+                    });
+                }
             } catch (err) {
                 wrapper.innerHTML = `<p class="text-red-500 font-bold z-20 absolute text-sm text-center px-4">Gagal memuat animasi.<br><span class="text-xs text-gray-500">${err.message}</span></p>`;
             }
@@ -870,7 +844,6 @@ async function init() {
             
             const themes = await fetchThemes();
             const select = document.getElementById('preview-theme-select');
-            const effectSelect = document.getElementById('preview-effect-select');
             
             if(select.options.length <= 1) { 
                 themes.forEach(t => {
@@ -881,16 +854,11 @@ async function init() {
                 });
                 select.onchange = (e) => {
                     state.selectedTheme = e.target.value; 
-                    applyLivePreview(e.target.value, effectSelect.value);
+                    applyLivePreview(e.target.value);
                 };
             }
-
-            effectSelect.onchange = (e) => {
-                state.selectedEffect = e.target.value;
-                applyLivePreview(select.value, e.target.value);
-            };
             
-            applyLivePreview(select.value, effectSelect.value);
+            applyLivePreview(select.value);
         }
 
         function closePreview() {
@@ -1139,15 +1107,9 @@ async function loadLottiePreview(animId) {
             }
         });
         
-        if (!response.ok) throw new Error("File TGS tidak ditemukan di server lokal.");
+        if (!response.ok) throw new Error("File tidak ditemukan di server lokal.");
         
-        const arrayBuffer = await response.arrayBuffer();
-        
-        const uint8Array = new Uint8Array(arrayBuffer);
-        const decompressedArray = window.pako.inflate(uint8Array);
-        const decompressedString = new TextDecoder('utf-8').decode(decompressedArray);
-        let animationData = JSON.parse(decompressedString);
-
+        const contentType = response.headers.get('Content-Type');
         const canvasContainer = document.getElementById('canvas-container');
         
         const oldLottie = document.getElementById('lottie-bg');
@@ -1169,22 +1131,40 @@ async function loadLottiePreview(animId) {
         svgCanvas.classList.remove('bg-checkered');
 
         canvasContainer.classList.add('bg-checkered');
-
         canvasContainer.insertBefore(lottieContainer, canvasContainer.firstChild);
 
-        lottie.loadAnimation({
-            container: lottieContainer,
-            renderer: 'svg', 
-            loop: true,
-            autoplay: true,
-            animationData: animationData,
-            rendererSettings: {
-                preserveAspectRatio: 'xMidYMid meet',
-                idPrefix: 'bg_lottie_anim_', // FIX BENTROK
-                hideOnTransparent: false,
-                clearCanvas: true
-            }
-        });
+        if (contentType && contentType.includes('image/webp')) {
+            // Jika Backend mengirim format WebP
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const img = document.createElement('img');
+            img.src = url;
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'contain';
+            lottieContainer.appendChild(img);
+        } else {
+            // Jika Backend mengirim format Lottie/TGS biasa
+            const arrayBuffer = await response.arrayBuffer();
+            const uint8Array = new Uint8Array(arrayBuffer);
+            const decompressedArray = window.pako.inflate(uint8Array);
+            const decompressedString = new TextDecoder('utf-8').decode(decompressedArray);
+            let animationData = JSON.parse(decompressedString);
+
+            lottie.loadAnimation({
+                container: lottieContainer,
+                renderer: 'svg', 
+                loop: true,
+                autoplay: true,
+                animationData: animationData,
+                rendererSettings: {
+                    preserveAspectRatio: 'xMidYMid meet',
+                    idPrefix: 'bg_lottie_anim_', // FIX BENTROK
+                    hideOnTransparent: false,
+                    clearCanvas: true
+                }
+            });
+        }
         
         const toggleBtn = document.getElementById('btn-toggle-anim-layer');
         if (toggleBtn) toggleBtn.classList.remove('hidden');
@@ -2188,8 +2168,7 @@ async function sendToBot(isSilent = false, isAuto = false) {
                 is_compressed: true,
                 is_auto: isAuto, 
                 app_state: state,
-                theme: state.selectedTheme || 'none',
-                effect: state.selectedEffect || 'light_none', // Menambahkan efek cahaya
+                theme: state.selectedTheme,
                 client_metadata: client_metadata
             })
         });
