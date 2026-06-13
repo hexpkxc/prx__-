@@ -795,8 +795,8 @@ async function init() {
 
                 const fileUrl = `${baseUrl}/api/preview/${resData.preview_file}?t=${Date.now()}`;
 
-                if (resData.format === 'webp') {
-                    // Jika sukses di-render sebagai WebP, langsung tampilkan dengan tag img
+                if (resData.format === 'webp' || resData.format === 'webm') {
+                    // Jika sukses di-render sebagai WebP/WebM, langsung tampilkan dengan tag img
                     const img = document.createElement('img');
                     img.src = fileUrl;
                     img.style.maxWidth = '100%';
@@ -804,34 +804,8 @@ async function init() {
                     img.style.objectFit = 'contain';
                     lottieDiv.appendChild(img);
                 } else {
-                    // Fallback jika dikembalikan format .tgs (Lottie biasa)
-                    const tgsResp = await fetch(fileUrl, { headers: { 'ngrok-skip-browser-warning': 'true' } });
-                    if (!tgsResp.ok) throw new Error("Gagal mengambil file pratinjau TGS.");
-                    
-                    const arrayBuffer = await tgsResp.arrayBuffer();
-                    const decompressedArray = window.pako.inflate(new Uint8Array(arrayBuffer));
-                    const animData = JSON.parse(new TextDecoder('utf-8').decode(decompressedArray));
-                    
-                    const uniquePrefix = 'preview_anim_' + Date.now() + '_';
-                    
-                    previewAnimInstance = lottie.loadAnimation({
-                        container: lottieDiv,
-                        renderer: 'svg', 
-                        loop: true, 
-                        autoplay: true,
-                        animationData: animData,
-                        rendererSettings: {
-                            preserveAspectRatio: 'xMidYMid meet',
-                            idPrefix: uniquePrefix,
-                            filterSize: { width: '300%', height: '300%', x: '-100%', y: '-100%' }, 
-                            hideOnTransparent: false,
-                            clearCanvas: true
-                        }
-                    });
-                    
-                    previewAnimInstance.addEventListener('error', (e) => {
-                        console.warn("Lottie Error Tertangkap:", e);
-                    });
+                    // Fallback Lottie dihapus, fokus hanya pada WebP/WebM
+                    throw new Error("Sistem fallback Lottie (TGS) telah dihapus. Pastikan server mengembalikan format WebP.");
                 }
             } catch (err) {
                 wrapper.innerHTML = `<p class="text-red-500 font-bold z-20 absolute text-sm text-center px-4">Gagal memuat animasi.<br><span class="text-xs text-gray-500">${err.message}</span></p>`;
@@ -1133,8 +1107,8 @@ async function loadLottiePreview(animId) {
         canvasContainer.classList.add('bg-checkered');
         canvasContainer.insertBefore(lottieContainer, canvasContainer.firstChild);
 
-        if (contentType && contentType.includes('image/webp')) {
-            // Jika Backend mengirim format WebP
+        if (contentType && (contentType.includes('image/webp') || contentType.includes('video/webm'))) {
+            // Jika Backend mengirim format WebP/WebM
             const blob = await response.blob();
             const url = URL.createObjectURL(blob);
             const img = document.createElement('img');
@@ -1144,33 +1118,15 @@ async function loadLottiePreview(animId) {
             img.style.objectFit = 'contain';
             lottieContainer.appendChild(img);
         } else {
-            // Jika Backend mengirim format Lottie/TGS biasa
-            const arrayBuffer = await response.arrayBuffer();
-            const uint8Array = new Uint8Array(arrayBuffer);
-            const decompressedArray = window.pako.inflate(uint8Array);
-            const decompressedString = new TextDecoder('utf-8').decode(decompressedArray);
-            let animationData = JSON.parse(decompressedString);
-
-            lottie.loadAnimation({
-                container: lottieContainer,
-                renderer: 'svg', 
-                loop: true,
-                autoplay: true,
-                animationData: animationData,
-                rendererSettings: {
-                    preserveAspectRatio: 'xMidYMid meet',
-                    idPrefix: 'bg_lottie_anim_', // FIX BENTROK
-                    hideOnTransparent: false,
-                    clearCanvas: true
-                }
-            });
+            // Jika Backend mengirim format Lottie/TGS biasa, kita hentikan
+            throw new Error("Sistem fallback Lottie (TGS) telah dihapus. Hanya memuat WebP/WebM.");
         }
         
         const toggleBtn = document.getElementById('btn-toggle-anim-layer');
         if (toggleBtn) toggleBtn.classList.remove('hidden');
         
     } catch (err) {
-        console.warn("Preview animasi diabaikan:", err.message);
+        console.warn("Preview animasi diabaikan atau gagal:", err.message);
     }
 }
 
