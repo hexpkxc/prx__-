@@ -754,6 +754,7 @@ async function init() {
                 const initData = tg && tg.initData ? tg.initData : "";
                 const baseUrl = NGROK_API_URL.replace('/api/upload', '');
                 
+                // === FETCH TAHAP 1: KIRIM KE BACKEND ===
                 const response = await fetch(`${baseUrl}/api/live_preview`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
@@ -774,7 +775,14 @@ async function init() {
                     throw new Error(errObj.error || "Gagal memproses render instan di server.");
                 }
                 
-                const fileSizeKB = response.headers.get('X-File-Size-KB') || '--';
+                const responseData = await response.json();
+                if (responseData.status !== "success") {
+                    throw new Error(responseData.error || "Gagal memproses render instan di server.");
+                }
+
+                const previewFilename = responseData.preview_file;
+                const fileSizeKB = responseData.file_size_kb || '--';
+                
                 const submitFormBtn = document.getElementById('auto-submit-btn');
                 
                 if (parseFloat(fileSizeKB) > 64) {
@@ -792,7 +800,19 @@ async function init() {
                 }
                 sizeBadge.innerHTML = `<i class="fas fa-weight-hanging mr-1"></i> ${fileSizeKB} KB`;
 
-                const buffer = await response.arrayBuffer();
+                // === FETCH TAHAP 2: AMBIL TGS DARI PREVIEW URL ===
+                // Endpoint api_get_preview di backend mengharapkan anim_id tanpa '.tgs'
+                const tgsUrl = `${baseUrl}/api/preview/${previewFilename.replace('.tgs', '')}?t=${new Date().getTime()}`;
+                const tgsResponse = await fetch(tgsUrl, {
+                    method: 'GET',
+                    headers: { "ngrok-skip-browser-warning": "true" }
+                });
+
+                if (!tgsResponse.ok) {
+                    throw new Error("Gagal mengunduh file hasil preview dari server.");
+                }
+
+                const buffer = await tgsResponse.arrayBuffer();
                 const decompressed = window.pako.inflate(new Uint8Array(buffer));
                 let animData = JSON.parse(new TextDecoder('utf-8').decode(decompressed));
 
