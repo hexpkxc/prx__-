@@ -422,7 +422,7 @@ async function init() {
                             </div>
                         </div>
 
-                        <div class="flex gap-3">
+                        <div class="flex gap-3 mb-3">
                             <div class="flex-1">
                                 <div class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1 flex justify-between"><span>Lebar</span><span id="auto-${layer}-w-val">${state[layer].w}</span></div>
                                 <input type="range" id="auto-${layer}-w" min="10" max="1000" value="${state[layer].w}" class="w-full accent-blue-600">
@@ -431,6 +431,11 @@ async function init() {
                                 <div class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1 flex justify-between"><span>Tinggi</span><span id="auto-${layer}-h-val">${state[layer].h}</span></div>
                                 <input type="range" id="auto-${layer}-h" min="10" max="1000" value="${state[layer].h}" class="w-full accent-blue-600">
                             </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1 flex justify-between"><span>Rotasi</span><span id="auto-${layer}-rotate-val">${state[layer].rotate || 0}°</span></div>
+                            <input type="range" id="auto-${layer}-rotate" min="-180" max="180" value="${state[layer].rotate || 0}" class="w-full accent-blue-600">
                         </div>
                     </div>
                 `;
@@ -454,6 +459,15 @@ async function init() {
                 sWrap.querySelector(`#auto-${layer}-w`).oninput = (e) => { state[layer].w = parseInt(e.target.value); document.getElementById(`auto-${layer}-w-val`).innerText = e.target.value; updateLayoutAndRender(); };
                 sWrap.querySelector(`#auto-${layer}-h`).oninput = (e) => { state[layer].h = parseInt(e.target.value); document.getElementById(`auto-${layer}-h-val`).innerText = e.target.value; updateLayoutAndRender(); };
                 
+                const rotInput = sWrap.querySelector(`#auto-${layer}-rotate`);
+                if (rotInput) {
+                    rotInput.oninput = (e) => {
+                        state[layer].rotate = parseInt(e.target.value);
+                        document.getElementById(`auto-${layer}-rotate-val`).innerText = e.target.value + '°';
+                        updateLayoutAndRender();
+                    };
+                }
+
                 const colorTypeSel = sWrap.querySelector(`#auto-${layer}-colorType`);
                 const colorWrap = sWrap.querySelector(`#auto-${layer}-color-wrapper`);
                 const color2Cont = sWrap.querySelector(`#auto-${layer}-color2-container`);
@@ -1687,7 +1701,7 @@ function setupEventListeners() {
         }
         
         bindInput(`${id}-shape`, `${id}.shape`); bindInput(`${id}-w`, `${id}.w`, true); bindInput(`${id}-h`, `${id}.h`, true); 
-        bindInput(`${id}-colorType`, `${id}.colorType`); 
+        bindInput(`${id}-colorType`, `${id}.colorType`); bindInput(`${id}-rotate`, `${id}.rotate`, true);
         bindInput(`${id}-outlineOnly`, `${id}.outlineOnly`); bindInput(`${id}-strokeW`, `${id}.strokeW`, true); 
         
         if(id === 'bg2') bindInput(`bg2-merge`, `bg2.mergeToBg1`);
@@ -1768,6 +1782,12 @@ function updateUIFromState() {
         document.getElementById(`${id}-w`).value = state[id].w; document.getElementById(`${id}-w-val`).innerText = state[id].w; 
         document.getElementById(`${id}-h`).value = state[id].h; document.getElementById(`${id}-h-val`).innerText = state[id].h;
         document.getElementById(`${id}-colorType`).value = state[id].colorType;
+        
+        if (document.getElementById(`${id}-rotate`)) {
+            document.getElementById(`${id}-rotate`).value = state[id].rotate || 0; 
+            document.getElementById(`${id}-rotate-val`).innerText = (state[id].rotate || 0) + '°';
+        }
+
         document.getElementById(`${id}-outlineOnly`).checked = state[id].outlineOnly; 
         document.getElementById(`${id}-strokeW`).value = state[id].strokeW;
         
@@ -1929,6 +1949,35 @@ async function sendToBot(isSilent = false, isAuto = false) {
         const uint8Array = new TextEncoder().encode(minifiedSvg);
         const compressed = window.pako.deflate(uint8Array);
         
+        // ========================================================
+        // SMART VALIDATION: PENCEGAHAN LIMITASI 64KB DARI TELEGRAM
+        // ========================================================
+        const estimatedWatermarkSize = 2048; // Buffer 2KB untuk unified watermark HexDev di backend
+        const totalEstimatedSize = compressed.byteLength + estimatedWatermarkSize;
+        const maxAllowedSize = 64 * 1024; // Batas Telegram 64KB
+
+        if (totalEstimatedSize > maxAllowedSize) {
+            const currentKb = (totalEstimatedSize / 1024).toFixed(2);
+            const errMsg = `Ukuran desain terlalu besar (${currentKb} KB). Batas Telegram adalah 64 KB.\n\nHarap ganti Bentuk/Shape yang lebih sederhana atau kurangi efek teks agar desain bisa diproses.`;
+            
+            // Matikan indikator loading
+            if(loader && !document.getElementById('siluman-container')) loader.classList.add('hidden');
+            
+            // Pulihkan tombol otomatis jika digunakan
+            const autoSubmitBtn = document.getElementById('auto-submit-btn');
+            if (autoSubmitBtn) {
+                autoSubmitBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> Proses & Kirim ke Bot';
+                autoSubmitBtn.disabled = false;
+            }
+
+            // Tampilkan pesan kesalahan tanpa menutup WebApp
+            if (tg && typeof tg.showAlert === 'function') tg.showAlert(errMsg);
+            else alert(errMsg);
+            
+            return; // Hentikan eksekusi pengiriman
+        }
+        // ========================================================
+
         let binary = '';
         const len = compressed.byteLength;
         for (let i = 0; i < len; i++) binary += String.fromCharCode(compressed[i]);
