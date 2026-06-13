@@ -693,6 +693,7 @@ async function init() {
                     <label class="block text-xs font-bold text-gray-600 dark:text-gray-300 mt-2 mb-2"><i class="fas fa-sparkles mr-1 text-yellow-500"></i> Efek Cahaya (Opsional)</label>
                     <select id="preview-effect-select" class="w-full mb-4 px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 dark:text-white transition shadow-sm focus:ring-2 focus:ring-indigo-500">
                         <option value="light_none">Tanpa Efek (Bawaan)</option>
+                        <option value="light_sweep_web">Light Sweep Web</option>
                         <option value="light_god_rays">God Rays</option>
                         <option value="light_spotlight_reveal">Spotlight Reveal</option>
                         <option value="light_rgb_split_glitch">RGB Split Glitch</option>
@@ -840,16 +841,16 @@ async function init() {
                 lottieDiv.style.zIndex = '10';
                 wrapper.appendChild(lottieDiv);
 
-                // === SOLUSI FINAL BENTROK EFEK CAHAYA/MASKING ===
+                // KITA KEMBALIKAN KE SVG KARENA BACKEND WEBANIM.PY SUDAH MENYEMBUHKAN BUG MASKING
                 previewAnimInstance = lottie.loadAnimation({
                     container: lottieDiv,
-                    renderer: 'canvas', // FIX: Menggunakan canvas agar kebal bentrok ID masking dari Python
+                    renderer: 'svg', 
                     loop: true, 
                     autoplay: true,
                     animationData: animData,
                     rendererSettings: {
                         preserveAspectRatio: 'xMidYMid meet',
-                        // idPrefix dan filterSize tidak diperlukan/didukung di renderer canvas
+                        idPrefix: 'live_preview_' + Date.now() + '_', // Mencegah bentrok ID DOM SVG jika preview di-load berkali-kali
                         hideOnTransparent: false,
                         clearCanvas: true
                     }
