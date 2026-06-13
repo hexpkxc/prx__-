@@ -679,7 +679,7 @@ async function init() {
                 </div>
                 
                 <div class="w-full flex items-center justify-center bg-transparent relative overflow-hidden" id="preview-lottie-wrapper" style="aspect-ratio: 1/1;">
-                    <!-- Lottie / WebP Anim Here -->
+                    <!-- Lottie Anim Here -->
                 </div>
                 
                 <div class="p-4 bg-gray-50 dark:bg-gray-900 z-20 border-t border-gray-200 dark:border-gray-700">
@@ -709,7 +709,7 @@ async function init() {
             sizeBadge.className = "mt-1 px-2 py-0.5 w-max bg-gray-100 text-gray-600 text-[10px] font-bold rounded-full";
 
             try {
-                await ensureLottieLoaded(); // Tetap panggil untuk berjaga jika kita fallback ke TGS
+                await ensureLottieLoaded();
                 if(!currentSvgCode || currentSvgCode.trim() === "") throw new Error("Desain SVG kosong.");
 
                 const client_metadata = await getClientMetadata();
@@ -743,12 +743,8 @@ async function init() {
                     const errObj = await response.json().catch(() => ({}));
                     throw new Error(errObj.error || "Gagal memproses render instan di server.");
                 }
-
-                // Membaca respons JSON terbaru
-                const resData = await response.json();
-                if (resData.error) throw new Error(resData.error);
                 
-                const fileSizeKB = resData.file_size_kb || '--';
+                const fileSizeKB = response.headers.get('X-File-Size-KB') || '--';
                 const submitFormBtn = document.getElementById('auto-submit-btn');
                 
                 if (parseFloat(fileSizeKB) > 64) {
@@ -765,6 +761,10 @@ async function init() {
                     }
                 }
                 sizeBadge.innerHTML = `<i class="fas fa-weight-hanging mr-1"></i> ${fileSizeKB} KB`;
+
+                const buffer = await response.arrayBuffer();
+                const decompressed = window.pako.inflate(new Uint8Array(buffer));
+                let animData = JSON.parse(new TextDecoder('utf-8').decode(decompressed));
 
                 wrapper.innerHTML = ''; 
                 
@@ -788,25 +788,30 @@ async function init() {
                 lottieDiv.style.height = '100%';
                 lottieDiv.style.minHeight = '300px'; 
                 lottieDiv.style.zIndex = '10';
-                lottieDiv.style.display = 'flex';
-                lottieDiv.style.alignItems = 'center';
-                lottieDiv.style.justifyContent = 'center';
                 wrapper.appendChild(lottieDiv);
 
-                const fileUrl = `${baseUrl}/api/preview/${resData.preview_file}?t=${Date.now()}`;
-
-                if (resData.format === 'webp' || resData.format === 'webm') {
-                    // Jika sukses di-render sebagai WebP/WebM, langsung tampilkan dengan tag img
-                    const img = document.createElement('img');
-                    img.src = fileUrl;
-                    img.style.maxWidth = '100%';
-                    img.style.maxHeight = '100%';
-                    img.style.objectFit = 'contain';
-                    lottieDiv.appendChild(img);
-                } else {
-                    // Fallback Lottie dihapus, fokus hanya pada WebP/WebM
-                    throw new Error("Sistem fallback Lottie (TGS) telah dihapus. Pastikan server mengembalikan format WebP.");
-                }
+                // === SOLUSI FINAL BENTROK EFEK CAHAYA/MASKING ===
+                // Menggunakan idPrefix yang selalu unik setiap kali preview dibuka
+                const uniquePrefix = 'preview_anim_' + Date.now() + '_';
+                
+                previewAnimInstance = lottie.loadAnimation({
+                    container: lottieDiv,
+                    renderer: 'svg', 
+                    loop: true, 
+                    autoplay: true,
+                    animationData: animData,
+                    rendererSettings: {
+                        preserveAspectRatio: 'xMidYMid meet',
+                        idPrefix: uniquePrefix, // MENCEGAH BENTROK MASKING DI BROWSER
+                        filterSize: { width: '300%', height: '300%', x: '-100%', y: '-100%' }, 
+                        hideOnTransparent: false,
+                        clearCanvas: true
+                    }
+                });
+                
+                previewAnimInstance.addEventListener('error', (e) => {
+                    console.warn("Lottie Error Tertangkap:", e);
+                });
             } catch (err) {
                 wrapper.innerHTML = `<p class="text-red-500 font-bold z-20 absolute text-sm text-center px-4">Gagal memuat animasi.<br><span class="text-xs text-gray-500">${err.message}</span></p>`;
             }
@@ -1081,9 +1086,15 @@ async function loadLottiePreview(animId) {
             }
         });
         
-        if (!response.ok) throw new Error("File tidak ditemukan di server lokal.");
+        if (!response.ok) throw new Error("File TGS tidak ditemukan di server lokal.");
         
-        const contentType = response.headers.get('Content-Type');
+        const arrayBuffer = await response.arrayBuffer();
+        
+        const uint8Array = new Uint8Array(arrayBuffer);
+        const decompressedArray = window.pako.inflate(uint8Array);
+        const decompressedString = new TextDecoder('utf-8').decode(decompressedArray);
+        let animationData = JSON.parse(decompressedString);
+
         const canvasContainer = document.getElementById('canvas-container');
         
         const oldLottie = document.getElementById('lottie-bg');
@@ -1105,28 +1116,28 @@ async function loadLottiePreview(animId) {
         svgCanvas.classList.remove('bg-checkered');
 
         canvasContainer.classList.add('bg-checkered');
+
         canvasContainer.insertBefore(lottieContainer, canvasContainer.firstChild);
 
-        if (contentType && (contentType.includes('image/webp') || contentType.includes('video/webm'))) {
-            // Jika Backend mengirim format WebP/WebM
-            const blob = await response.blob();
-            const url = URL.createObjectURL(blob);
-            const img = document.createElement('img');
-            img.src = url;
-            img.style.width = '100%';
-            img.style.height = '100%';
-            img.style.objectFit = 'contain';
-            lottieContainer.appendChild(img);
-        } else {
-            // Jika Backend mengirim format Lottie/TGS biasa, kita hentikan
-            throw new Error("Sistem fallback Lottie (TGS) telah dihapus. Hanya memuat WebP/WebM.");
-        }
+        lottie.loadAnimation({
+            container: lottieContainer,
+            renderer: 'svg', 
+            loop: true,
+            autoplay: true,
+            animationData: animationData,
+            rendererSettings: {
+                preserveAspectRatio: 'xMidYMid meet',
+                idPrefix: 'bg_lottie_anim_', // FIX BENTROK
+                hideOnTransparent: false,
+                clearCanvas: true
+            }
+        });
         
         const toggleBtn = document.getElementById('btn-toggle-anim-layer');
         if (toggleBtn) toggleBtn.classList.remove('hidden');
         
     } catch (err) {
-        console.warn("Preview animasi diabaikan atau gagal:", err.message);
+        console.warn("Preview animasi diabaikan:", err.message);
     }
 }
 
