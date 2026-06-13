@@ -841,19 +841,15 @@ async function init() {
                 wrapper.appendChild(lottieDiv);
 
                 // === SOLUSI FINAL BENTROK EFEK CAHAYA/MASKING ===
-                // Menggunakan idPrefix yang selalu unik setiap kali preview dibuka
-                const uniquePrefix = 'preview_anim_' + Date.now() + '_';
-                
                 previewAnimInstance = lottie.loadAnimation({
                     container: lottieDiv,
-                    renderer: 'svg', 
+                    renderer: 'canvas', // FIX: Menggunakan canvas agar kebal bentrok ID masking dari Python
                     loop: true, 
                     autoplay: true,
                     animationData: animData,
                     rendererSettings: {
                         preserveAspectRatio: 'xMidYMid meet',
-                        idPrefix: uniquePrefix, // MENCEGAH BENTROK MASKING DI BROWSER
-                        filterSize: { width: '300%', height: '300%', x: '-100%', y: '-100%' }, 
+                        // idPrefix dan filterSize tidak diperlukan/didukung di renderer canvas
                         hideOnTransparent: false,
                         clearCanvas: true
                     }
