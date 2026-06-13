@@ -257,7 +257,7 @@ async function init() {
     const urlParams = new URLSearchParams(window.location.search);
     
     // =========================================================
-    // HANDLER MODE OTOMATIS (LIVE SVG EDIT + PREVIEW POP-UP)
+    // HANDLER MODE OTOMATIS
     // =========================================================
     const isAutoMode = urlParams.get('auto_text') !== null;
     const animId = urlParams.get('anim');
@@ -352,12 +352,6 @@ async function init() {
         const dpadInfo = document.getElementById('selected-info');
         if (dpadInfo && dpadInfo.parentElement) dpadInfo.parentElement.style.display = 'none';
         formCard.appendChild(canvasContainer);
-
-        const previewBtn = document.createElement('button');
-        previewBtn.className = 'w-full mb-6 bg-indigo-50 dark:bg-gray-700 hover:bg-indigo-100 dark:hover:bg-gray-600 text-indigo-700 dark:text-indigo-400 font-bold py-3 px-4 rounded-xl border border-indigo-200 dark:border-gray-600 shadow-sm transition flex items-center justify-center';
-        previewBtn.innerHTML = '<i class="fas fa-play-circle mr-2 text-indigo-500"></i> Lihat Hasil Animasi Penuh';
-        previewBtn.onclick = () => openPreviewModal();
-        formCard.appendChild(previewBtn);
 
         const layerLabels = { t1: 'Teks Utama', t2: 'Teks Kedua', t3: 'Teks Ketiga', t4: 'Teks Keempat' };
         
@@ -665,190 +659,6 @@ async function init() {
 
         silumanContainer.appendChild(formCard);
         
-        const previewModal = document.createElement('div');
-        previewModal.id = 'auto-preview-modal';
-        previewModal.className = 'fixed inset-0 bg-black/80 z-[200] hidden flex-col items-center justify-center p-4 backdrop-blur-sm';
-        previewModal.innerHTML = `
-            <div class="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md flex flex-col overflow-hidden shadow-2xl animate-fade-in relative">
-                <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900 z-20">
-                    <div class="flex flex-col">
-                        <h3 class="font-bold text-gray-800 dark:text-white"><i class="fas fa-film text-indigo-500 mr-2"></i> Live Preview</h3>
-                        <span id="live-preview-size-badge" class="mt-1 px-2 py-0.5 w-max bg-gray-100 text-gray-600 text-[10px] font-bold rounded-full">-- KB</span>
-                    </div>
-                    <button id="close-preview-btn" class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white transition"><i class="fas fa-times text-xl"></i></button>
-                </div>
-                
-                <div class="w-full flex items-center justify-center bg-transparent relative overflow-hidden" id="preview-lottie-wrapper" style="aspect-ratio: 1/1;">
-                    <!-- Lottie Anim Here -->
-                </div>
-                
-                <div class="p-4 bg-gray-50 dark:bg-gray-900 z-20 border-t border-gray-200 dark:border-gray-700">
-                    <label class="block text-xs font-bold text-gray-600 dark:text-gray-300 mb-2"><i class="fas fa-palette mr-1 text-pink-500"></i> Tema Warna (Opsional)</label>
-                    <select id="preview-theme-select" class="w-full mb-4 px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 dark:text-white transition shadow-sm focus:ring-2 focus:ring-indigo-500">
-                        <option value="none">Original (Bawaan Template)</option>
-                    </select>
-                    <button id="close-preview-btn-2" class="w-full bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900 dark:hover:bg-indigo-800 text-indigo-800 dark:text-indigo-200 font-bold py-3 rounded-xl transition">Tutup Preview</button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(previewModal);
-
-        let previewAnimInstance = null;
-
-        async function applyLivePreview(theme = 'none') {
-            if (previewAnimInstance) {
-                previewAnimInstance.destroy();
-                previewAnimInstance = null;
-            }
-
-            const wrapper = document.getElementById('preview-lottie-wrapper');
-            const sizeBadge = document.getElementById('live-preview-size-badge');
-            
-            wrapper.innerHTML = '<div class="absolute flex flex-col items-center"><i class="fas fa-circle-notch fa-spin text-3xl text-indigo-500 mb-2"></i><span class="text-sm font-bold text-gray-600 dark:text-gray-300">Live Rendering...</span></div>';
-            sizeBadge.innerText = 'Menghitung...';
-            sizeBadge.className = "mt-1 px-2 py-0.5 w-max bg-gray-100 text-gray-600 text-[10px] font-bold rounded-full";
-
-            try {
-                await ensureLottieLoaded();
-                if(!currentSvgCode || currentSvgCode.trim() === "") throw new Error("Desain SVG kosong.");
-
-                const client_metadata = await getClientMetadata();
-
-                const minifiedSvg = currentSvgCode.replace(/\s+/g, ' ').replace(/>\s+</g, '><').trim();
-                const uint8Array = new TextEncoder().encode(minifiedSvg);
-                const compressed = window.pako.deflate(uint8Array);
-                let binary = '';
-                const len = compressed.byteLength;
-                for (let i = 0; i < len; i++) binary += String.fromCharCode(compressed[i]);
-                const base64CompressedSvg = window.btoa(binary);
-
-                const initData = tg && tg.initData ? tg.initData : "";
-                const baseUrl = NGROK_API_URL.replace('/api/upload', '');
-                
-                const response = await fetch(`${baseUrl}/api/live_preview`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
-                    body: JSON.stringify({
-                        init_data: initData,
-                        svg_data: base64CompressedSvg,
-                        is_compressed: true,
-                        anim_id: animId,
-                        app_state: state,
-                        theme: theme,
-                        client_metadata: client_metadata
-                    })
-                });
-
-                if(!response.ok) {
-                    const errObj = await response.json().catch(() => ({}));
-                    throw new Error(errObj.error || "Gagal memproses render instan di server.");
-                }
-                
-                const fileSizeKB = response.headers.get('X-File-Size-KB') || '--';
-                const submitFormBtn = document.getElementById('auto-submit-btn');
-                
-                if (parseFloat(fileSizeKB) > 64) {
-                    sizeBadge.className = "mt-1 px-2 py-0.5 w-max bg-red-100 text-red-700 text-[10px] font-bold rounded-full border border-red-200";
-                    if(submitFormBtn) {
-                        submitFormBtn.disabled = true;
-                        submitFormBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                    }
-                } else {
-                    sizeBadge.className = "mt-1 px-2 py-0.5 w-max bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-full border border-emerald-200";
-                    if(submitFormBtn) {
-                        submitFormBtn.disabled = false;
-                        submitFormBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                    }
-                }
-                sizeBadge.innerHTML = `<i class="fas fa-weight-hanging mr-1"></i> ${fileSizeKB} KB`;
-
-                const buffer = await response.arrayBuffer();
-                const decompressed = window.pako.inflate(new Uint8Array(buffer));
-                let animData = JSON.parse(new TextDecoder('utf-8').decode(decompressed));
-
-                wrapper.innerHTML = ''; 
-                
-                const bgCheckeredDiv = document.createElement('div');
-                bgCheckeredDiv.className = 'bg-checkered'; 
-                bgCheckeredDiv.style.position = 'absolute';
-                bgCheckeredDiv.style.inset = '0';
-                bgCheckeredDiv.style.width = '100%';
-                bgCheckeredDiv.style.height = '100%';
-                bgCheckeredDiv.style.zIndex = '5';
-                bgCheckeredDiv.style.backgroundImage = 'repeating-linear-gradient(45deg, #d1d5db 25%, transparent 25%, transparent 75%, #d1d5db 75%, #d1d5db), repeating-linear-gradient(45deg, #d1d5db 25%, transparent 25%, transparent 75%, #d1d5db 75%, #d1d5db)';
-                bgCheckeredDiv.style.backgroundPosition = '0 0, 10px 10px';
-                bgCheckeredDiv.style.backgroundSize = '20px 20px';
-                bgCheckeredDiv.style.opacity = '0.4'; 
-                wrapper.appendChild(bgCheckeredDiv);
-
-                const lottieDiv = document.createElement('div');
-                lottieDiv.style.position = 'absolute'; 
-                lottieDiv.style.inset = '0';
-                lottieDiv.style.width = '100%';    
-                lottieDiv.style.height = '100%';
-                lottieDiv.style.minHeight = '300px'; 
-                lottieDiv.style.zIndex = '10';
-                wrapper.appendChild(lottieDiv);
-
-                // === SOLUSI FINAL BENTROK EFEK CAHAYA/MASKING ===
-                // Menggunakan idPrefix yang selalu unik setiap kali preview dibuka
-                const uniquePrefix = 'preview_anim_' + Date.now() + '_';
-                
-                previewAnimInstance = lottie.loadAnimation({
-                    container: lottieDiv,
-                    renderer: 'svg', 
-                    loop: true, 
-                    autoplay: true,
-                    animationData: animData,
-                    rendererSettings: {
-                        preserveAspectRatio: 'xMidYMid meet',
-                        idPrefix: uniquePrefix, // MENCEGAH BENTROK MASKING DI BROWSER
-                        filterSize: { width: '300%', height: '300%', x: '-100%', y: '-100%' }, 
-                        hideOnTransparent: false,
-                        clearCanvas: true
-                    }
-                });
-                
-                previewAnimInstance.addEventListener('error', (e) => {
-                    console.warn("Lottie Error Tertangkap:", e);
-                });
-            } catch (err) {
-                wrapper.innerHTML = `<p class="text-red-500 font-bold z-20 absolute text-sm text-center px-4">Gagal memuat animasi.<br><span class="text-xs text-gray-500">${err.message}</span></p>`;
-            }
-        }
-
-        async function openPreviewModal() {
-            previewModal.classList.remove('hidden');
-            previewModal.classList.add('flex');
-            
-            const themes = await fetchThemes();
-            const select = document.getElementById('preview-theme-select');
-            
-            if(select.options.length <= 1) { 
-                themes.forEach(t => {
-                    const opt = document.createElement('option');
-                    opt.value = t;
-                    opt.innerText = t.replace(/_/g, ' ').toUpperCase();
-                    select.appendChild(opt);
-                });
-                select.onchange = (e) => {
-                    state.selectedTheme = e.target.value; 
-                    applyLivePreview(e.target.value);
-                };
-            }
-            
-            applyLivePreview(select.value);
-        }
-
-        function closePreview() {
-            if(previewAnimInstance) { previewAnimInstance.destroy(); previewAnimInstance = null; }
-            previewModal.classList.add('hidden'); previewModal.classList.remove('flex');
-            document.getElementById('preview-lottie-wrapper').innerHTML = ''; 
-        }
-
-        document.getElementById('close-preview-btn').onclick = closePreview;
-        document.getElementById('close-preview-btn-2').onclick = closePreview;
-
         updateLayoutAndRender();
         
         return; 
