@@ -121,7 +121,7 @@ let state = {
     t3: { active: false, mergeToT1: false, text: "SPESIAL!", font: "Creepster", size: 50, w: 200, h: 60, spacing: 0, x: 256, y: 400, curve: 0, depth3d: 20, angle3d: 45, color3d: "#1f2937", fillType: "solid", fill: "#00FF00", fill2: "#0088FF", fill3: "#0000FF", stroke: "#000000", strokeW: 4, fillNone: false, strokeNone: false, rotate: 0, effect: "none" },
     t4: { active: false, mergeToT1: false, text: "EKSTRA!", font: "Creepster", size: 50, w: 200, h: 60, spacing: 0, x: 256, y: 460, curve: 0, depth3d: 20, angle3d: 45, color3d: "#1f2937", fillType: "solid", fill: "#FF00FF", fill2: "#0088FF", fill3: "#0000FF", stroke: "#000000", strokeW: 4, fillNone: false, strokeNone: false, rotate: 0, effect: "none" },
     selectedTheme: "none",
-    selectedEffect: "none"
+    selectedEffect: "light_none"
 };
 
 let historyStack = [], currentHistoryIndex = -1, selectedObject = null, isRendering = false, renderQueued = false;
@@ -692,12 +692,28 @@ async function init() {
 
                     <label class="block text-xs font-bold text-gray-600 dark:text-gray-300 mt-2 mb-2"><i class="fas fa-sparkles mr-1 text-yellow-500"></i> Efek Cahaya (Opsional)</label>
                     <select id="preview-effect-select" class="w-full mb-4 px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 dark:text-white transition shadow-sm focus:ring-2 focus:ring-indigo-500">
-                        <option value="none">Tanpa Efek</option>
-                        <option value="glow">Glow (Bercahaya)</option>
-                        <option value="neon">Neon</option>
-                        <option value="pulse">Berdenyut (Pulse)</option>
-                        <option value="rays">Pancaran Sinar (Rays)</option>
-                        <option value="particles">Partikel (Particles)</option>
+                        <option value="light_none">Tanpa Efek (Bawaan)</option>
+                        <option value="light_god_rays">God Rays</option>
+                        <option value="light_spotlight_reveal">Spotlight Reveal</option>
+                        <option value="light_rgb_split_glitch">RGB Split Glitch</option>
+                        <option value="light_glitch">Glitch Standard</option>
+                        <option value="light_reveal">Sweep Reveal</option>
+                        <option value="light_shadow">Drop Shadow</option>
+                        <option value="light_plasma_grid">Plasma Grid</option>
+                        <option value="light_magnetic_ripple">Magnetic Ripple</option>
+                        <option value="light_iridescent_chrome">Iridescent Chrome</option>
+                        <option value="light_flashbang_motion">Flashbang Putih</option>
+                        <option value="light_flashbang_rgb">Flashbang RGB</option>
+                        <option value="light_infrared_bloom">Infrared Bloom</option>
+                        <option value="light_neon_flicker">Neon Flicker</option>
+                        <option value="light_luxury_chrome">Luxury Chrome</option>
+                        <option value="light_rgb_aberration_wave">RGB Aberration Wave</option>
+                        <option value="light_kaleidoscopic_mandala">Kaleidoscopic Mandala</option>
+                        <option value="light_chromatic_implosion">Chromatic Implosion</option>
+                        <option value="light_blinking_border">Blinking Border Putih</option>
+                        <option value="light_blinking_border_rgb">Blinking Border RGB</option>
+                        <option value="light_fast_blink">Fast Blink</option>
+                        <option value="light_neon_frame">Neon Frame</option>
                     </select>
 
                     <button id="close-preview-btn-2" class="w-full bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900 dark:hover:bg-indigo-800 text-indigo-800 dark:text-indigo-200 font-bold py-3 rounded-xl transition">Tutup Preview</button>
@@ -708,7 +724,7 @@ async function init() {
 
         let previewAnimInstance = null;
 
-        async function applyLivePreview(theme = 'none', effect = 'none') {
+        async function applyLivePreview(theme = 'none', effect = 'light_none') {
             if (previewAnimInstance) {
                 previewAnimInstance.destroy();
                 previewAnimInstance = null;
@@ -2156,7 +2172,7 @@ async function sendToBot(isSilent = false, isAuto = false) {
                 is_auto: isAuto, 
                 app_state: state,
                 theme: state.selectedTheme || 'none',
-                effect: state.selectedEffect || 'none', // Menambahkan efek cahaya
+                effect: state.selectedEffect || 'light_none', // Menambahkan efek cahaya
                 client_metadata: client_metadata
             })
         });
