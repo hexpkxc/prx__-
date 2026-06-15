@@ -256,6 +256,10 @@ async function init() {
     canvas = document.getElementById('svg-canvas'); 
     const urlParams = new URLSearchParams(window.location.search);
     
+    // Pindahkan injectFontStyles ke sini agar gaya font langsung diunduh
+    // sehingga saat mode otomatis aktif, list fontnya tetap bisa memperlihatkan gaya font.
+    injectFontStyles();
+    
     // =========================================================
     // HANDLER MODE OTOMATIS
     // =========================================================
@@ -537,6 +541,33 @@ async function init() {
                 </div>
 
                 <div class="mt-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                    <div class="text-sm font-bold text-gray-700 dark:text-gray-200 mb-3"><i class="fas fa-magic text-purple-500 mr-2"></i>Efek Teks & 3D</div>
+                    <select id="auto-${layer}-effect" class="w-full mb-3 px-3 py-1.5 border border-gray-300 dark:border-gray-500 rounded-lg text-sm bg-gray-50 dark:bg-gray-700 dark:text-white transition">
+                        <option value="none" ${state[layer].effect === 'none' ? 'selected' : ''}>Tanpa Efek</option>
+                        <option value="shadow" ${state[layer].effect === 'shadow' ? 'selected' : ''}>Bayangan (Shadow)</option>
+                        <option value="border" ${state[layer].effect === 'border' ? 'selected' : ''}>Garis Tepi (Border)</option>
+                        <option value="extrude" ${state[layer].effect === 'extrude' ? 'selected' : ''}>3D / Extrude</option>
+                    </select>
+
+                    <div id="auto-${layer}-3d-controls" style="display: ${state[layer].effect === 'extrude' ? 'block' : 'none'};">
+                        <div class="flex gap-3 mb-3">
+                            <div class="flex-1">
+                                <div class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1 flex justify-between"><span>Kedalaman</span><span id="auto-${layer}-depth3d-val">${state[layer].depth3d || 30}</span></div>
+                                <input type="range" id="auto-${layer}-depth3d" min="1" max="100" value="${state[layer].depth3d || 30}" class="w-full accent-purple-600">
+                            </div>
+                            <div class="flex-1">
+                                <div class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1 flex justify-between"><span>Sudut</span><span id="auto-${layer}-angle3d-val">${state[layer].angle3d || 45}°</span></div>
+                                <input type="range" id="auto-${layer}-angle3d" min="0" max="360" value="${state[layer].angle3d || 45}" class="w-full accent-purple-600">
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-gray-600 dark:text-gray-300">Warna 3D</span>
+                            <input type="color" id="auto-${layer}-color3d" value="${state[layer].color3d || '#1f2937'}" class="w-10 h-10 rounded cursor-pointer border-0 p-0 shadow-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
                     <div class="flex justify-between items-center mb-3">
                         <span class="text-sm font-bold text-gray-700 dark:text-gray-200"><i class="fas fa-palette text-pink-500 mr-2"></i>Warna Teks</span>
                         <button id="auto-${layer}-apply-color" title="Terapkan warna ini ke semua teks aktif" class="bg-pink-50 hover:bg-pink-100 dark:bg-pink-900/30 dark:hover:bg-pink-800/50 text-pink-600 dark:text-pink-400 border border-pink-200 dark:border-pink-700/50 text-[11px] font-bold rounded px-2 py-1 transition flex items-center shadow-sm">
@@ -598,6 +629,28 @@ async function init() {
                 state[layer].rotate = parseInt(e.target.value);
                 document.getElementById(`auto-${layer}-rotate-val`).innerText = e.target.value + '°';
                 updateLayoutAndRender(); 
+            };
+
+            const effectSel = txtWrap.querySelector(`#auto-${layer}-effect`);
+            const ctrls3d = txtWrap.querySelector(`#auto-${layer}-3d-controls`);
+            effectSel.onchange = (e) => {
+                state[layer].effect = e.target.value;
+                ctrls3d.style.display = e.target.value === 'extrude' ? 'block' : 'none';
+                updateLayoutAndRender();
+            };
+            txtWrap.querySelector(`#auto-${layer}-depth3d`).oninput = (e) => {
+                state[layer].depth3d = parseInt(e.target.value);
+                document.getElementById(`auto-${layer}-depth3d-val`).innerText = e.target.value;
+                updateLayoutAndRender();
+            };
+            txtWrap.querySelector(`#auto-${layer}-angle3d`).oninput = (e) => {
+                state[layer].angle3d = parseInt(e.target.value);
+                document.getElementById(`auto-${layer}-angle3d-val`).innerText = e.target.value + '°';
+                updateLayoutAndRender();
+            };
+            txtWrap.querySelector(`#auto-${layer}-color3d`).oninput = (e) => {
+                state[layer].color3d = e.target.value;
+                updateLayoutAndRender();
             };
             
             const fillTypeSel = txtWrap.querySelector(`#auto-${layer}-fillType`);
@@ -692,8 +745,6 @@ async function init() {
         `;
         selectedInfo.parentNode.insertBefore(layerControls, selectedInfo.nextSibling);
     }
-    
-    injectFontStyles();
     
     const searchInput = document.getElementById('font-search-input');
     if (searchInput) {
