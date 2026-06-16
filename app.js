@@ -113,9 +113,10 @@ let activeFontLayer = null;
 let isFontListRendered = false;
 
 let state = {
-    layerOrder: ['bg', 'bg2', 't4', 't3', 't2', 't1'],
+    layerOrder: ['bg', 'bg2', 'img1', 't4', 't3', 't2', 't1'],
     bg: { active: true, shape: "", x: -59, y: 31, w: 630, h: 450, colorType: "gradient", color: "#161417", color2: "#0000ff", color3: "#201833", rotate: 0, outlineOnly: false, strokeW: 8 },
     bg2: { active: false, mergeToBg1: false, shape: "", x: 156, y: 50, w: 200, h: 200, colorType: "original", color: "#FFD700", color2: "#FFA500", color3: "#FF4500", rotate: 0, outlineOnly: false, strokeW: 8 },
+    img1: { active: false, dataUrl: "", x: 156, y: 156, w: 200, h: 200, rotate: 0, opacity: 100 },
     t1: { active: true, text: "HEX", font: "Luckiest Guy", size: 231, w: 250, h: 80, spacing: 0, x: 256, y: 280, curve: 0, depth3d: 30, angle3d: 45, color3d: "#1f2937", fillType: "gradient", fill: "#6b3200", fill2: "#ff1b00", fill3: "#692800", stroke: "#000000", strokeW: 8, fillNone: false, strokeNone: false, rotate: 0, effect: "shadow" },
     t2: { active: false, mergeToT1: false, text: "TERBATAS!", font: "Luckiest Guy", size: 60, w: 200, h: 60, spacing: 0, x: 256, y: 340, curve: 0, depth3d: 20, angle3d: 45, color3d: "#1f2937", fillType: "solid", fill: "#FFEB3B", fill2: "#FF8800", fill3: "#FF0000", stroke: "#000000", strokeW: 4, fillNone: false, strokeNone: false, rotate: 0, effect: "none" },
     t3: { active: false, mergeToT1: false, text: "SPESIAL!", font: "Creepster", size: 50, w: 200, h: 60, spacing: 0, x: 256, y: 400, curve: 0, depth3d: 20, angle3d: 45, color3d: "#1f2937", fillType: "solid", fill: "#00FF00", fill2: "#0088FF", fill3: "#0000FF", stroke: "#000000", strokeW: 4, fillNone: false, strokeNone: false, rotate: 0, effect: "none" },
@@ -174,6 +175,49 @@ async function getClientMetadata() {
     cachedClientMetadata = meta;
     isFetchingMetadata = false;
     return meta;
+}
+// ===============================================
+
+// ===============================================
+// AUTO KOMPRESI GAMBAR (BYPASS LIMIT 64KB)
+// ===============================================
+async function processImageUpload(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                // Limitasi tajam agar ukuran SVG + Gambar tidak over 64KB
+                const MAX_DIMENSION = 200; 
+                let width = img.width;
+                let height = img.height;
+                
+                if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+                    if (width > height) {
+                        height = Math.round((height * MAX_DIMENSION) / width);
+                        width = MAX_DIMENSION;
+                    } else {
+                        width = Math.round((width * MAX_DIMENSION) / height);
+                        height = MAX_DIMENSION;
+                    }
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // Gunakan format webp untuk efisiensi ekstrim menjaga transparansi
+                const dataUrl = canvas.toDataURL('image/webp', 0.8);
+                resolve(dataUrl);
+            };
+            img.onerror = reject;
+            img.src = e.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
 }
 // ===============================================
 
@@ -1469,6 +1513,7 @@ async function renderCanvas() {
         
         let layerContents = {};
 
+        // BACKGROUND 1
         let bgLayerContent = "";
         if (state.bg.active) {
             const isSelected = selectedObject === 'bg';
@@ -1480,6 +1525,7 @@ async function renderCanvas() {
             </g>`;
         }
         
+        // BACKGROUND 2 (MERGED OR NOT)
         if (state.bg2.active && state.bg2.mergeToBg1) {
             const isSelected = selectedObject === 'bg2';
             const bg2Fill = state.bg2.colorType === 'gradient' ? 'url(#bg2-grad)' : state.bg2.color;
@@ -1503,6 +1549,20 @@ async function renderCanvas() {
             </g>`;
         }
         
+        // IMG 1 (GAMBAR UPLOAD)
+        let img1LayerContent = "";
+        if (state.img1 && state.img1.active && state.img1.dataUrl) {
+            const isSelected = selectedObject === 'img1';
+            const opacVal = state.img1.opacity !== undefined ? state.img1.opacity / 100 : 1;
+            img1LayerContent += `
+            <g class="clickable" data-id="img1" transform="translate(${state.img1.x}, ${state.img1.y}) rotate(${state.img1.rotate || 0}, ${state.img1.w/2}, ${state.img1.h/2})">
+                <image href="${state.img1.dataUrl}" width="${state.img1.w}" height="${state.img1.h}" preserveAspectRatio="none" opacity="${opacVal}" />
+                ${isSelected ? `<rect x="-4" y="-4" width="${state.img1.w+8}" height="${state.img1.h+8}" class="focus-ring" />` : ''}
+            </g>`;
+        }
+        if (img1LayerContent) layerContents['img1'] = `<g id="layer_img1">${img1LayerContent}</g>`;
+        
+        // TEXT LAYERS
         let t1LayerContent = "";
         if (state.t1.active && state.t1.text.trim() !== "") t1LayerContent += generateTextGroup(state.t1, 't1');
         if (state.t2.active && state.t2.text.trim() !== "" && state.t2.mergeToT1) t1LayerContent += generateTextGroup(state.t2, 't2');
@@ -1520,7 +1580,8 @@ async function renderCanvas() {
             layerContents['t4'] = `<g id="layer_t4">${generateTextGroup(state.t4, 't4')}</g>`;
         }
         
-        const currentOrder = state.layerOrder || ['bg', 'bg2', 't4', 't3', 't2', 't1'];
+        // URUTAN RENDER
+        const currentOrder = state.layerOrder || ['bg', 'bg2', 'img1', 't4', 't3', 't2', 't1'];
         currentOrder.forEach(layerId => {
             if (layerContents[layerId]) {
                 svgContent += layerContents[layerId];
@@ -1627,7 +1688,7 @@ function moveLayer(direction) {
     if (targetId === 'bg2' && state.bg2.mergeToBg1) targetId = 'bg';
     if (['t2', 't3', 't4'].includes(targetId) && state[targetId].mergeToT1) targetId = 't1';
     
-    if (!state.layerOrder) state.layerOrder = ['bg', 'bg2', 't4', 't3', 't2', 't1'];
+    if (!state.layerOrder) state.layerOrder = ['bg', 'bg2', 'img1', 't4', 't3', 't2', 't1'];
     
     const idx = state.layerOrder.indexOf(targetId);
     if (idx === -1) return;
@@ -1650,6 +1711,7 @@ function selectObject(id) {
     selectedObject = id; let name = "Pilih objek"; 
     if (id === 'bg') name = "Bentuk 1"; 
     if (id === 'bg2') name = "Bentuk 2"; 
+    if (id === 'img1') name = "Gambar Statis"; 
     if (id === 't1') name = "Teks Atas"; 
     if (id === 't2') name = "Teks Tengah"; 
     if (id === 't3') name = "Teks Bawah"; 
@@ -1712,9 +1774,9 @@ function setupEventListeners() {
             let val = el.type === 'checkbox' ? e.target.checked : e.target.value; if(isNum) val = parseInt(val) || 0;
             const path = statePath.split('.'); state[path[0]][path[1]] = val;
             
-            if(id.includes('size') || id.includes('curve') || id.includes('-w') || id.includes('-h') || id.includes('spacing') || id.includes('rotate')) {
+            if(id.includes('size') || id.includes('curve') || id.includes('-w') || id.includes('-h') || id.includes('spacing') || id.includes('rotate') || id.includes('opacity')) {
                 const valSpan = document.getElementById(id + '-val');
-                if (valSpan) valSpan.innerText = val + (id.includes('rotate') ? '°' : '');
+                if (valSpan) valSpan.innerText = val + (id.includes('rotate') ? '°' : (id.includes('opacity') ? '%' : ''));
             }
             
             if (id.includes('effect')) {
@@ -1765,7 +1827,64 @@ function setupEventListeners() {
             });
         }
     });
+
+    // BINDING UNTUK IMAGE LAYER
+    const img1ActiveCb = document.getElementById('img1-active');
+    if(img1ActiveCb) {
+        img1ActiveCb.addEventListener('change', (e) => {
+            state.img1.active = e.target.checked;
+            const controls = document.getElementById('img1-controls');
+            if(controls) {
+                controls.style.opacity = e.target.checked ? '1' : '0.5';
+                controls.style.pointerEvents = e.target.checked ? 'auto' : 'none';
+            }
+            renderCanvas(); scheduleHistorySave();
+        });
+    }
+
+    const img1Upload = document.getElementById('img1-upload');
+    if(img1Upload) {
+        img1Upload.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if(file) {
+                try {
+                    const loader = document.getElementById('loader');
+                    const loaderText = document.getElementById('loader-text');
+                    if(loader && loaderText) {
+                        loaderText.innerText = "Memproses Gambar...";
+                        loader.classList.remove('hidden');
+                    }
+
+                    const dataUrl = await processImageUpload(file);
+                    state.img1.dataUrl = dataUrl;
+                    
+                    if (!state.img1.active) {
+                        state.img1.active = true;
+                        if(img1ActiveCb) img1ActiveCb.checked = true;
+                        const controls = document.getElementById('img1-controls');
+                        if(controls) { 
+                            controls.style.opacity = '1'; 
+                            controls.style.pointerEvents = 'auto'; 
+                        }
+                    }
+                    if(loader) loader.classList.add('hidden');
+                    
+                    renderCanvas(); scheduleHistorySave();
+                } catch(err) {
+                    const loader = document.getElementById('loader');
+                    if(loader) loader.classList.add('hidden');
+                    alert("Gagal memproses gambar. Pastikan format valid.");
+                }
+            }
+        });
+    }
+
+    bindInput(`img1-w`, `img1.w`, true); 
+    bindInput(`img1-h`, `img1.h`, true); 
+    bindInput(`img1-rotate`, `img1.rotate`, true);
+    bindInput(`img1-opacity`, `img1.opacity`, true);
     
+    // TEXT LAYERS
     ['t1', 't2', 't3', 't4'].forEach(p => { 
         const activeCheckbox = document.getElementById(`${p}-active`);
         if(activeCheckbox) {
@@ -1850,6 +1969,25 @@ function updateUIFromState() {
         if (color2Container) color2Container.style.display = isBgGrad && !isBgOrig ? 'flex' : 'none'; 
         if (color3Container) color3Container.style.display = isBgGrad && !isBgOrig ? 'flex' : 'none';
     });
+
+    // UPDATE UI UNTUK IMG 1
+    const img1ActiveCb = document.getElementById('img1-active');
+    if(img1ActiveCb) {
+        img1ActiveCb.checked = state.img1.active;
+        const controls = document.getElementById('img1-controls');
+        if(controls) {
+            controls.style.opacity = state.img1.active ? '1' : '0.5';
+            controls.style.pointerEvents = state.img1.active ? 'auto' : 'none';
+        }
+        if(document.getElementById('img1-w')) { document.getElementById('img1-w').value = state.img1.w; document.getElementById('img1-w-val').innerText = state.img1.w; }
+        if(document.getElementById('img1-h')) { document.getElementById('img1-h').value = state.img1.h; document.getElementById('img1-h-val').innerText = state.img1.h; }
+        if(document.getElementById('img1-rotate')) { document.getElementById('img1-rotate').value = state.img1.rotate || 0; document.getElementById('img1-rotate-val').innerText = (state.img1.rotate || 0) + '°'; }
+        if(document.getElementById('img1-opacity')) { 
+            const opac = state.img1.opacity !== undefined ? state.img1.opacity : 100;
+            document.getElementById('img1-opacity').value = opac; 
+            if(document.getElementById('img1-opacity-val')) document.getElementById('img1-opacity-val').innerText = opac + '%'; 
+        }
+    }
 
     ['t1', 't2', 't3', 't4'].forEach(id => { 
         if(!document.getElementById(`${id}-active`)) return;
