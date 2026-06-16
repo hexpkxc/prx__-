@@ -188,8 +188,8 @@ async function processImageUpload(file) {
             const img = new Image();
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                // Limitasi tajam agar ukuran SVG + Gambar tidak over 64KB
-                const MAX_DIMENSION = 200; 
+                // Limitasi tajam agar ukuran SVG + Gambar tidak over 64KB (Diturunkan ke 150 agar PNG aman)
+                const MAX_DIMENSION = 150; 
                 let width = img.width;
                 let height = img.height;
                 
@@ -208,8 +208,8 @@ async function processImageUpload(file) {
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
                 
-                // Gunakan format webp untuk efisiensi ekstrim menjaga transparansi
-                const dataUrl = canvas.toDataURL('image/webp', 0.8);
+                // Gunakan format png untuk dukungan webview yang lebih baik menjaga transparansi
+                const dataUrl = canvas.toDataURL('image/png');
                 resolve(dataUrl);
             };
             img.onerror = reject;
@@ -1556,7 +1556,7 @@ async function renderCanvas() {
             const opacVal = state.img1.opacity !== undefined ? state.img1.opacity / 100 : 1;
             img1LayerContent += `
             <g class="clickable" data-id="img1" transform="translate(${state.img1.x}, ${state.img1.y}) rotate(${state.img1.rotate || 0}, ${state.img1.w/2}, ${state.img1.h/2})">
-                <image href="${state.img1.dataUrl}" width="${state.img1.w}" height="${state.img1.h}" preserveAspectRatio="none" opacity="${opacVal}" />
+                <image href="${state.img1.dataUrl}" xlink:href="${state.img1.dataUrl}" width="${state.img1.w}" height="${state.img1.h}" preserveAspectRatio="none" opacity="${opacVal}" />
                 ${isSelected ? `<rect x="-4" y="-4" width="${state.img1.w+8}" height="${state.img1.h+8}" class="focus-ring" />` : ''}
             </g>`;
         }
