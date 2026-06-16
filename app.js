@@ -1602,19 +1602,12 @@ function generateTextGroup(tState, idTag) {
         const angle = (parseInt(tState.angle3d) || 45) * (Math.PI / 180);
         const extColor = tState.color3d || '#1f2937';
         
-        const dxStep = Math.cos(angle);
-        const dyStep = Math.sin(angle);
+        const dx = Math.cos(angle) * depth;
+        const dy = Math.sin(angle) * depth;
         
-        const maxLayers = 6; 
-        const actualLayers = Math.min(depth, maxLayers);
-        const stepDistance = depth / actualLayers;
+        const extStrokeW = Math.max(baseStrokeW, 2) + (depth * 1.2);
         
-        let extStrokeW = Math.max(baseStrokeW, 2) + (stepDistance * 1.5);
-        
-        for (let i = actualLayers; i >= 1; i--) {
-            const currentDist = i * stepDistance;
-            renderedPaths += makePath(extColor, extColor, extStrokeW, dxStep * currentDist, dyStep * currentDist);
-        }
+        renderedPaths += makePath(extColor, extColor, extStrokeW, dx, dy);
     }
 
     renderedPaths += makePath(baseFill, baseStroke, baseStrokeW);
