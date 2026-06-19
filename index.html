@@ -194,43 +194,11 @@
                 <div id="bg-controls" class="transition-opacity opacity-50 pointer-events-none">
                     <div id="bg-tab-edit" class="space-y-3">
                         
-                        <!-- BAGIAN MANUAL & NEON PRESET -->
                         <div>
-                            <div class="flex justify-between items-center mb-1">
-                                <label class="block text-[11px] font-bold text-gray-600">Bentuk Latar</label>
-                                <button type="button" onclick="toggleManualInput('bg')" class="text-[10px] bg-indigo-100 hover:bg-indigo-200 text-indigo-700 py-0.5 px-2 rounded font-bold transition flex items-center shadow-sm">
-                                    <i class="fas fa-plus mr-1"></i> Manual / Neon
-                                </button>
-                            </div>
+                            <label class="block text-[11px] font-bold text-gray-600 mb-1">Bentuk Latar</label>
                             <select id="bg-shape" class="w-full border rounded-lg p-2 text-sm outline-blue-500 bg-gray-50 transition-colors">
                                 <option value="" disabled selected>Memuat Bentuk...</option>
                             </select>
-
-                            <div id="bg-manual-container" class="hidden mt-2 p-3 bg-indigo-50 border border-indigo-200 rounded-lg shadow-inner">
-                                <label class="block text-[11px] font-bold text-indigo-800 mb-2">
-                                    <i class="fas fa-magic mr-1"></i> Mode Preset & Manual
-                                </label>
-                                
-                                <button type="button" onclick="loadNeonBorder('bg')" class="w-full mb-3 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white text-[11px] font-bold py-2 px-3 rounded-lg shadow-md flex items-center justify-center transition transform active:scale-95">
-                                    <i class="fas fa-vector-square mr-2 text-sm"></i> Pakai Preset: Border Neon
-                                </button>
-                                
-                                <div class="flex items-center gap-2 mb-2">
-                                    <div class="h-px bg-indigo-200 flex-1"></div>
-                                    <span class="text-[9px] text-indigo-400 font-bold tracking-wider">ATAU KUSTOM</span>
-                                    <div class="h-px bg-indigo-200 flex-1"></div>
-                                </div>
-
-                                <label class="block text-[10px] font-bold text-gray-600 mb-1">Upload File (.json / .svg):</label>
-                                <input type="file" id="bg-manual-file" accept=".json,.txt,.svg" class="w-full text-[10px] file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer mb-2">
-                                
-                                <label class="block text-[10px] font-bold text-gray-600 mb-1">Paste Kode Mentah:</label>
-                                <textarea id="bg-manual-code" rows="2" class="w-full text-[10px] p-2 border border-blue-300 rounded outline-blue-500 font-mono mb-2" placeholder='<path d="..." /> atau JSON'></textarea>
-                                
-                                <button type="button" onclick="applyManualShape('bg')" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold py-1.5 rounded transition">
-                                    Terapkan Kode Manual
-                                </button>
-                            </div>
                         </div>
 
                         <div class="grid grid-cols-1 gap-3">
@@ -312,43 +280,11 @@
                 <div id="bg2-controls" class="transition-opacity opacity-50 pointer-events-none">
                     <div id="bg2-tab-edit" class="space-y-3">
                         
-                        <!-- BAGIAN MANUAL & NEON PRESET -->
                         <div>
-                            <div class="flex justify-between items-center mb-1">
-                                <label class="block text-[11px] font-bold text-gray-600">Bentuk Hiasan</label>
-                                <button type="button" onclick="toggleManualInput('bg2')" class="text-[10px] bg-indigo-100 hover:bg-indigo-200 text-indigo-700 py-0.5 px-2 rounded font-bold transition flex items-center shadow-sm">
-                                    <i class="fas fa-plus mr-1"></i> Manual / Neon
-                                </button>
-                            </div>
+                            <label class="block text-[11px] font-bold text-gray-600 mb-1">Bentuk Hiasan</label>
                             <select id="bg2-shape" class="w-full border rounded-lg p-2 text-sm outline-blue-500 bg-gray-50 transition-colors">
                                 <option value="" disabled selected>Memuat Bentuk...</option>
                             </select>
-
-                            <div id="bg2-manual-container" class="hidden mt-2 p-3 bg-indigo-50 border border-indigo-200 rounded-lg shadow-inner">
-                                <label class="block text-[11px] font-bold text-indigo-800 mb-2">
-                                    <i class="fas fa-magic mr-1"></i> Mode Preset & Manual
-                                </label>
-                                
-                                <button type="button" onclick="loadNeonBorder('bg2')" class="w-full mb-3 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white text-[11px] font-bold py-2 px-3 rounded-lg shadow-md flex items-center justify-center transition transform active:scale-95">
-                                    <i class="fas fa-vector-square mr-2 text-sm"></i> Pakai Preset: Border Neon
-                                </button>
-                                
-                                <div class="flex items-center gap-2 mb-2">
-                                    <div class="h-px bg-indigo-200 flex-1"></div>
-                                    <span class="text-[9px] text-indigo-400 font-bold tracking-wider">ATAU KUSTOM</span>
-                                    <div class="h-px bg-indigo-200 flex-1"></div>
-                                </div>
-
-                                <label class="block text-[10px] font-bold text-gray-600 mb-1">Upload File (.json / .svg):</label>
-                                <input type="file" id="bg2-manual-file" accept=".json,.txt,.svg" class="w-full text-[10px] file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer mb-2">
-                                
-                                <label class="block text-[10px] font-bold text-gray-600 mb-1">Paste Kode Mentah:</label>
-                                <textarea id="bg2-manual-code" rows="2" class="w-full text-[10px] p-2 border border-blue-300 rounded outline-blue-500 font-mono mb-2" placeholder='<path d="..." /> atau JSON'></textarea>
-                                
-                                <button type="button" onclick="applyManualShape('bg2')" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold py-1.5 rounded transition">
-                                    Terapkan Kode Manual
-                                </button>
-                            </div>
                         </div>
 
                         <div class="grid grid-cols-1 gap-3">
@@ -1077,20 +1013,83 @@
 
     </div>
 
-    <!-- SCRIPT INJEKSI SHAPE MANUAL & PRESET NEON (TANPA MENGGANGGU APP.JS) -->
+    <!-- SCRIPT INJEKSI PRESET BORDER HD & NEON (TANPA MENGGANGGU APP.JS) -->
     <script>
-        window.customShapes = {};
-        
-        // 1. Intercept fetch API untuk memuat shape manual/kustom seolah dari server
+        const PRESETS = {
+            'preset_neon': { 
+                name: '🌟 Border Neon Glowing', 
+                svg: (layer) => `<g>
+                    <path class="glow-path-${layer} has-filter" d="M 76 131 L 436 131 A 20 20 0 0 1 456 151 L 456 361 A 20 20 0 0 1 436 381 L 76 381 A 20 20 0 0 1 56 361 L 56 151 A 20 20 0 0 1 76 131 Z M 76 143 A 8 8 0 0 0 68 151 L 68 361 A 8 8 0 0 0 76 369 L 436 369 A 8 8 0 0 0 444 361 L 444 151 A 8 8 0 0 0 436 143 Z" style="fill: #ff0055; filter: drop-shadow(0 0 15px #ff0055) blur(6px); opacity: 0.7;" />
+                    <path class="glow-path-${layer}" d="M 76 131 L 436 131 A 20 20 0 0 1 456 151 L 456 361 A 20 20 0 0 1 436 381 L 76 381 A 20 20 0 0 1 56 361 L 56 151 A 20 20 0 0 1 76 131 Z M 76 143 A 8 8 0 0 0 68 151 L 68 361 A 8 8 0 0 0 76 369 L 436 369 A 8 8 0 0 0 444 361 L 444 151 A 8 8 0 0 0 436 143 Z" style="fill: #ff0055; opacity: 0.9;" />
+                    <path d="M 76 131 L 436 131 A 20 20 0 0 1 456 151 L 456 361 A 20 20 0 0 1 436 381 L 76 381 A 20 20 0 0 1 56 361 L 56 151 A 20 20 0 0 1 76 131 Z M 76 143 A 8 8 0 0 0 68 151 L 68 361 A 8 8 0 0 0 76 369 L 436 369 A 8 8 0 0 0 444 361 L 444 151 A 8 8 0 0 0 436 143 Z" fill="#ffffff" stroke="none" />
+                    <path d="M 76 137 L 436 137 A 14 14 0 0 1 450 151 L 450 361 A 14 14 0 0 1 436 375 L 76 375 A 14 14 0 0 1 62 361 L 62 151 A 14 14 0 0 1 76 137 Z" style="stroke: #ffffff; stroke-width: 3px; fill: none; opacity: 0.8;" />
+                </g>`
+            },
+            'preset_scifi': { 
+                name: '🤖 Sci-Fi HUD', 
+                svg: () => `<g>
+                    <path d="M 86 111 L 426 111 L 466 151 L 466 361 L 426 401 L 86 401 L 46 361 L 46 151 Z M 96 126 L 56 166 L 56 346 L 96 386 L 416 386 L 456 346 L 456 166 L 416 126 Z" fill="#ffffff" stroke="none" />
+                    <path d="M 120 100 L 200 100 M 312 100 L 392 100 M 120 412 L 200 412 M 312 412 L 392 412" stroke="#ffffff" stroke-width="6" stroke-dasharray="12 6" fill="none" opacity="0.8" />
+                    <rect x="46" y="246" width="6" height="20" fill="#ffffff" opacity="0.5"/>
+                    <rect x="460" y="246" width="6" height="20" fill="#ffffff" opacity="0.5"/>
+                </g>`
+            },
+            'preset_elegant': { 
+                name: '✨ Elegant Classic', 
+                svg: () => `<g>
+                    <path d="M 66 131 L 446 131 L 446 381 L 66 381 Z M 74 139 L 74 373 L 438 373 L 438 139 Z" fill="#ffffff" />
+                    <path d="M 86 151 L 426 151 L 426 361 L 86 361 Z M 88 153 L 88 359 L 424 359 L 424 153 Z" fill="#ffffff" opacity="0.6" />
+                    <circle cx="70" cy="135" r="8" fill="#ffffff" />
+                    <circle cx="442" cy="135" r="8" fill="#ffffff" />
+                    <circle cx="70" cy="377" r="8" fill="#ffffff" />
+                    <circle cx="442" cy="377" r="8" fill="#ffffff" />
+                    <path d="M 120 120 Q 256 140 392 120 M 120 392 Q 256 372 392 392" stroke="#ffffff" stroke-width="2" fill="none" opacity="0.5"/>
+                </g>`
+            },
+            'preset_esport': { 
+                name: '🛡️ Esport Shield', 
+                svg: () => `<g>
+                    <path d="M 46 111 L 256 71 L 466 111 L 446 361 L 256 441 L 66 361 Z M 68 131 L 256 100 L 444 131 L 426 346 L 256 414 L 86 346 Z" fill="#ffffff" />
+                    <path d="M 236 86 L 276 86 L 256 116 Z" fill="#ffffff" opacity="0.8"/>
+                    <path d="M 236 416 L 276 416 L 256 386 Z" fill="#ffffff" opacity="0.8"/>
+                </g>`
+            },
+            'preset_minimalist': { 
+                name: '💠 Minimalist Bracket', 
+                svg: () => `<g>
+                    <path d="M 46 181 L 66 181 L 66 131 L 116 131 L 116 111 L 46 111 Z M 396 111 L 396 131 L 446 131 L 446 181 L 466 181 L 466 111 Z M 466 401 L 466 331 L 446 331 L 446 381 L 396 381 L 396 401 Z M 116 401 L 116 381 L 66 381 L 66 331 L 46 331 L 46 401 Z" fill="#ffffff" />
+                    <circle cx="256" cy="121" r="4" fill="#ffffff" opacity="0.6"/>
+                    <circle cx="256" cy="391" r="4" fill="#ffffff" opacity="0.6"/>
+                    <circle cx="56" cy="256" r="4" fill="#ffffff" opacity="0.6"/>
+                    <circle cx="456" cy="256" r="4" fill="#ffffff" opacity="0.6"/>
+                </g>`
+            },
+            'preset_offset': { 
+                name: '🌌 Double Neon Offset', 
+                svg: (layer) => `<g>
+                    <path class="glow-path-${layer}" d="M 86 141 L 446 141 A 10 10 0 0 1 456 151 L 456 371 A 10 10 0 0 1 446 381 L 86 381 A 10 10 0 0 1 76 371 L 76 151 A 10 10 0 0 1 86 141 Z M 86 149 A 2 2 0 0 0 84 151 L 84 371 A 2 2 0 0 0 86 373 L 446 373 A 2 2 0 0 0 448 371 L 448 151 A 2 2 0 0 0 446 149 Z" style="fill: #ff0055; opacity: 0.6;" />
+                    <path d="M 66 121 L 426 121 A 10 10 0 0 1 436 131 L 436 351 A 10 10 0 0 1 426 361 L 66 361 A 10 10 0 0 1 56 351 L 56 131 A 10 10 0 0 1 66 121 Z M 66 129 A 2 2 0 0 0 64 131 L 64 351 A 2 2 0 0 0 66 353 L 426 353 A 2 2 0 0 0 428 351 L 428 131 A 2 2 0 0 0 426 129 Z" fill="#ffffff" stroke="none" />
+                </g>`
+            }
+        };
+
+        // 1. Intercept fetch API (Supaya 6 Shape Terekstrak Sempurna ke app.js)
         const originalFetch = window.fetch;
         window.fetch = async function(...args) {
             const url = args[0];
-            if (typeof url === 'string' && url.includes('/api/shapes/manual_')) {
-                const match = url.match(/\/api\/shapes\/(manual_[^?]+)/);
-                if (match && match[1]) {
-                    const shapeId = match[1];
-                    if (window.customShapes[shapeId]) {
-                        return new Response(JSON.stringify(window.customShapes[shapeId]), {
+            if (typeof url === 'string' && url.includes('/api/shapes/preset_')) {
+                const match = url.match(/\/api\/shapes\/(preset_[a-z0-9_]+)_(bg|bg2)/);
+                if (match) {
+                    const presetKey = match[1];
+                    const layerId = match[2];
+                    if (PRESETS[presetKey]) {
+                        return new Response(JSON.stringify({
+                            "isLottieCompiled": true,
+                            "viewBox": "0 0 512 512",
+                            "width": 512,
+                            "height": 512,
+                            "svgContent": PRESETS[presetKey].svg(layerId)
+                        }), {
                             status: 200,
                             headers: { 'Content-Type': 'application/json' }
                         });
@@ -1100,121 +1099,58 @@
             return originalFetch.apply(this, args);
         };
 
-        // 2. Sinkronisasi warna utama UI ke Variabel CSS untuk Neon Glow
-        setInterval(() => {
-            const bgBtn = document.getElementById('bg-color-btn');
-            if (bgBtn && bgBtn.style.backgroundColor) {
-                document.documentElement.style.setProperty('--neon-glow-bg', bgBtn.style.backgroundColor);
-            }
-            const bg2Btn = document.getElementById('bg2-color-btn');
-            if (bg2Btn && bg2Btn.style.backgroundColor) {
-                document.documentElement.style.setProperty('--neon-glow-bg2', bg2Btn.style.backgroundColor);
-            }
-        }, 300);
-
-        // 3. Logika Drawer Manual
-        function toggleManualInput(layerId) {
-            const container = document.getElementById(`${layerId}-manual-container`);
-            if (container) container.classList.toggle('hidden');
-        }
-
-        function addManualOptionToSelect(layerId, shapeId, shapeName) {
-            const select = document.getElementById(`${layerId}-shape`);
-            if (!select) return;
+        // 2. Injeksi Pilihan Shape ke Dropdown Secara Otomatis
+        function injectOptions(selectId, layerId) {
+            const select = document.getElementById(selectId);
+            if(!select) return;
             
-            let exists = false;
-            for (let i = 0; i < select.options.length; i++) {
-                if (select.options[i].value === shapeId) exists = true;
-            }
-            
-            if (!exists) {
-                const opt = document.createElement('option');
-                opt.value = shapeId;
-                opt.innerHTML = `🌟 ${shapeName}`;
-                opt.className = 'font-bold text-indigo-700 bg-indigo-50';
-                select.appendChild(opt);
-            }
-            
-            select.value = shapeId;
-            select.dispatchEvent(new Event('change')); // Picu update app.js
-        }
-
-        // 4. Inject Border Neon Preset
-        function loadNeonBorder(layerId) {
-            const shapeId = 'manual_neon_border_' + layerId;
-            const cssVar = layerId === 'bg' ? 'var(--neon-glow-bg, #ff0055)' : 'var(--neon-glow-bg2, #ff0055)';
-            
-            // Path Kotak Berlubang (Hollow Rounded Rectangle)
-            const hollowPath = 'M 76 131 L 436 131 A 20 20 0 0 1 456 151 L 456 361 A 20 20 0 0 1 436 381 L 76 381 A 20 20 0 0 1 56 361 L 56 151 A 20 20 0 0 1 76 131 Z M 76 143 A 8 8 0 0 0 68 151 L 68 361 A 8 8 0 0 0 76 369 L 436 369 A 8 8 0 0 0 444 361 L 444 151 A 8 8 0 0 0 436 143 Z';
-            
-            // Path Garis Tengah untuk Highlight Putih
-            const centerPath = 'M 76 137 L 436 137 A 14 14 0 0 1 450 151 L 450 361 A 14 14 0 0 1 436 375 L 76 375 A 14 14 0 0 1 62 361 L 62 151 A 14 14 0 0 1 76 137 Z';
-            
-            window.customShapes[shapeId] = {
-                "isLottieCompiled": true,
-                "viewBox": "0 0 512 512",
-                "width": 512,
-                "height": 512,
-                "svgContent": `<g>
-                    <!-- Glow Luar (Blur tebal) -->
-                    <path d='${hollowPath}' style='fill: ${cssVar}; filter: drop-shadow(0 0 15px ${cssVar}) blur(6px); opacity: 0.7;' />
-                    <!-- Glow Dalam (Blur tipis) -->
-                    <path d='${hollowPath}' style='fill: ${cssVar}; filter: blur(2px); opacity: 0.9;' />
-                    <!-- Inti Border (Kutip ganda fill="#ffffff" agar ditangkap app.js untuk warna gradient/solid) -->
-                    <path d='${hollowPath}' fill="#ffffff" stroke='none' />
-                    <!-- Highlight Neon (Putih Tipis di tengah tabung) -->
-                    <path d='${centerPath}' style='stroke: #ffffff; stroke-width: 3px; fill: none; opacity: 0.8; filter: blur(0.5px);' />
-                </g>`
+            const ensureOptions = () => {
+                Object.keys(PRESETS).forEach(key => {
+                    const val = `${key}_${layerId}`;
+                    if(!select.querySelector(`option[value="${val}"]`)) {
+                        const opt = document.createElement('option');
+                        opt.value = val;
+                        opt.innerHTML = PRESETS[key].name;
+                        opt.className = 'font-bold text-indigo-700 bg-indigo-50';
+                        select.appendChild(opt);
+                    }
+                });
             };
             
-            addManualOptionToSelect(layerId, shapeId, 'Preset: Border Neon');
-            toggleManualInput(layerId);
-        }
-
-        // 5. Terapkan Input Manual 
-        function applyManualShape(layerId) {
-            const textInput = document.getElementById(`${layerId}-manual-code`).value;
-            if (!textInput.trim()) return alert("Kode tidak boleh kosong!");
+            ensureOptions();
             
-            try {
-                let parsedData;
-                if (textInput.trim().startsWith('<svg') || textInput.trim().startsWith('<g') || textInput.trim().startsWith('<path')) {
-                     parsedData = {
-                         "isLottieCompiled": true,
-                         "viewBox": "0 0 512 512",
-                         "width": 512,
-                         "height": 512,
-                         "svgContent": textInput.trim()
-                     };
-                } else {
-                     parsedData = JSON.parse(textInput);
-                }
-                
-                const shapeId = 'manual_custom_' + Date.now();
-                window.customShapes[shapeId] = parsedData;
-                
-                addManualOptionToSelect(layerId, shapeId, 'Bentuk Manual Kustom');
-                toggleManualInput(layerId);
-            } catch(e) {
-                alert("Format tidak valid! Pastikan berupa JSON yang benar atau kode elemen SVG mentah.");
-            }
+            // Jaga-jaga kalau app.js memuat ulang list selectnya
+            const observer = new MutationObserver(() => {
+                observer.disconnect();
+                ensureOptions();
+                observer.observe(select, { childList: true });
+            });
+            observer.observe(select, { childList: true });
         }
-
-        // 6. Handle File Upload Manual
-        ['bg', 'bg2'].forEach(layerId => {
-            const fileInput = document.getElementById(`${layerId}-manual-file`);
-            if(fileInput) {
-                fileInput.addEventListener('change', (e) => {
-                    const file = e.target.files[0];
-                    if(!file) return;
-                    const reader = new FileReader();
-                    reader.onload = function(evt) {
-                        document.getElementById(`${layerId}-manual-code`).value = evt.target.result;
-                    };
-                    reader.readAsText(file);
-                });
-            }
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            injectOptions('bg-shape', 'bg');
+            injectOptions('bg2-shape', 'bg2');
         });
+
+        // 3. Sistem Dinamis Warna Pengganti "var()" yang 100% AMAN di Lottie
+        setInterval(() => {
+            ['bg', 'bg2'].forEach(layer => {
+                const btn = document.getElementById(`${layer}-color-btn`);
+                if (!btn) return;
+                
+                // Ambil warna real-time dari tombolnya
+                const color = btn.style.backgroundColor || '#ff0055';
+                
+                // Warnai path-path khusus tanpa menyentuh CSS Variable var()
+                document.querySelectorAll(`.glow-path-${layer}`).forEach(el => {
+                    el.style.fill = color;
+                    if(el.classList.contains('has-filter')) {
+                        el.style.filter = `drop-shadow(0 0 15px ${color}) blur(6px)`;
+                    }
+                });
+            });
+        }, 300);
     </script>
     
     <script src="app.js"></script>
