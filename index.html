@@ -193,12 +193,46 @@
                 
                 <div id="bg-controls" class="transition-opacity opacity-50 pointer-events-none">
                     <div id="bg-tab-edit" class="space-y-3">
+                        
+                        <!-- BAGIAN MANUAL & NEON PRESET -->
                         <div>
-                            <label class="block text-[11px] font-bold text-gray-600 mb-1">Bentuk Latar</label>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="block text-[11px] font-bold text-gray-600">Bentuk Latar</label>
+                                <button type="button" onclick="toggleManualInput('bg')" class="text-[10px] bg-indigo-100 hover:bg-indigo-200 text-indigo-700 py-0.5 px-2 rounded font-bold transition flex items-center shadow-sm">
+                                    <i class="fas fa-plus mr-1"></i> Manual / Neon
+                                </button>
+                            </div>
                             <select id="bg-shape" class="w-full border rounded-lg p-2 text-sm outline-blue-500 bg-gray-50 transition-colors">
                                 <option value="" disabled selected>Memuat Bentuk...</option>
                             </select>
+
+                            <div id="bg-manual-container" class="hidden mt-2 p-3 bg-indigo-50 border border-indigo-200 rounded-lg shadow-inner">
+                                <label class="block text-[11px] font-bold text-indigo-800 mb-2">
+                                    <i class="fas fa-magic mr-1"></i> Mode Preset & Manual
+                                </label>
+                                
+                                <button type="button" onclick="loadNeonDragonfly('bg')" class="w-full mb-3 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white text-[11px] font-bold py-2 px-3 rounded-lg shadow-md flex items-center justify-center transition transform active:scale-95">
+                                    <i class="fas fa-bug mr-2 text-sm"></i> Pakai Preset: Capung Neon
+                                </button>
+                                
+                                <div class="flex items-center gap-2 mb-2">
+                                    <div class="h-px bg-indigo-200 flex-1"></div>
+                                    <span class="text-[9px] text-indigo-400 font-bold tracking-wider">ATAU KUSTOM</span>
+                                    <div class="h-px bg-indigo-200 flex-1"></div>
+                                </div>
+
+                                <label class="block text-[10px] font-bold text-gray-600 mb-1">Upload File (.json / .svg):</label>
+                                <input type="file" id="bg-manual-file" accept=".json,.txt,.svg" class="w-full text-[10px] file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer mb-2">
+                                
+                                <label class="block text-[10px] font-bold text-gray-600 mb-1">Paste Kode Mentah:</label>
+                                <textarea id="bg-manual-code" rows="2" class="w-full text-[10px] p-2 border border-blue-300 rounded outline-blue-500 font-mono mb-2" placeholder='<path d="..." /> atau JSON'></textarea>
+                                
+                                <button type="button" onclick="applyManualShape('bg')" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold py-1.5 rounded transition">
+                                    Terapkan Kode Manual
+                                </button>
+                            </div>
                         </div>
+
                         <div class="grid grid-cols-1 gap-3">
                             <div>
                                 <div class="flex justify-between items-center mb-1">
@@ -238,7 +272,7 @@
                             </select>
                             
                             <div id="bg-color-wrapper" class="transition-opacity">
-                                <label class="block text-[11px] font-bold text-gray-800 mb-2">Warna Latar</label>
+                                <label class="block text-[11px] font-bold text-gray-800 mb-2">Warna Latar (Mempengaruhi Neon Glow)</label>
                                 <div class="flex items-center gap-2">
                                     <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="bg-color-btn" onclick="openColorPicker('bg.color', this)"></div>
                                     <div id="bg-color2-container" class="items-center gap-2" style="display:none;">
@@ -277,12 +311,46 @@
                 
                 <div id="bg2-controls" class="transition-opacity opacity-50 pointer-events-none">
                     <div id="bg2-tab-edit" class="space-y-3">
+                        
+                        <!-- BAGIAN MANUAL & NEON PRESET -->
                         <div>
-                            <label class="block text-[11px] font-bold text-gray-600 mb-1">Bentuk Hiasan</label>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="block text-[11px] font-bold text-gray-600">Bentuk Hiasan</label>
+                                <button type="button" onclick="toggleManualInput('bg2')" class="text-[10px] bg-indigo-100 hover:bg-indigo-200 text-indigo-700 py-0.5 px-2 rounded font-bold transition flex items-center shadow-sm">
+                                    <i class="fas fa-plus mr-1"></i> Manual / Neon
+                                </button>
+                            </div>
                             <select id="bg2-shape" class="w-full border rounded-lg p-2 text-sm outline-blue-500 bg-gray-50 transition-colors">
                                 <option value="" disabled selected>Memuat Bentuk...</option>
                             </select>
+
+                            <div id="bg2-manual-container" class="hidden mt-2 p-3 bg-indigo-50 border border-indigo-200 rounded-lg shadow-inner">
+                                <label class="block text-[11px] font-bold text-indigo-800 mb-2">
+                                    <i class="fas fa-magic mr-1"></i> Mode Preset & Manual
+                                </label>
+                                
+                                <button type="button" onclick="loadNeonDragonfly('bg2')" class="w-full mb-3 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white text-[11px] font-bold py-2 px-3 rounded-lg shadow-md flex items-center justify-center transition transform active:scale-95">
+                                    <i class="fas fa-bug mr-2 text-sm"></i> Pakai Preset: Capung Neon
+                                </button>
+                                
+                                <div class="flex items-center gap-2 mb-2">
+                                    <div class="h-px bg-indigo-200 flex-1"></div>
+                                    <span class="text-[9px] text-indigo-400 font-bold tracking-wider">ATAU KUSTOM</span>
+                                    <div class="h-px bg-indigo-200 flex-1"></div>
+                                </div>
+
+                                <label class="block text-[10px] font-bold text-gray-600 mb-1">Upload File (.json / .svg):</label>
+                                <input type="file" id="bg2-manual-file" accept=".json,.txt,.svg" class="w-full text-[10px] file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer mb-2">
+                                
+                                <label class="block text-[10px] font-bold text-gray-600 mb-1">Paste Kode Mentah:</label>
+                                <textarea id="bg2-manual-code" rows="2" class="w-full text-[10px] p-2 border border-blue-300 rounded outline-blue-500 font-mono mb-2" placeholder='<path d="..." /> atau JSON'></textarea>
+                                
+                                <button type="button" onclick="applyManualShape('bg2')" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold py-1.5 rounded transition">
+                                    Terapkan Kode Manual
+                                </button>
+                            </div>
                         </div>
+
                         <div class="grid grid-cols-1 gap-3">
                             <div>
                                 <div class="flex justify-between items-center mb-1">
@@ -322,7 +390,7 @@
                             </select>
                             
                             <div id="bg2-color-wrapper" class="transition-opacity">
-                                <label class="block text-[11px] font-bold text-gray-800 mb-2">Warna Latar</label>
+                                <label class="block text-[11px] font-bold text-gray-800 mb-2">Warna Latar (Mempengaruhi Neon Glow)</label>
                                 <div class="flex items-center gap-2">
                                     <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="bg2-color-btn" onclick="openColorPicker('bg2.color', this)"></div>
                                     <div id="bg2-color2-container" class="items-center gap-2" style="display:none;">
@@ -341,7 +409,7 @@
             </div>
         </div>
 
-        <!-- NEW: BAGIAN UPLOAD GAMBAR STATIS -->
+        <!-- GAMBAR STATIS -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-3 overflow-hidden transition-colors duration-300">
             <button onclick="toggleSection('sec-img1')" class="w-full p-3 flex justify-between items-center bg-gray-50 hover:bg-gray-100 transition">
                 <span class="font-bold text-gray-700 text-sm">3. Gambar Statis (Logo / Foto)</span>
@@ -1009,6 +1077,141 @@
 
     </div>
 
+    <!-- SCRIPT INJEKSI SHAPE MANUAL & PRESET NEON (TANPA MENGGANGGU APP.JS) -->
+    <script>
+        window.customShapes = {};
+        
+        // 1. Intercept fetch API untuk memuat shape manual/kustom seolah dari server
+        const originalFetch = window.fetch;
+        window.fetch = async function(...args) {
+            const url = args[0];
+            if (typeof url === 'string' && url.includes('/api/shapes/manual_')) {
+                const match = url.match(/\/api\/shapes\/(manual_[^?]+)/);
+                if (match && match[1]) {
+                    const shapeId = match[1];
+                    if (window.customShapes[shapeId]) {
+                        return new Response(JSON.stringify(window.customShapes[shapeId]), {
+                            status: 200,
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                    }
+                }
+            }
+            return originalFetch.apply(this, args);
+        };
+
+        // 2. Sinkronisasi warna utama UI ke Variabel CSS untuk Neon Glow
+        setInterval(() => {
+            const bgBtn = document.getElementById('bg-color-btn');
+            if (bgBtn && bgBtn.style.backgroundColor) {
+                document.documentElement.style.setProperty('--neon-glow-bg', bgBtn.style.backgroundColor);
+            }
+            const bg2Btn = document.getElementById('bg2-color-btn');
+            if (bg2Btn && bg2Btn.style.backgroundColor) {
+                document.documentElement.style.setProperty('--neon-glow-bg2', bg2Btn.style.backgroundColor);
+            }
+        }, 300);
+
+        // 3. Logika Drawer Manual
+        function toggleManualInput(layerId) {
+            const container = document.getElementById(`${layerId}-manual-container`);
+            if (container) container.classList.toggle('hidden');
+        }
+
+        function addManualOptionToSelect(layerId, shapeId, shapeName) {
+            const select = document.getElementById(`${layerId}-shape`);
+            if (!select) return;
+            
+            let exists = false;
+            for (let i = 0; i < select.options.length; i++) {
+                if (select.options[i].value === shapeId) exists = true;
+            }
+            
+            if (!exists) {
+                const opt = document.createElement('option');
+                opt.value = shapeId;
+                opt.innerHTML = `🌟 ${shapeName}`;
+                opt.className = 'font-bold text-indigo-700 bg-indigo-50';
+                select.appendChild(opt);
+            }
+            
+            select.value = shapeId;
+            select.dispatchEvent(new Event('change')); // Picu update app.js
+        }
+
+        // 4. Inject Capung Neon Preset
+        function loadNeonDragonfly(layerId) {
+            const shapeId = 'manual_dragonfly_' + layerId;
+            const cssVar = layerId === 'bg' ? 'var(--neon-glow-bg, #00f3ff)' : 'var(--neon-glow-bg2, #00f3ff)';
+            
+            // Path Capung Simetris 
+            const pathData = 'M 256 40 C 265 40 270 50 270 70 C 270 90 262 100 256 120 C 250 100 242 90 242 70 C 242 50 247 40 256 40 Z M 256 130 L 265 140 L 265 190 L 256 200 L 247 190 L 247 140 Z M 256 210 L 262 220 L 256 460 L 250 220 Z M 265 145 C 340 100 460 80 480 100 C 490 110 460 140 360 170 C 310 185 270 170 265 165 Z M 247 145 C 172 100 52 80 32 100 C 22 110 52 140 152 170 C 202 185 242 170 247 165 Z M 265 175 C 330 180 440 210 450 230 C 460 250 420 280 340 250 C 290 230 270 200 265 195 Z M 247 175 C 182 180 72 210 62 230 C 52 250 92 280 172 250 C 222 230 242 200 247 195 Z';
+            
+            window.customShapes[shapeId] = {
+                "isLottieCompiled": true,
+                "viewBox": "0 0 512 512",
+                "width": 512,
+                "height": 512,
+                "svgContent": `<g>
+                    <!-- Trik Kutip Tunggal: Mengamankan Cahaya Neon dari pergantian warna massal di app.js -->
+                    <path style='stroke: ${cssVar}; stroke-width: 18px; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 15px ${cssVar}) blur(3px); opacity: 0.85;' d='${pathData}' fill='none' />
+                    <!-- Highlight kaca di tengah cahaya -->
+                    <path style='stroke: #ffffff; stroke-width: 4px; filter: blur(1px);' d='${pathData}' fill='none' />
+                    <!-- Lapis Inti: Menggunakan kutip ganda fill="...", sehingga ditangkap dan diganti gradien oleh app.js -->
+                    <path d='${pathData}' fill="#ffffff" stroke='none' />
+                </g>`
+            };
+            
+            addManualOptionToSelect(layerId, shapeId, 'Preset: Capung Neon');
+            toggleManualInput(layerId);
+        }
+
+        // 5. Terapkan Input Manual 
+        function applyManualShape(layerId) {
+            const textInput = document.getElementById(`${layerId}-manual-code`).value;
+            if (!textInput.trim()) return alert("Kode tidak boleh kosong!");
+            
+            try {
+                let parsedData;
+                if (textInput.trim().startsWith('<svg') || textInput.trim().startsWith('<g') || textInput.trim().startsWith('<path')) {
+                     parsedData = {
+                         "isLottieCompiled": true,
+                         "viewBox": "0 0 512 512",
+                         "width": 512,
+                         "height": 512,
+                         "svgContent": textInput.trim()
+                     };
+                } else {
+                     parsedData = JSON.parse(textInput);
+                }
+                
+                const shapeId = 'manual_custom_' + Date.now();
+                window.customShapes[shapeId] = parsedData;
+                
+                addManualOptionToSelect(layerId, shapeId, 'Bentuk Manual Kustom');
+                toggleManualInput(layerId);
+            } catch(e) {
+                alert("Format tidak valid! Pastikan berupa JSON yang benar atau kode elemen SVG mentah.");
+            }
+        }
+
+        // 6. Handle File Upload Manual
+        ['bg', 'bg2'].forEach(layerId => {
+            const fileInput = document.getElementById(`${layerId}-manual-file`);
+            if(fileInput) {
+                fileInput.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if(!file) return;
+                    const reader = new FileReader();
+                    reader.onload = function(evt) {
+                        document.getElementById(`${layerId}-manual-code`).value = evt.target.result;
+                    };
+                    reader.readAsText(file);
+                });
+            }
+        });
+    </script>
+    
     <script src="app.js"></script>
 
 </body>
