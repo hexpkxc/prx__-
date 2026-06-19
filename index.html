@@ -211,8 +211,8 @@
                                     <i class="fas fa-magic mr-1"></i> Mode Preset & Manual
                                 </label>
                                 
-                                <button type="button" onclick="loadNeonDragonfly('bg')" class="w-full mb-3 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white text-[11px] font-bold py-2 px-3 rounded-lg shadow-md flex items-center justify-center transition transform active:scale-95">
-                                    <i class="fas fa-bug mr-2 text-sm"></i> Pakai Preset: Capung Neon
+                                <button type="button" onclick="loadNeonBorder('bg')" class="w-full mb-3 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white text-[11px] font-bold py-2 px-3 rounded-lg shadow-md flex items-center justify-center transition transform active:scale-95">
+                                    <i class="fas fa-vector-square mr-2 text-sm"></i> Pakai Preset: Border Neon
                                 </button>
                                 
                                 <div class="flex items-center gap-2 mb-2">
@@ -329,8 +329,8 @@
                                     <i class="fas fa-magic mr-1"></i> Mode Preset & Manual
                                 </label>
                                 
-                                <button type="button" onclick="loadNeonDragonfly('bg2')" class="w-full mb-3 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white text-[11px] font-bold py-2 px-3 rounded-lg shadow-md flex items-center justify-center transition transform active:scale-95">
-                                    <i class="fas fa-bug mr-2 text-sm"></i> Pakai Preset: Capung Neon
+                                <button type="button" onclick="loadNeonBorder('bg2')" class="w-full mb-3 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white text-[11px] font-bold py-2 px-3 rounded-lg shadow-md flex items-center justify-center transition transform active:scale-95">
+                                    <i class="fas fa-vector-square mr-2 text-sm"></i> Pakai Preset: Border Neon
                                 </button>
                                 
                                 <div class="flex items-center gap-2 mb-2">
@@ -1139,13 +1139,16 @@
             select.dispatchEvent(new Event('change')); // Picu update app.js
         }
 
-        // 4. Inject Capung Neon Preset
-        function loadNeonDragonfly(layerId) {
-            const shapeId = 'manual_dragonfly_' + layerId;
-            const cssVar = layerId === 'bg' ? 'var(--neon-glow-bg, #00f3ff)' : 'var(--neon-glow-bg2, #00f3ff)';
+        // 4. Inject Border Neon Preset
+        function loadNeonBorder(layerId) {
+            const shapeId = 'manual_neon_border_' + layerId;
+            const cssVar = layerId === 'bg' ? 'var(--neon-glow-bg, #ff0055)' : 'var(--neon-glow-bg2, #ff0055)';
             
-            // Path Capung Simetris 
-            const pathData = 'M 256 40 C 265 40 270 50 270 70 C 270 90 262 100 256 120 C 250 100 242 90 242 70 C 242 50 247 40 256 40 Z M 256 130 L 265 140 L 265 190 L 256 200 L 247 190 L 247 140 Z M 256 210 L 262 220 L 256 460 L 250 220 Z M 265 145 C 340 100 460 80 480 100 C 490 110 460 140 360 170 C 310 185 270 170 265 165 Z M 247 145 C 172 100 52 80 32 100 C 22 110 52 140 152 170 C 202 185 242 170 247 165 Z M 265 175 C 330 180 440 210 450 230 C 460 250 420 280 340 250 C 290 230 270 200 265 195 Z M 247 175 C 182 180 72 210 62 230 C 52 250 92 280 172 250 C 222 230 242 200 247 195 Z';
+            // Path Kotak Berlubang (Hollow Rounded Rectangle)
+            const hollowPath = 'M 76 131 L 436 131 A 20 20 0 0 1 456 151 L 456 361 A 20 20 0 0 1 436 381 L 76 381 A 20 20 0 0 1 56 361 L 56 151 A 20 20 0 0 1 76 131 Z M 76 143 A 8 8 0 0 0 68 151 L 68 361 A 8 8 0 0 0 76 369 L 436 369 A 8 8 0 0 0 444 361 L 444 151 A 8 8 0 0 0 436 143 Z';
+            
+            // Path Garis Tengah untuk Highlight Putih
+            const centerPath = 'M 76 137 L 436 137 A 14 14 0 0 1 450 151 L 450 361 A 14 14 0 0 1 436 375 L 76 375 A 14 14 0 0 1 62 361 L 62 151 A 14 14 0 0 1 76 137 Z';
             
             window.customShapes[shapeId] = {
                 "isLottieCompiled": true,
@@ -1153,16 +1156,18 @@
                 "width": 512,
                 "height": 512,
                 "svgContent": `<g>
-                    <!-- Trik Kutip Tunggal: Mengamankan Cahaya Neon dari pergantian warna massal di app.js -->
-                    <path style='stroke: ${cssVar}; stroke-width: 18px; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 15px ${cssVar}) blur(3px); opacity: 0.85;' d='${pathData}' fill='none' />
-                    <!-- Highlight kaca di tengah cahaya -->
-                    <path style='stroke: #ffffff; stroke-width: 4px; filter: blur(1px);' d='${pathData}' fill='none' />
-                    <!-- Lapis Inti: Menggunakan kutip ganda fill="...", sehingga ditangkap dan diganti gradien oleh app.js -->
-                    <path d='${pathData}' fill="#ffffff" stroke='none' />
+                    <!-- Glow Luar (Blur tebal) -->
+                    <path d='${hollowPath}' style='fill: ${cssVar}; filter: drop-shadow(0 0 15px ${cssVar}) blur(6px); opacity: 0.7;' />
+                    <!-- Glow Dalam (Blur tipis) -->
+                    <path d='${hollowPath}' style='fill: ${cssVar}; filter: blur(2px); opacity: 0.9;' />
+                    <!-- Inti Border (Kutip ganda fill="#ffffff" agar ditangkap app.js untuk warna gradient/solid) -->
+                    <path d='${hollowPath}' fill="#ffffff" stroke='none' />
+                    <!-- Highlight Neon (Putih Tipis di tengah tabung) -->
+                    <path d='${centerPath}' style='stroke: #ffffff; stroke-width: 3px; fill: none; opacity: 0.8; filter: blur(0.5px);' />
                 </g>`
             };
             
-            addManualOptionToSelect(layerId, shapeId, 'Preset: Capung Neon');
+            addManualOptionToSelect(layerId, shapeId, 'Preset: Border Neon');
             toggleManualInput(layerId);
         }
 
