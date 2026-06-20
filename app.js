@@ -112,10 +112,11 @@ let availableShapes = {};
 let activeFontLayer = null;
 let isFontListRendered = false;
 
+// FIX: Update nilai fillColor default menjadi "#000000" (Hitam)
 let state = {
     layerOrder: ['bg', 'bg2', 'img1', 't4', 't3', 't2', 't1'],
-    bg: { active: true, shape: "", x: -59, y: 31, w: 630, h: 450, colorType: "gradient", color: "#161417", color2: "#0000ff", color3: "#201833", rotate: 0, outlineOnly: false, strokeW: 8, fillActive: false, fillColor: "#ffffff", fillOpacity: 100, cornerStyle: "round" },
-    bg2: { active: false, mergeToBg1: false, shape: "", x: 156, y: 50, w: 200, h: 200, colorType: "original", color: "#FFD700", color2: "#FFA500", color3: "#FF4500", rotate: 0, outlineOnly: false, strokeW: 8, fillActive: false, fillColor: "#ffffff", fillOpacity: 100, cornerStyle: "round" },
+    bg: { active: true, shape: "", x: -59, y: 31, w: 630, h: 450, colorType: "gradient", color: "#161417", color2: "#0000ff", color3: "#201833", rotate: 0, outlineOnly: false, strokeW: 8, fillActive: false, fillColor: "#000000", fillOpacity: 100, cornerStyle: "round" },
+    bg2: { active: false, mergeToBg1: false, shape: "", x: 156, y: 50, w: 200, h: 200, colorType: "original", color: "#FFD700", color2: "#FFA500", color3: "#FF4500", rotate: 0, outlineOnly: false, strokeW: 8, fillActive: false, fillColor: "#000000", fillOpacity: 100, cornerStyle: "round" },
     img1: { active: false, dataUrl: "", x: 156, y: 156, w: 200, h: 200, rotate: 0, opacity: 100 },
     t1: { active: true, text: "HEX", font: "Luckiest Guy", size: 231, w: 250, h: 80, spacing: 0, x: 256, y: 280, curve: 0, depth3d: 30, angle3d: 45, color3d: "#1f2937", fillType: "gradient", fill: "#6b3200", fill2: "#ff1b00", fill3: "#692800", stroke: "#000000", strokeW: 8, fillNone: false, strokeNone: false, rotate: 0, effect: "shadow" },
     t2: { active: false, mergeToT1: false, text: "TERBATAS!", font: "Luckiest Guy", size: 60, w: 200, h: 60, spacing: 0, x: 256, y: 340, curve: 0, depth3d: 20, angle3d: 45, color3d: "#1f2937", fillType: "solid", fill: "#FFEB3B", fill2: "#FF8800", fill3: "#FF0000", stroke: "#000000", strokeW: 4, fillNone: false, strokeNone: false, rotate: 0, effect: "none" },
@@ -1117,7 +1118,6 @@ function openColorPicker(statePath, element) {
     activeColorBtnElement = element;
     const path = statePath.split('.'); 
     
-    // FIX: Gunakan #000000 (hitam) jika warna tidak ditemukan/undefined
     const hexColor = state[path[0]][path[1]] || "#000000";
     
     try {
@@ -1334,7 +1334,7 @@ function getBgShape(bg, fillAttr) {
 
     // Aktifkan inner fill saat mode Outline/Border jika fitur centang dihidupkan
     if (outlineOnly && fillActive) {
-        finalFill = fillColor || "#ffffff";
+        finalFill = fillColor || "#000000";
         finalFillOpacity = (fillOpacity !== undefined ? fillOpacity : 100) / 100;
     }
     
@@ -1836,6 +1836,8 @@ function setupEventListeners() {
         
         bindInput(`${id}-fillActive`, `${id}.fillActive`);
         bindInput(`${id}-fillOpacity`, `${id}.fillOpacity`, true);
+        
+        // FIX: Binding untuk Corner Style agar mendengarkan perubahan
         bindInput(`${id}-cornerStyle`, `${id}.cornerStyle`);
         
         const fillActiveCb = document.getElementById(`${id}-fillActive`);
@@ -2009,8 +2011,9 @@ function updateUIFromState() {
             }
         }
         if(document.getElementById(`${id}-fillColor-btn`)) {
-            document.getElementById(`${id}-fillColor-btn`).style.backgroundColor = state[id].fillColor || '#ffffff';
+            document.getElementById(`${id}-fillColor-btn`).style.backgroundColor = state[id].fillColor || '#000000';
         }
+        // FIX: Sinkronisasi Corner Style agar UI mencerminkan state yang benar
         if(document.getElementById(`${id}-cornerStyle`)) {
             document.getElementById(`${id}-cornerStyle`).value = state[id].cornerStyle || 'round';
         }
