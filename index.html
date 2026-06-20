@@ -1072,56 +1072,40 @@
 
     </div>
 
-    <!-- SCRIPT INJEKSI 6 PRESET NEON HD AMAN DARI BUG (TANPA MENGGANGGU APP.JS) -->
+    <!-- SCRIPT PRESET SHAPE MURNI (1 GARIS) -->
     <script>
         const PRESETS = {
             'preset_neon_default': { 
-                name: '🌟 Neon Default', 
-                svg: (layer) => `<g>
-                    <path class="glow-path-${layer} has-filter" d="M 64 131 L 448 131 A 16 16 0 0 1 464 147 L 464 365 A 16 16 0 0 1 448 381 L 64 381 A 16 16 0 0 1 48 365 L 48 147 A 16 16 0 0 1 64 131 Z M 64 143 A 4 4 0 0 0 60 147 L 60 365 A 4 4 0 0 0 64 369 L 448 369 A 4 4 0 0 0 452 365 L 452 147 A 4 4 0 0 0 448 143 Z" style="fill: #ff0055; filter: drop-shadow(0 0 15px #ff0055) blur(6px); opacity: 0.7;" />
-                    <path class="glow-path-${layer}" d="M 64 131 L 448 131 A 16 16 0 0 1 464 147 L 464 365 A 16 16 0 0 1 448 381 L 64 381 A 16 16 0 0 1 48 365 L 48 147 A 16 16 0 0 1 64 131 Z M 64 143 A 4 4 0 0 0 60 147 L 60 365 A 4 4 0 0 0 64 369 L 448 369 A 4 4 0 0 0 452 365 L 452 147 A 4 4 0 0 0 448 143 Z" style="fill: #ff0055; opacity: 0.9;" />
-                    <path d="M 64 131 L 448 131 A 16 16 0 0 1 464 147 L 464 365 A 16 16 0 0 1 448 381 L 64 381 A 16 16 0 0 1 48 365 L 48 147 A 16 16 0 0 1 64 131 Z M 64 143 A 4 4 0 0 0 60 147 L 60 365 A 4 4 0 0 0 64 369 L 448 369 A 4 4 0 0 0 452 365 L 452 147 A 4 4 0 0 0 448 143 Z" fill="#ffffff" stroke="none" />
-                </g>`
+                name: '🌟 Kotak Standar (Box)', 
+                svg: (layer) => `<g><path d="M 48 131 L 464 131 L 464 381 L 48 381 Z" fill="#ffffff" stroke="none" /></g>`
             },
             'preset_neon_cyber': { 
-                name: '🤖 Neon Cyber Edge', 
-                svg: (layer) => `<g>
-                    <path class="glow-path-${layer} has-filter" d="M 116 131 L 396 131 L 466 201 L 466 311 L 396 381 L 116 381 L 46 311 L 46 201 Z M 121 143 L 58 206 L 58 306 L 121 369 L 391 369 L 454 306 L 454 206 L 391 143 Z" style="fill: #ff0055; filter: drop-shadow(0 0 15px #ff0055) blur(6px); opacity: 0.7;" />
-                    <path class="glow-path-${layer}" d="M 116 131 L 396 131 L 466 201 L 466 311 L 396 381 L 116 381 L 46 311 L 46 201 Z M 121 143 L 58 206 L 58 306 L 121 369 L 391 369 L 454 306 L 454 206 L 391 143 Z" style="fill: #ff0055; opacity: 0.9;" />
-                    <path d="M 116 131 L 396 131 L 466 201 L 466 311 L 396 381 L 116 381 L 46 311 L 46 201 Z M 121 143 L 58 206 L 58 306 L 121 369 L 391 369 L 454 306 L 454 206 L 391 143 Z" fill="#ffffff" stroke="none" />
-                </g>`
+                name: '🤖 Cyber Edge', 
+                svg: (layer) => `<g><path d="M 116 131 L 396 131 L 466 201 L 466 311 L 396 381 L 116 381 L 46 311 L 46 201 Z" fill="#ffffff" stroke="none" /></g>`
             },
             'preset_neon_capsule': { 
-                name: '💊 Neon Capsule', 
-                svg: (layer) => `<g>
-                    <path class="glow-path-${layer} has-filter" d="M 176 131 L 336 131 A 125 125 0 0 1 336 381 L 176 381 A 125 125 0 0 1 176 131 Z M 176 143 A 113 113 0 0 0 176 369 L 336 369 A 113 113 0 0 0 336 143 Z" style="fill: #ff0055; filter: drop-shadow(0 0 15px #ff0055) blur(6px); opacity: 0.7;" />
-                    <path class="glow-path-${layer}" d="M 176 131 L 336 131 A 125 125 0 0 1 336 381 L 176 381 A 125 125 0 0 1 176 131 Z M 176 143 A 113 113 0 0 0 176 369 L 336 369 A 113 113 0 0 0 336 143 Z" style="fill: #ff0055; opacity: 0.9;" />
-                    <path d="M 176 131 L 336 131 A 125 125 0 0 1 336 381 L 176 381 A 125 125 0 0 1 176 131 Z M 176 143 A 113 113 0 0 0 176 369 L 336 369 A 113 113 0 0 0 336 143 Z" fill="#ffffff" stroke="none" />
-                </g>`
+                name: '💊 Bentuk Kapsul', 
+                svg: (layer) => `<g><path d="M 176 131 L 336 131 A 125 125 0 0 1 336 381 L 176 381 A 125 125 0 0 1 176 131 Z" fill="#ffffff" stroke="none" /></g>`
             },
             'preset_neon_twin': { 
-                name: '🪟 Neon Twin Lines', 
+                name: '🪟 Garis Ganda (Twin)', 
                 svg: (layer) => `<g>
-                    <path class="glow-path-${layer} has-filter" d="M 64 131 L 448 131 A 16 16 0 0 1 464 147 L 464 365 A 16 16 0 0 1 448 381 L 64 381 A 16 16 0 0 1 48 365 L 48 147 A 16 16 0 0 1 64 131 Z M 64 137 A 10 10 0 0 0 54 147 L 54 365 A 10 10 0 0 0 64 375 L 448 375 A 10 10 0 0 0 458 365 L 458 147 A 10 10 0 0 0 448 137 Z M 76 151 L 436 151 A 8 8 0 0 1 444 159 L 444 353 A 8 8 0 0 1 436 361 L 76 361 A 8 8 0 0 1 68 353 L 68 159 A 8 8 0 0 1 76 151 Z M 76 155 A 4 4 0 0 0 72 159 L 72 353 A 4 4 0 0 0 76 357 L 436 357 A 4 4 0 0 0 440 353 L 440 159 A 4 4 0 0 0 436 155 Z" style="fill: #ff0055; filter: drop-shadow(0 0 15px #ff0055) blur(6px); opacity: 0.7;" />
-                    <path class="glow-path-${layer}" d="M 64 131 L 448 131 A 16 16 0 0 1 464 147 L 464 365 A 16 16 0 0 1 448 381 L 64 381 A 16 16 0 0 1 48 365 L 48 147 A 16 16 0 0 1 64 131 Z M 64 137 A 10 10 0 0 0 54 147 L 54 365 A 10 10 0 0 0 64 375 L 448 375 A 10 10 0 0 0 458 365 L 458 147 A 10 10 0 0 0 448 137 Z M 76 151 L 436 151 A 8 8 0 0 1 444 159 L 444 353 A 8 8 0 0 1 436 361 L 76 361 A 8 8 0 0 1 68 353 L 68 159 A 8 8 0 0 1 76 151 Z M 76 155 A 4 4 0 0 0 72 159 L 72 353 A 4 4 0 0 0 76 357 L 436 357 A 4 4 0 0 0 440 353 L 440 159 A 4 4 0 0 0 436 155 Z" style="fill: #ff0055; opacity: 0.9;" />
-                    <path d="M 64 131 L 448 131 A 16 16 0 0 1 464 147 L 464 365 A 16 16 0 0 1 448 381 L 64 381 A 16 16 0 0 1 48 365 L 48 147 A 16 16 0 0 1 64 131 Z M 64 137 A 10 10 0 0 0 54 147 L 54 365 A 10 10 0 0 0 64 375 L 448 375 A 10 10 0 0 0 458 365 L 458 147 A 10 10 0 0 0 448 137 Z M 76 151 L 436 151 A 8 8 0 0 1 444 159 L 444 353 A 8 8 0 0 1 436 361 L 76 361 A 8 8 0 0 1 68 353 L 68 159 A 8 8 0 0 1 76 151 Z M 76 155 A 4 4 0 0 0 72 159 L 72 353 A 4 4 0 0 0 76 357 L 436 357 A 4 4 0 0 0 440 353 L 440 159 A 4 4 0 0 0 436 155 Z" fill="#ffffff" stroke="none" />
+                    <path d="M 48 131 L 464 131 L 464 381 L 48 381 Z" fill="#ffffff" stroke="none" />
+                    <path d="M 68 151 L 444 151 L 444 361 L 68 361 Z" fill="#ffffff" stroke="none" />
                 </g>`
             },
             'preset_neon_focus': { 
-                name: '💠 Neon Focus Bracket', 
+                name: '💠 Kurung Fokus', 
                 svg: (layer) => `<g>
-                    <path class="glow-path-${layer} has-filter" d="M 116 131 L 64 131 A 16 16 0 0 0 48 147 L 48 191 L 60 191 L 60 147 A 4 4 0 0 1 64 143 L 116 143 Z M 396 131 L 448 131 A 16 16 0 0 1 464 147 L 464 191 L 452 191 L 452 147 A 4 4 0 0 0 448 143 L 396 143 Z M 464 321 L 464 365 A 16 16 0 0 1 448 381 L 396 381 L 396 369 L 448 369 A 4 4 0 0 0 452 365 L 452 321 Z M 48 321 L 48 365 A 16 16 0 0 0 64 381 L 116 381 L 116 369 L 64 369 A 4 4 0 0 1 60 365 L 60 321 Z" style="fill: #ff0055; filter: drop-shadow(0 0 15px #ff0055) blur(6px); opacity: 0.7;" />
-                    <path class="glow-path-${layer}" d="M 116 131 L 64 131 A 16 16 0 0 0 48 147 L 48 191 L 60 191 L 60 147 A 4 4 0 0 1 64 143 L 116 143 Z M 396 131 L 448 131 A 16 16 0 0 1 464 147 L 464 191 L 452 191 L 452 147 A 4 4 0 0 0 448 143 L 396 143 Z M 464 321 L 464 365 A 16 16 0 0 1 448 381 L 396 381 L 396 369 L 448 369 A 4 4 0 0 0 452 365 L 452 321 Z M 48 321 L 48 365 A 16 16 0 0 0 64 381 L 116 381 L 116 369 L 64 369 A 4 4 0 0 1 60 365 L 60 321 Z" style="fill: #ff0055; opacity: 0.9;" />
-                    <path d="M 116 131 L 64 131 A 16 16 0 0 0 48 147 L 48 191 L 60 191 L 60 147 A 4 4 0 0 1 64 143 L 116 143 Z M 396 131 L 448 131 A 16 16 0 0 1 464 147 L 464 191 L 452 191 L 452 147 A 4 4 0 0 0 448 143 L 396 143 Z M 464 321 L 464 365 A 16 16 0 0 1 448 381 L 396 381 L 396 369 L 448 369 A 4 4 0 0 0 452 365 L 452 321 Z M 48 321 L 48 365 A 16 16 0 0 0 64 381 L 116 381 L 116 369 L 64 369 A 4 4 0 0 1 60 365 L 60 321 Z" fill="#ffffff" stroke="none" />
+                    <path d="M 116 131 L 48 131 L 48 191" fill="none" stroke="#ffffff" />
+                    <path d="M 396 131 L 464 131 L 464 191" fill="none" stroke="#ffffff" />
+                    <path d="M 464 321 L 464 381 L 396 381" fill="none" stroke="#ffffff" />
+                    <path d="M 48 321 L 48 381 L 116 381" fill="none" stroke="#ffffff" />
                 </g>`
             },
             'preset_neon_retro': { 
-                name: '🎟️ Neon Retro Ticket', 
-                svg: (layer) => `<g>
-                    <path class="glow-path-${layer} has-filter" d="M 48 155 A 24 24 0 0 0 72 131 L 440 131 A 24 24 0 0 0 464 155 L 464 357 A 24 24 0 0 0 440 381 L 72 381 A 24 24 0 0 0 48 357 Z M 58 155 L 58 357 A 34 34 0 0 1 72 371 L 440 371 A 34 34 0 0 1 454 357 L 454 155 A 34 34 0 0 1 440 141 L 72 141 A 34 34 0 0 1 58 155 Z" style="fill: #ff0055; filter: drop-shadow(0 0 15px #ff0055) blur(6px); opacity: 0.7;" />
-                    <path class="glow-path-${layer}" d="M 48 155 A 24 24 0 0 0 72 131 L 440 131 A 24 24 0 0 0 464 155 L 464 357 A 24 24 0 0 0 440 381 L 72 381 A 24 24 0 0 0 48 357 Z M 58 155 L 58 357 A 34 34 0 0 1 72 371 L 440 371 A 34 34 0 0 1 454 357 L 454 155 A 34 34 0 0 1 440 141 L 72 141 A 34 34 0 0 1 58 155 Z" style="fill: #ff0055; opacity: 0.9;" />
-                    <path d="M 48 155 A 24 24 0 0 0 72 131 L 440 131 A 24 24 0 0 0 464 155 L 464 357 A 24 24 0 0 0 440 381 L 72 381 A 24 24 0 0 0 48 357 Z M 58 155 L 58 357 A 34 34 0 0 1 72 371 L 440 371 A 34 34 0 0 1 454 357 L 454 155 A 34 34 0 0 1 440 141 L 72 141 A 34 34 0 0 1 58 155 Z" fill="#ffffff" stroke="none" />
-                </g>`
+                name: '🎟️ Tiket Retro', 
+                svg: (layer) => `<g><path d="M 48 155 A 24 24 0 0 0 72 131 L 440 131 A 24 24 0 0 0 464 155 L 464 357 A 24 24 0 0 0 440 381 L 72 381 A 24 24 0 0 0 48 357 Z" fill="#ffffff" stroke="none" /></g>`
             }
         };
 
@@ -1184,40 +1168,13 @@
             injectOptions('bg-shape', 'bg');
             injectOptions('bg2-shape', 'bg2');
         });
-
-        // 3. Konversi RGB ke HEX & Sistem Injeksi Warna AMAN Lottie
-        function rgbToHex(rgbStr) {
-            const match = rgbStr.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
-            if (!match) return rgbStr; 
-            const r = parseInt(match[1]).toString(16).padStart(2, '0');
-            const g = parseInt(match[2]).toString(16).padStart(2, '0');
-            const b = parseInt(match[3]).toString(16).padStart(2, '0');
-            return `#${r}${g}${b}`;
-        }
-
-        setInterval(() => {
-            ['bg', 'bg2'].forEach(layer => {
-                const btn = document.getElementById(`${layer}-color-btn`);
-                if (!btn) return;
-                
-                // Ambil warna real-time dan konversi jadi Hex murni (#xxxxxx)
-                let color = btn.style.backgroundColor;
-                if (color) {
-                    color = rgbToHex(color);
-                    
-                    // Warnai path-path khusus tanpa menyentuh CSS Variable var()
-                    document.querySelectorAll(`.glow-path-${layer}`).forEach(el => {
-                        el.style.fill = color;
-                        if(el.classList.contains('has-filter')) {
-                            el.style.filter = `drop-shadow(0 0 15px ${color}) blur(6px)`;
-                        }
-                    });
-                }
-            });
-        }, 300);
+        
+        // Catatan: Script interval pewarnaan yang kacau telah dihapus.
+        // App.js sekarang mengambil kendali pewarnaan sepenuhnya!
     </script>
     
     <script src="app.js"></script>
 
 </body>
 </html>
+

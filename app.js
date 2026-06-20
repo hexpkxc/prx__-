@@ -1312,10 +1312,10 @@ function getBgShape(bg, fillAttr) {
     const isOrig = colorType === 'original';
     const strokeJoin = cornerStyle || 'round';
 
-    let finalFill = outlineOnly ? 'transparent' : fillAttr;
+    let finalFill = outlineOnly ? 'none' : fillAttr;
     let finalFillOpacity = 1;
     const finalStroke = outlineOnly ? fillAttr : 'none';
-    const finalStrokeW = outlineOnly ? (parseInt(strokeW) || 0) : (parseInt(strokeW) || 0);
+    const finalStrokeW = outlineOnly ? (parseInt(strokeW) || 0) : 0; // Jika tidak outline, maka tidak ada border.
 
     // Aktifkan inner fill saat mode Outline/Border jika fitur centang dihidupkan
     if (outlineOnly && fillActive) {
@@ -1342,41 +1342,40 @@ function getBgShape(bg, fillAttr) {
         
         let content = cShape.svgContent;
         
-        // Terapkan pengaturan sudut (stroke-linejoin) secara paksa dengan aman 
+        // Membersihkan gaya yang dibawa oleh bentuk mentah (apabila ada)
         content = content.replace(/stroke-linejoin="[^"]*"/gi, '');
-        content = content.replace(/<path /gi, `<path stroke-linejoin="${strokeJoin}" `);
-        
         if (!isOrig) {
-            content = content.replace(/fill="([^"]+)"/gi, (match, p1) => {
-                if (p1.toLowerCase() === 'none' && !outlineOnly) return match; 
-                let res = `fill="${finalFill}"`;
-                if (finalFillOpacity !== 1) res += ` fill-opacity="${finalFillOpacity}"`;
-                return res;
-            });
-            
-            if (outlineOnly) {
-                content = content.replace(/stroke="[^"]*"/gi, '');
-                content = content.replace(/stroke-width="[^"]*"/gi, '');
-                content = content.replace(/<path /gi, `<path stroke="${finalStroke}" stroke-width="${finalStrokeW}" `);
-            } else {
-                content = content.replace(/stroke="([^"]+)"/gi, (match, p1) => {
-                    if (p1.toLowerCase() === 'none' || p1.toLowerCase() === 'transparent') return match;
-                    return `stroke="${finalStroke}"`;
-                });
-            }
-        } else if (outlineOnly && fillActive) {
-            // Memastikan transparansi isi jika mode asli dengan kombinasi fill kustom tetap bekerja sedikit lebih baik
-            content = content.replace(/fill="([^"]+)"/gi, (match, p1) => {
-                if (p1.toLowerCase() === 'none' || p1.toLowerCase() === 'transparent') return match;
-                return `fill="${finalFill}" fill-opacity="${finalFillOpacity}"`;
-            });
+            content = content.replace(/fill="[^"]*"/gi, '');
+            content = content.replace(/stroke="[^"]*"/gi, '');
+            content = content.replace(/stroke-width="[^"]*"/gi, '');
+        }
+
+        let glowLayer = '';
+        // Jika mode outline (Hanya Garis Luar) dan bukan warna asli, kita buat lapisan Neon Blur di bawahnya
+        if (outlineOnly && !isOrig) {
+            glowLayer = content.replace(/<path /gi, `<path fill="none" stroke="${finalStroke}" stroke-width="${finalStrokeW}" stroke-linejoin="${strokeJoin}" filter="url(#neon-glow)" opacity="0.6" vector-effect="non-scaling-stroke" `);
         }
         
+        let injectStr = `stroke-linejoin="${strokeJoin}"`;
+        if (!isOrig) {
+            // Suntikkan gaya fill dan stroke murni
+            injectStr += ` fill="${finalFill}"`;
+            if (finalFillOpacity !== 1) injectStr += ` fill-opacity="${finalFillOpacity}"`;
+            injectStr += ` stroke="${finalStroke}" stroke-width="${finalStrokeW}" vector-effect="non-scaling-stroke"`;
+        } else if (outlineOnly && fillActive) {
+            // Jika mode original tapi user ingin isi fill juga
+            injectStr += ` fill="${finalFill}" fill-opacity="${finalFillOpacity}"`;
+        }
+        
+        let mainLayer = content.replace(/<path /gi, `<path ${injectStr} `);
+        
         return `<g transform="translate(${x}, ${y}) scale(${sx}, ${sy})">
-            ${content}
+            ${glowLayer}
+            ${mainLayer}
         </g>`;
     }
 
+    // --- BAGIAN UNTUK BENTUK MANUAL (LOTTIE EXTERNAL) ---
     let origW = 512;
     let origH = 512;
     
@@ -1402,13 +1401,10 @@ function getBgShape(bg, fillAttr) {
     
     function extractAllPaths(obj) {
         let foundPaths = [];
-        
         if (typeof obj === 'string') {
             if (/^[Mm]\s*[-.\d]/.test(obj.trim())) foundPaths.push(obj.trim());
         } else if (Array.isArray(obj)) {
-            obj.forEach(item => {
-                foundPaths = foundPaths.concat(extractAllPaths(item));
-            });
+            obj.forEach(item => { foundPaths = foundPaths.concat(extractAllPaths(item)); });
         } else if (obj !== null && typeof obj === 'object') {
             if (obj.v && Array.isArray(obj.v) && obj.i && Array.isArray(obj.i) && obj.o && Array.isArray(obj.o)) {
                 hasLottiePaths = true;
@@ -1418,41 +1414,27 @@ function getBgShape(bg, fillAttr) {
                     let ix = vx + obj.i[j][0], iy = vy + obj.i[j][1];
                     let ox = vx + obj.o[j][0], oy = vy + obj.o[j][1];
 
-                    gMinX = Math.min(gMinX, vx, ix, ox);
-                    gMinY = Math.min(gMinY, vy, iy, oy);
-                    gMaxX = Math.max(gMaxX, vx, ix, ox);
-                    gMaxY = Math.max(gMaxY, vy, iy, oy);
+                    gMinX = Math.min(gMinX, vx, ix, ox); gMinY = Math.min(gMinY, vy, iy, oy);
+                    gMaxX = Math.max(gMaxX, vx, ix, ox); gMaxY = Math.max(gMaxY, vy, iy, oy);
 
-                    if (j === 0) {
-                        dStr += `M ${vx} ${vy} `;
-                    } else {
+                    if (j === 0) { dStr += `M ${vx} ${vy} `; } else {
                         let prev = j - 1;
-                        let cp1x = obj.v[prev][0] + obj.o[prev][0];
-                        let cp1y = obj.v[prev][1] + obj.o[prev][1];
-                        let cp2x = vx + obj.i[j][0];
-                        let cp2y = vy + obj.i[j][1];
+                        let cp1x = obj.v[prev][0] + obj.o[prev][0]; let cp1y = obj.v[prev][1] + obj.o[prev][1];
+                        let cp2x = vx + obj.i[j][0]; let cp2y = vy + obj.i[j][1];
                         dStr += `C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${vx} ${vy} `;
                     }
                 }
                 if (obj.c && obj.v.length > 0) {
                     let prev = obj.v.length - 1;
-                    let cp1x = obj.v[prev][0] + obj.o[prev][0];
-                    let cp1y = obj.v[prev][1] + obj.o[prev][1];
-                    let cp2x = obj.v[0][0] + obj.i[0][0];
-                    let cp2y = obj.v[0][1] + obj.i[0][1];
+                    let cp1x = obj.v[prev][0] + obj.o[prev][0]; let cp1y = obj.v[prev][1] + obj.o[prev][1];
+                    let cp2x = obj.v[0][0] + obj.i[0][0]; let cp2y = obj.v[0][1] + obj.i[0][1];
                     dStr += `C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${obj.v[0][0]} ${obj.v[0][1]} Z`;
                 }
                 if (dStr.trim() !== "") foundPaths.push(dStr.trim());
             } 
-            else if (obj.d && typeof obj.d === 'string' && /^[Mm]/.test(obj.d.trim())) {
-                foundPaths.push(obj.d.trim());
-            } else if (obj.path && typeof obj.path === 'string' && /^[Mm]/.test(obj.path.trim())) {
-                foundPaths.push(obj.path.trim());
-            } else {
-                for (let key in obj) {
-                    foundPaths = foundPaths.concat(extractAllPaths(obj[key]));
-                }
-            }
+            else if (obj.d && typeof obj.d === 'string' && /^[Mm]/.test(obj.d.trim())) { foundPaths.push(obj.d.trim()); } 
+            else if (obj.path && typeof obj.path === 'string' && /^[Mm]/.test(obj.path.trim())) { foundPaths.push(obj.path.trim()); } 
+            else { for (let key in obj) { foundPaths = foundPaths.concat(extractAllPaths(obj[key])); } }
         }
         return foundPaths;
     }
@@ -1462,18 +1444,13 @@ function getBgShape(bg, fillAttr) {
     
     let lottieTransform = "";
     if (hasLottiePaths && gMinX !== Infinity) {
-        let rawW = gMaxX - gMinX;
-        let rawH = gMaxY - gMinY;
-        if (rawW === 0) rawW = 1;
-        if (rawH === 0) rawH = 1;
+        let rawW = gMaxX - gMinX; let rawH = gMaxY - gMinY;
+        if (rawW === 0) rawW = 1; if (rawH === 0) rawH = 1;
 
         let scaleFit = Math.min(origW / rawW, origH / rawH) * 0.95;
-        let rawCx = gMinX + rawW / 2;
-        let rawCy = gMinY + rawH / 2;
-        let targetCx = origW / 2;
-        let targetCy = origH / 2;
-        let tx = targetCx - (rawCx * scaleFit);
-        let ty = targetCy - (rawCy * scaleFit);
+        let rawCx = gMinX + rawW / 2; let rawCy = gMinY + rawH / 2;
+        let targetCx = origW / 2; let targetCy = origH / 2;
+        let tx = targetCx - (rawCx * scaleFit); let ty = targetCy - (rawCy * scaleFit);
 
         lottieTransform = `transform="translate(${tx}, ${ty}) scale(${scaleFit})"`;
     }
@@ -1481,6 +1458,10 @@ function getBgShape(bg, fillAttr) {
     if (pathsToRender.length > 0) {
         subPaths += `<g ${lottieTransform}>`;
         pathsToRender.forEach(pD => {
+            // Efek Neon otomatis untuk Lottie external yang dijadikan outline
+            if (outlineOnly) {
+                subPaths += `<path d="${pD}" fill="none" stroke="${finalStroke}" stroke-width="${finalStrokeW}" stroke-linejoin="${strokeJoin}" filter="url(#neon-glow)" opacity="0.6" vector-effect="non-scaling-stroke" />`;
+            }
             subPaths += `<path d="${pD}" fill="${finalFill}" fill-opacity="${finalFillOpacity}" stroke="${finalStroke}" stroke-width="${finalStrokeW}" stroke-linejoin="${strokeJoin}" vector-effect="non-scaling-stroke" />`;
         });
         subPaths += `</g>`;
