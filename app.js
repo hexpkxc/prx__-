@@ -25,2289 +25,1081 @@ try { tg = window.Telegram.WebApp; tg.expand(); } catch (e) { console.warn("Tele
                 blocker.classList.add('flex');
                 blocker.innerHTML = `
                     <i class="fas fa-shield-alt text-6xl text-red-500 mb-6 drop-shadow-lg"></i>
-                    <h1 class="text-3xl font-bold text-white mb-3">Akses Ditolak</h1>
-                    <p class="text-gray-300 text-sm leading-relaxed max-w-xs mx-auto">
-                        Editor ini dilindungi. Akses hanya diizinkan melalui aplikasi <b>Telegram resmi di Handphone</b> dan dari server yang sah.
-                    </p>
+                    <h1 class="text-3xl font-bold text-white mb-2">Akses Ditolak</h1>
+                    <p class="text-gray-300 text-center mb-6">Aplikasi ini hanya dapat diakses melalui<br>Aplikasi Telegram Mobile (Android/iOS).</p>
+                    <button onclick="tg.close()" class="px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-full shadow-lg transition-colors">Tutup WebApp</button>
                 `;
             }
-            const allAppElements = document.querySelectorAll('.app-content');
-            allAppElements.forEach(el => el.style.display = 'none');
         });
-        throw new Error("Akses diblokir oleh sistem keamanan.");
+        throw new Error("Akses tidak sah.");
     }
 })();
 
-const _apiPart1 = "https://unreal-deceptive";
-const _apiPart2 = "-finished.ngrok-free.dev";
-const NGROK_API_URL = _apiPart1 + _apiPart2 + "/api/upload";
+const urlParams = new URLSearchParams(window.location.search);
+const animId = urlParams.get('anim');
+const isAutoText = urlParams.get('auto_text') === '1';
 
-const FONT_LIST = {
-    "Luckiest Guy": "https://cdn.jsdelivr.net/npm/@fontsource/luckiest-guy/files/luckiest-guy-latin-400-normal.woff",
-    "Creepster": "https://cdn.jsdelivr.net/npm/@fontsource/creepster/files/creepster-latin-400-normal.woff",
-    "Sigmar One": "https://cdn.jsdelivr.net/npm/@fontsource/sigmar-one/files/sigmar-one-latin-400-normal.woff",
-    "Fredoka One": "https://cdn.jsdelivr.net/npm/@fontsource/fredoka-one/files/fredoka-one-latin-400-normal.woff",
-    "Carter One": "https://cdn.jsdelivr.net/npm/@fontsource/carter-one/files/carter-one-latin-400-normal.woff",
-    "Chewy": "https://cdn.jsdelivr.net/npm/@fontsource/chewy/files/chewy-latin-400-normal.woff",
-    "Black Ops One": "https://cdn.jsdelivr.net/npm/@fontsource/black-ops-one/files/black-ops-one-latin-400-normal.woff",
-    "Righteous": "https://cdn.jsdelivr.net/npm/@fontsource/righteous/files/righteous-latin-400-normal.woff",
-    "Shrikhand": "https://cdn.jsdelivr.net/npm/@fontsource/shrikhand/files/shrikhand-latin-400-normal.woff",
-    "Permanent Marker": "https://cdn.jsdelivr.net/npm/@fontsource/permanent-marker/files/permanent-marker-latin-400-normal.woff",
-    "Orbitron Bold": "https://cdn.jsdelivr.net/npm/@fontsource/orbitron/files/orbitron-latin-700-normal.woff",
-    "Bungee": "https://cdn.jsdelivr.net/npm/@fontsource/bungee/files/bungee-latin-400-normal.woff",
-    "Frijole": "https://cdn.jsdelivr.net/npm/@fontsource/frijole/files/frijole-latin-400-normal.woff",
-    "Vampiro One": "https://cdn.jsdelivr.net/npm/@fontsource/vampiro-one/files/vampiro-one-latin-400-normal.woff",
-    "Abril Fatface": "https://cdn.jsdelivr.net/npm/@fontsource/abril-fatface/files/abril-fatface-latin-400-normal.woff",
-    "Titan One": "https://cdn.jsdelivr.net/npm/@fontsource/titan-one/files/titan-one-latin-400-normal.woff",
-    "Fugaz One": "https://cdn.jsdelivr.net/npm/@fontsource/fugaz-one/files/fugaz-one-latin-400-normal.woff",
-    "Chango": "https://cdn.jsdelivr.net/npm/@fontsource/chango/files/chango-latin-400-normal.woff",
-    "Bowlby One SC": "https://cdn.jsdelivr.net/npm/@fontsource/bowlby-one-sc/files/bowlby-one-sc-latin-400-normal.woff",
-    "Rubik Mono One": "https://cdn.jsdelivr.net/npm/@fontsource/rubik-mono-one/files/rubik-mono-one-latin-400-normal.woff",
-    "Bungee Inline": "https://cdn.jsdelivr.net/npm/@fontsource/bungee-inline/files/bungee-inline-latin-400-normal.woff",
-    "Bungee Shade": "https://cdn.jsdelivr.net/npm/@fontsource/bungee-shade/files/bungee-shade-latin-400-normal.woff",
-    "Ceviche One": "https://cdn.jsdelivr.net/npm/@fontsource/ceviche-one/files/ceviche-one-latin-400-normal.woff",
-    "Rampart One": "https://cdn.jsdelivr.net/npm/@fontsource/rampart-one/files/rampart-one-latin-400-normal.woff",
-    "Cherry Cream Soda": "https://cdn.jsdelivr.net/npm/@fontsource/cherry-cream-soda/files/cherry-cream-soda-latin-400-normal.woff",
-    "Slackey": "https://cdn.jsdelivr.net/npm/@fontsource/slackey/files/slackey-latin-400-normal.woff",
-    "Henny Penny": "https://cdn.jsdelivr.net/npm/@fontsource/henny-penny/files/henny-penny-latin-400-normal.woff",
-    "Kavoon": "https://cdn.jsdelivr.net/npm/@fontsource/kavoon/files/kavoon-latin-400-normal.woff",
-    "Shojumaru": "https://cdn.jsdelivr.net/npm/@fontsource/shojumaru/files/shojumaru-latin-400-normal.woff",
-    "Sancreek": "https://cdn.jsdelivr.net/npm/@fontsource/sancreek/files/sancreek-latin-400-normal.woff",
-    "Ewert": "https://cdn.jsdelivr.net/npm/@fontsource/ewert/files/ewert-latin-400-normal.woff",
-    "Ribeye": "https://cdn.jsdelivr.net/npm/@fontsource/ribeye/files/ribeye-latin-400-normal.woff",
-    "Rye": "https://cdn.jsdelivr.net/npm/@fontsource/rye/files/rye-latin-400-normal.woff",
-    "Spicy Rice": "https://cdn.jsdelivr.net/npm/@fontsource/spicy-rice/files/spicy-rice-latin-400-normal.woff",
-    "Margarine": "https://cdn.jsdelivr.net/npm/@fontsource/margarine/files/margarine-latin-400-normal.woff",
-    "Modak": "https://cdn.jsdelivr.net/npm/@fontsource/modak/files/modak-latin-400-normal.woff",
-    "Audiowide": "https://cdn.jsdelivr.net/npm/@fontsource/audiowide/files/audiowide-latin-400-normal.woff",
-    "Balsamiq Sans Bold": "https://cdn.jsdelivr.net/npm/@fontsource/balsamiq-sans/files/balsamiq-sans-latin-700-normal.woff",
-    "Kalam Bold": "https://cdn.jsdelivr.net/npm/@fontsource/kalam/files/kalam-latin-700-normal.woff",
-    "Mali Bold": "https://cdn.jsdelivr.net/npm/@fontsource/mali/files/mali-latin-700-normal.woff",
-    "Comic Neue Bold": "https://cdn.jsdelivr.net/npm/@fontsource/comic-neue/files/comic-neue-latin-700-normal.woff",
-    "Sedgwick Ave": "https://cdn.jsdelivr.net/npm/@fontsource/sedgwick-ave/files/sedgwick-ave-latin-400-normal.woff",
-    "Rock Salt": "https://cdn.jsdelivr.net/npm/@fontsource/rock-salt/files/rock-salt-latin-400-normal.woff",
-    "Knewave": "https://cdn.jsdelivr.net/npm/@fontsource/knewave/files/knewave-latin-400-normal.woff",
-    "Nosifer": "https://cdn.jsdelivr.net/npm/@fontsource/nosifer/files/nosifer-latin-400-normal.woff",
-    "Butcherman": "https://cdn.jsdelivr.net/npm/@fontsource/butcherman/files/butcherman-latin-400-normal.woff",
-    "Flavors": "https://cdn.jsdelivr.net/npm/@fontsource/flavors/files/flavors-latin-400-normal.woff",
-    "Oswald Bold": "https://cdn.jsdelivr.net/npm/@fontsource/oswald/files/oswald-latin-700-normal.woff",
-    "Ranchers": "https://cdn.jsdelivr.net/npm/@fontsource/ranchers/files/ranchers-latin-400-normal.woff",
-    "Fontdiner Swanky": "https://cdn.jsdelivr.net/npm/@fontsource/fontdiner-swanky/files/fontdiner-swanky-latin-400-normal.woff",
-    "Smokum": "https://cdn.jsdelivr.net/npm/@fontsource/smokum/files/smokum-latin-400-normal.woff",
-    "Aladin": "https://cdn.jsdelivr.net/npm/@fontsource/aladin/files/aladin-latin-400-normal.woff",
-    "Erica One": "https://cdn.jsdelivr.net/npm/@fontsource/erica-one/files/erica-one-latin-400-normal.woff",
-    "Jolly Lodger": "https://cdn.jsdelivr.net/npm/@fontsource/jolly-lodger/files/jolly-lodger-latin-400-normal.woff",
-    "Pirata One": "https://cdn.jsdelivr.net/npm/@fontsource/pirata-one/files/pirata-one-latin-400-normal.woff",
-    "Poller One": "https://cdn.jsdelivr.net/npm/@fontsource/poller-one/files/poller-one-latin-400-normal.woff",
-    "UnifrakturMaguntia": "https://cdn.jsdelivr.net/npm/@fontsource/unifrakturmaguntia/files/unifrakturmaguntia-latin-400-normal.woff",
-    "Vast Shadow": "https://cdn.jsdelivr.net/npm/@fontsource/vast-shadow/files/vast-shadow-latin-400-normal.woff",
-    "Eater": "https://cdn.jsdelivr.net/npm/@fontsource/eater/files/eater-latin-400-normal.woff",
-    "Monoton": "https://cdn.jsdelivr.net/npm/@fontsource/monoton/files/monoton-latin-400-normal.woff"
-};
-
-const loadedFonts = {};
-const shapeCache = {}; 
-let availableShapes = {}; 
-
-let activeFontLayer = null;
-let isFontListRendered = false;
+if (!animId) {
+    document.body.innerHTML = '<div class="flex items-center justify-center h-screen bg-gray-900 text-white font-sans text-xl">ID Animasi tidak ditemukan.</div>';
+    throw new Error("Missing animId");
+}
 
 let state = {
-    layerOrder: ['bg', 'bg2', 'img1', 't4', 't3', 't2', 't1'],
-    bg: { active: true, shape: "", x: -59, y: 31, w: 630, h: 450, colorType: "gradient", color: "#161417", color2: "#0000ff", color3: "#201833", rotate: 0, outlineOnly: false, strokeW: 8 },
-    bg2: { active: false, mergeToBg1: false, shape: "", x: 156, y: 50, w: 200, h: 200, colorType: "original", color: "#FFD700", color2: "#FFA500", color3: "#FF4500", rotate: 0, outlineOnly: false, strokeW: 8 },
-    img1: { active: false, dataUrl: "", x: 156, y: 156, w: 200, h: 200, rotate: 0, opacity: 100 },
-    t1: { active: true, text: "HEX", font: "Luckiest Guy", size: 231, w: 250, h: 80, spacing: 0, x: 256, y: 280, curve: 0, depth3d: 30, angle3d: 45, color3d: "#1f2937", fillType: "gradient", fill: "#6b3200", fill2: "#ff1b00", fill3: "#692800", stroke: "#000000", strokeW: 8, fillNone: false, strokeNone: false, rotate: 0, effect: "shadow" },
-    t2: { active: false, mergeToT1: false, text: "TERBATAS!", font: "Luckiest Guy", size: 60, w: 200, h: 60, spacing: 0, x: 256, y: 340, curve: 0, depth3d: 20, angle3d: 45, color3d: "#1f2937", fillType: "solid", fill: "#FFEB3B", fill2: "#FF8800", fill3: "#FF0000", stroke: "#000000", strokeW: 4, fillNone: false, strokeNone: false, rotate: 0, effect: "none" },
-    t3: { active: false, mergeToT1: false, text: "SPESIAL!", font: "Creepster", size: 50, w: 200, h: 60, spacing: 0, x: 256, y: 400, curve: 0, depth3d: 20, angle3d: 45, color3d: "#1f2937", fillType: "solid", fill: "#00FF00", fill2: "#0088FF", fill3: "#0000FF", stroke: "#000000", strokeW: 4, fillNone: false, strokeNone: false, rotate: 0, effect: "none" },
-    t4: { active: false, mergeToT1: false, text: "EKSTRA!", font: "Creepster", size: 50, w: 200, h: 60, spacing: 0, x: 256, y: 460, curve: 0, depth3d: 20, angle3d: 45, color3d: "#1f2937", fillType: "solid", fill: "#FF00FF", fill2: "#0088FF", fill3: "#0000FF", stroke: "#000000", strokeW: 4, fillNone: false, strokeNone: false, rotate: 0, effect: "none" }
+    bg: { isVisible: true, type: 'shape', content: 'bulat', color: '#000000', scale: 100, x: 0, y: 0, rotation: 0 },
+    bg2: { isVisible: true, type: 'shape', content: 'bulat', color: '#FF0000', scale: 90, x: 0, y: 0, rotation: 0 },
+    t1: { isVisible: true, type: 'text', content: 'Teks 1', color: '#FFFFFF', font: 'Arial', scale: 50, x: 0, y: 0, rotation: 0 },
+    t2: { isVisible: false, type: 'text', content: 'Teks 2', color: '#FFFFFF', font: 'Arial', scale: 30, x: 0, y: 50, rotation: 0 },
+    t3: { isVisible: false, type: 'text', content: 'Teks 3', color: '#FFFFFF', font: 'Arial', scale: 20, x: 0, y: 80, rotation: 0 },
+    t4: { isVisible: false, type: 'text', content: 'Teks 4', color: '#FFFFFF', font: 'Arial', scale: 20, x: 0, y: 110, rotation: 0 }
 };
 
-let historyStack = [], currentHistoryIndex = -1, selectedObject = null, isRendering = false, renderQueued = false;
-let currentSvgCode = ""; 
-let isDarkMode = false;
-let canvas; 
+let selectedLayer = 't1';
+let shapesData = {};
+let availableShapes = [];
+let availableThemes = [];
 
-let colorPicker;
-let activeColorStatePath = null;
-let activeColorBtnElement = null;
+const BASE_URL = isAutoText 
+    ? "https://1138-103-124-115-46.ngrok-free.app"
+    : "https://1138-103-124-115-46.ngrok-free.app";
 
-// ===============================================
-// SISTEM TELEMETRI
-// ===============================================
-let cachedClientMetadata = null;
-let isFetchingMetadata = false;
+const API_TEMPLATE = `${BASE_URL}/api/template/${animId}`;
+const API_PREVIEW = `${BASE_URL}/api/preview/${animId}`;
+const API_UPLOAD = `${BASE_URL}/api/upload`;
+const API_SHAPES_LIST = `${BASE_URL}/api/shapes`;
+const API_SHAPE_DATA = `${BASE_URL}/api/shapes`;
+const API_THEMES = `${BASE_URL}/api/themes`;
+const API_LIVE_PREVIEW = `${BASE_URL}/api/live_preview`;
 
-async function getClientMetadata() {
-    if (cachedClientMetadata) return cachedClientMetadata;
-    if (isFetchingMetadata) {
-        while(isFetchingMetadata) {
-            await new Promise(r => setTimeout(r, 100));
-            if (cachedClientMetadata) return cachedClientMetadata;
+const LOCAL_STORAGE_KEY = `emoji_editor_${animId}`;
+
+let history = [];
+let historyIndex = -1;
+
+const API_TIMEOUT = 10000;
+const MAX_RETRIES = 2;
+
+async function fetchWithRetry(url, options = {}, retries = MAX_RETRIES) {
+    for (let i = 0; i <= retries; i++) {
+        try {
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), API_TIMEOUT);
+            const res = await fetch(url, { ...options, signal: controller.signal });
+            clearTimeout(id);
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+            return res;
+        } catch (e) {
+            if (i === retries) throw e;
+            await new Promise(r => setTimeout(r, 1000 * (i + 1))); 
         }
     }
-    
-    isFetchingMetadata = true;
-    const meta = {
-        platform: (tg && tg.platform) ? tg.platform : "unknown",
-        device: navigator.userAgent,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        lang: navigator.language || "Tidak diketahui",
-        screen: `${window.screen.width}x${window.screen.height}`,
-        connection: (navigator.connection && navigator.connection.effectiveType) ? navigator.connection.effectiveType : "unknown",
-        ip: "Tidak diketahui",
-        geo: "Tidak diketahui",
-        geo_source: "IP"
-    };
+}
 
+async function loadShapesList() {
     try {
-        const ipRes = await fetch('https://get.geojs.io/v1/ip/geo.json');
-        if (ipRes.ok) {
-            const ipData = await ipRes.json();
-            meta.ip = ipData.ip || "Tidak diketahui";
-            if(ipData.city || ipData.country) {
-                const locStr = `${ipData.city || ''}, ${ipData.region || ''}, ${ipData.country || ''}`.replace(/^, | ,|, $/g, '').trim();
-                meta.geo = locStr || "Tidak diketahui";
-            }
-        }
-    } catch (e) { console.warn("IP Geo gagal:", e); }
-
-    cachedClientMetadata = meta;
-    isFetchingMetadata = false;
-    return meta;
-}
-// ===============================================
-
-// ===============================================
-// AUTO KOMPRESI GAMBAR (BYPASS LIMIT 64KB)
-// ===============================================
-async function processImageUpload(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                // Limitasi tajam agar ukuran SVG + Gambar tidak over 64KB (Diturunkan ke 150 agar PNG aman)
-                const MAX_DIMENSION = 150; 
-                let width = img.width;
-                let height = img.height;
-                
-                if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
-                    if (width > height) {
-                        height = Math.round((height * MAX_DIMENSION) / width);
-                        width = MAX_DIMENSION;
-                    } else {
-                        width = Math.round((width * MAX_DIMENSION) / height);
-                        height = MAX_DIMENSION;
-                    }
-                }
-                
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-                
-                // Gunakan format png untuk dukungan webview yang lebih baik menjaga transparansi
-                const dataUrl = canvas.toDataURL('image/png');
-                resolve(dataUrl);
-            };
-            img.onerror = reject;
-            img.src = e.target.result;
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
-}
-// ===============================================
-
-async function ensureLottieLoaded() {
-    if (window.lottie) return true;
-    return new Promise((resolve) => {
-        const script = document.createElement('script');
-        script.src = "https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js";
-        script.onload = () => resolve(true);
-        script.onerror = () => {
-            console.warn("Gagal meload Lottie Web");
-            resolve(false);
-        };
-        document.head.appendChild(script);
-    });
-}
-
-function validateShapes() {
-    if (Object.keys(availableShapes).length > 0) {
-        if (state.bg.shape && !availableShapes[state.bg.shape]) {
-            console.warn(`Shape ${state.bg.shape} sudah dihapus dari server, mereset layar utama...`);
-            state.bg.shape = "";
-        }
-        if (state.bg2.shape && !availableShapes[state.bg2.shape]) {
-            console.warn(`Shape ${state.bg2.shape} sudah dihapus dari server, mereset ornamen...`);
-            state.bg2.shape = "";
-        }
+        const response = await fetchWithRetry(API_SHAPES_LIST);
+        const data = await response.json();
+        availableShapes = Object.keys(data).map(key => ({
+            id: key,
+            name: data[key]
+        }));
+        populateShapeSelects();
+    } catch (error) {
+        console.error("Gagal memuat daftar shape:", error);
     }
 }
 
-function injectLottieFixStyles() {
-    const style = document.createElement('style');
-    style.innerHTML = `
-        /* FIX UNTUK LOTTIE BLEND-MODE BUG DI WEBVIEW MOBILE */
-        #preview-lottie-wrapper svg, #lottie-bg svg {
-            isolation: isolate !important;
-            transform: translate3d(0,0,0) !important;
-            will-change: transform !important;
-        }
-    `;
-    document.head.appendChild(style);
-}
-
-function injectFontStyles() {
-    let styleContent = '';
-    for (let fontName in FONT_LIST) {
-        styleContent += `
-            @font-face {
-                font-family: '${fontName}';
-                src: url('${FONT_LIST[fontName]}') format('woff');
-                font-weight: normal;
-                font-style: normal;
-                font-display: swap;
-            }
-        `;
-    }
-    const styleElement = document.createElement('style');
-    styleElement.innerHTML = styleContent;
-    document.head.appendChild(styleElement);
-}
-
-let cachedThemes = [];
-async function fetchThemes() {
-    if(cachedThemes.length > 0) return cachedThemes;
-    try {
-        const baseUrl = NGROK_API_URL.replace('/api/upload', '');
-        const res = await fetch(`${baseUrl}/api/themes`, { headers: {"ngrok-skip-browser-warning": "true", "Cache-Control": "no-cache"} });
-        if(res.ok) {
-            const data = await res.json();
-            if(data.status === "success") cachedThemes = data.themes;
-        }
-    } catch(e) { console.warn("Gagal tarik tema", e) }
-    return cachedThemes;
-}
-
-async function init() {
-    getClientMetadata().catch(e => console.log(e));
-    injectLottieFixStyles(); 
-
-    canvas = document.getElementById('svg-canvas'); 
-    const urlParams = new URLSearchParams(window.location.search);
-    
-    // Pindahkan injectFontStyles ke sini agar gaya font langsung diunduh
-    // sehingga saat mode otomatis aktif, list fontnya tetap bisa memperlihatkan gaya font.
-    injectFontStyles();
-    
-    // =========================================================
-    // HANDLER MODE OTOMATIS
-    // =========================================================
-    const isAutoMode = urlParams.get('auto_text') !== null;
-    const animId = urlParams.get('anim');
-
-    if (isAutoMode) {
-        document.body.style.overflow = 'auto'; 
-        const allChildren = document.body.children;
-        for (let i = 0; i < allChildren.length; i++) {
-            if (allChildren[i].tagName !== 'SCRIPT' && allChildren[i].id !== 'loader' && allChildren[i].id !== 'font-picker-modal') {
-                allChildren[i].style.display = 'none';
-            }
-        }
-
-        const silumanContainer = document.createElement('div');
-        silumanContainer.id = 'siluman-container';
-        silumanContainer.className = 'fixed inset-0 bg-gray-50 dark:bg-gray-900 z-50 flex flex-col items-center justify-start p-4 overflow-y-auto';
-        document.body.appendChild(silumanContainer);
-
-        silumanContainer.innerHTML = `
-            <div class="text-center mt-32 sm:mt-20">
-                <i class="fas fa-circle-notch fa-spin text-4xl text-blue-500 mb-4"></i>
-                <p class="text-gray-700 dark:text-gray-300 font-bold" id="siluman-loader-text">Menghubungkan ke Server...</p>
-            </div>
-        `;
-
-        await fetchShapeList();
-
-        let originalTemplateState = null;
-
-        if (animId && animId !== "None" && animId !== "undefined") {
-            const ldr = document.getElementById('siluman-loader-text');
-            if (ldr) ldr.innerText = "Mengunduh Template Owner...";
-            try {
-                const baseUrl = NGROK_API_URL.replace('/api/upload', '');
-                const ts = new Date().getTime();
-                const res = await fetch(`${baseUrl}/api/template/${animId}?t=${ts}`, {
-                    headers: { "ngrok-skip-browser-warning": "true", "Cache-Control": "no-cache" }
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.status === "success" && data.state) {
-                        state = { ...state, ...data.state };
-                        originalTemplateState = JSON.parse(JSON.stringify(state)); 
-                        if (data.allow_auto_center !== undefined) {
-                            window.allowAutoCenter = data.allow_auto_center;
-                        }
-                    }
-                }
-            } catch (e) { console.warn("Gagal menarik template dari server.", e); }
-        }
-        
-        if (!originalTemplateState) {
-            originalTemplateState = JSON.parse(JSON.stringify(state)); 
-        }
-
-        const textLayerKeys = ['t1', 't2', 't3', 't4'];
-        const activeTextLayers = [];
-        for (let key of textLayerKeys) {
-            if (state[key].active && state[key].text && state[key].text.trim() !== '') activeTextLayers.push(key);
-        }
-        if (activeTextLayers.length === 0) activeTextLayers.push('t1');
-
-        validateShapes();
-        await preloadActiveShapes();
-
-        if (!window.pako) {
-            await new Promise((resolve) => {
-                const script = document.createElement('script');
-                script.src = "https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js";
-                script.onload = resolve;
-                document.head.appendChild(script);
+function populateShapeSelects() {
+    const shapeSelects = ['content-bg', 'content-bg2'];
+    shapeSelects.forEach(selectId => {
+        const select = document.getElementById(selectId);
+        if (select) {
+            select.innerHTML = '';
+            availableShapes.forEach(shape => {
+                const option = document.createElement('option');
+                option.value = shape.id;
+                option.textContent = shape.name;
+                select.appendChild(option);
             });
-        }
-
-        silumanContainer.innerHTML = ''; 
-        
-        const formCard = document.createElement('div');
-        formCard.className = 'w-full max-w-md bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 mb-10';
-        
-        const formTitle = document.createElement('h2');
-        formTitle.className = 'text-xl font-black mb-4 text-gray-800 dark:text-white text-center tracking-wide';
-        formTitle.innerHTML = '<i class="fas fa-magic text-blue-500 mr-2"></i> Mode Otomatis';
-        formCard.appendChild(formTitle);
-
-        const canvasContainer = document.getElementById('canvas-container');
-        const existingLottie = document.getElementById('lottie-bg');
-        if(existingLottie) existingLottie.remove(); 
-        
-        canvasContainer.style.display = 'block'; 
-        canvasContainer.classList.add('mx-auto', 'mb-5', 'rounded-xl', 'shadow-xl', 'border', 'border-gray-300', 'dark:border-gray-600', 'bg-white', 'dark:bg-gray-800', 'pointer-events-none', 'sticky', 'top-2', 'z-40');
-        
-        const dpadInfo = document.getElementById('selected-info');
-        if (dpadInfo && dpadInfo.parentElement) dpadInfo.parentElement.style.display = 'none';
-        formCard.appendChild(canvasContainer);
-
-        const layerLabels = { t1: 'Teks Utama', t2: 'Teks Kedua', t3: 'Teks Ketiga', t4: 'Teks Keempat' };
-        
-        const updateLayoutAndRender = async () => {
-            if (originalTemplateState) {
-                let originalTextCount = ['t1', 't2', 't3', 't4'].filter(k => originalTemplateState[k] && originalTemplateState[k].active).length;
-                let activeCount = ['t1', 't2', 't3', 't4'].filter(k => state[k].active).length;
-                
-                let isTemplateMultiText = originalTextCount > 1;
-                let isAllowed = window.allowAutoCenter !== false; 
-
-                if (isAllowed && isTemplateMultiText && activeCount === 1 && state.t1.active) {
-                    state.t1.y = 256; 
-                    
-                    if (state.bg.active) {
-                        state.bg.x = 256 - (state.bg.w / 2);
-                        state.bg.y = 256 - (state.bg.h / 2);
-                    }
-                } else {
-                    if (originalTemplateState.t1) state.t1.y = originalTemplateState.t1.y;
-                    if (originalTemplateState.bg) {
-                        state.bg.x = originalTemplateState.bg.x;
-                        state.bg.y = originalTemplateState.bg.y;
-                    }
-                }
+            const layerId = selectId.split('-')[1];
+            if (state[layerId].type === 'shape') {
+                select.value = state[layerId].content;
             }
-
-            await renderCanvas();
-        };
-
-        ['bg', 'bg2'].forEach(layer => {
-            if (state[layer].active || layer === 'bg') {
-                const sWrap = document.createElement('div');
-                sWrap.className = 'mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 transition-all';
-                
-                sWrap.innerHTML = `
-                    <div class="flex items-center justify-between mb-3">
-                        <label class="font-bold text-sm text-gray-800 dark:text-gray-200 flex items-center cursor-pointer">
-                            <input type="checkbox" id="auto-${layer}-active" class="mr-2 w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500" ${state[layer].active ? 'checked' : ''}>
-                            <i class="fas ${layer === 'bg' ? 'fa-square' : 'fa-star'} text-blue-500 mr-2"></i> ${layer === 'bg' ? 'Bentuk Latar Utama' : 'Bentuk Ornamen'}
-                        </label>
-                    </div>
-                    
-                    <div id="auto-${layer}-controls-wrapper" style="display: ${state[layer].active ? 'block' : 'none'};">
-                        <select id="auto-${layer}-shape" class="w-full mb-3 px-3 py-2 border rounded-lg text-sm bg-white dark:bg-gray-800 dark:text-white dark:border-gray-500"></select>
-                        
-                        <div class="p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 mb-3">
-                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-200 mb-2"><i class="fas fa-palette text-pink-500 mr-1"></i> Warna Bentuk</label>
-                            <select id="auto-${layer}-colorType" class="w-full mb-3 px-3 py-1.5 border border-gray-300 dark:border-gray-500 rounded-lg text-sm bg-gray-50 dark:bg-gray-700 dark:text-white transition">
-                                <option value="original" ${state[layer].colorType === 'original' ? 'selected' : ''}>Warna Asli</option>
-                                <option value="solid" ${state[layer].colorType === 'solid' ? 'selected' : ''}>Warna Solid</option>
-                                <option value="gradient" ${state[layer].colorType === 'gradient' ? 'selected' : ''}>Warna Gradien</option>
-                            </select>
-                            
-                            <div class="flex gap-2 justify-between" id="auto-${layer}-color-wrapper" style="display: ${state[layer].colorType === 'original' ? 'none' : 'flex'};">
-                                <div class="flex-1 flex flex-col items-center">
-                                    <span class="text-[10px] text-gray-500 dark:text-gray-400 mb-1">Warna 1</span>
-                                    <input type="color" id="auto-${layer}-color" value="${state[layer].color || '#161417'}" class="w-10 h-10 rounded cursor-pointer border-0 p-0 shadow-sm">
-                                </div>
-                                <div class="flex-1 flex flex-col items-center" id="auto-${layer}-color2-container" style="display: ${state[layer].colorType === 'gradient' ? 'flex' : 'none'};">
-                                    <span class="text-[10px] text-gray-500 dark:text-gray-400 mb-1">Warna 2</span>
-                                    <input type="color" id="auto-${layer}-color2" value="${state[layer].color2 || '#0000ff'}" class="w-10 h-10 rounded cursor-pointer border-0 p-0 shadow-sm">
-                                </div>
-                                <div class="flex-1 flex flex-col items-center" id="auto-${layer}-color3-container" style="display: ${state[layer].colorType === 'gradient' ? 'flex' : 'none'};">
-                                    <span class="text-[10px] text-gray-500 dark:text-gray-400 mb-1">Warna 3</span>
-                                    <input type="color" id="auto-${layer}-color3" value="${state[layer].color3 || '#201833'}" class="w-10 h-10 rounded cursor-pointer border-0 p-0 shadow-sm">
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="flex gap-3 mb-3">
-                            <div class="flex-1">
-                                <div class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1 flex justify-between"><span>Lebar</span><span id="auto-${layer}-w-val">${state[layer].w}</span></div>
-                                <input type="range" id="auto-${layer}-w" min="10" max="1000" value="${state[layer].w}" class="w-full accent-blue-600">
-                            </div>
-                            <div class="flex-1">
-                                <div class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1 flex justify-between"><span>Tinggi</span><span id="auto-${layer}-h-val">${state[layer].h}</span></div>
-                                <input type="range" id="auto-${layer}-h" min="10" max="1000" value="${state[layer].h}" class="w-full accent-blue-600">
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <div class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1 flex justify-between"><span>Rotasi</span><span id="auto-${layer}-rotate-val">${state[layer].rotate || 0}°</span></div>
-                            <input type="range" id="auto-${layer}-rotate" min="-180" max="180" value="${state[layer].rotate || 0}" class="w-full accent-blue-600">
-                        </div>
-                    </div>
-                `;
-                formCard.appendChild(sWrap);
-                
-                const activeCheck = sWrap.querySelector(`#auto-${layer}-active`);
-                const controlsWrap = sWrap.querySelector(`#auto-${layer}-controls-wrapper`);
-                
-                activeCheck.onchange = (e) => {
-                    state[layer].active = e.target.checked;
-                    controlsWrap.style.display = e.target.checked ? 'block' : 'none';
-                    updateLayoutAndRender();
-                };
-
-                const sel = sWrap.querySelector(`#auto-${layer}-shape`);
-                for(let k in availableShapes) {
-                    sel.innerHTML += `<option value="${k}" ${state[layer].shape === k ? 'selected' : ''}>${availableShapes[k]}</option>`;
-                }
-                sel.onchange = async (e) => { state[layer].shape = e.target.value; await loadShapeData(e.target.value); updateLayoutAndRender(); };
-                
-                sWrap.querySelector(`#auto-${layer}-w`).oninput = (e) => { state[layer].w = parseInt(e.target.value); document.getElementById(`auto-${layer}-w-val`).innerText = e.target.value; updateLayoutAndRender(); };
-                sWrap.querySelector(`#auto-${layer}-h`).oninput = (e) => { state[layer].h = parseInt(e.target.value); document.getElementById(`auto-${layer}-h-val`).innerText = e.target.value; updateLayoutAndRender(); };
-                
-                const rotInput = sWrap.querySelector(`#auto-${layer}-rotate`);
-                if (rotInput) {
-                    rotInput.oninput = (e) => {
-                        state[layer].rotate = parseInt(e.target.value);
-                        document.getElementById(`auto-${layer}-rotate-val`).innerText = e.target.value + '°';
-                        updateLayoutAndRender();
-                    };
-                }
-
-                const colorTypeSel = sWrap.querySelector(`#auto-${layer}-colorType`);
-                const colorWrap = sWrap.querySelector(`#auto-${layer}-color-wrapper`);
-                const color2Cont = sWrap.querySelector(`#auto-${layer}-color2-container`);
-                const color3Cont = sWrap.querySelector(`#auto-${layer}-color3-container`);
-                
-                colorTypeSel.onchange = (e) => {
-                    state[layer].colorType = e.target.value;
-                    const isGrad = e.target.value === 'gradient';
-                    const isOrig = e.target.value === 'original';
-                    
-                    colorWrap.style.display = isOrig ? 'none' : 'flex';
-                    color2Cont.style.display = isGrad ? 'flex' : 'none';
-                    color3Cont.style.display = isGrad ? 'flex' : 'none';
-                    
-                    updateLayoutAndRender();
-                };
-                
-                sWrap.querySelector(`#auto-${layer}-color`).oninput = (e) => { state[layer].color = e.target.value; updateLayoutAndRender(); };
-                sWrap.querySelector(`#auto-${layer}-color2`).oninput = (e) => { state[layer].color2 = e.target.value; updateLayoutAndRender(); };
-                sWrap.querySelector(`#auto-${layer}-color3`).oninput = (e) => { state[layer].color3 = e.target.value; updateLayoutAndRender(); };
-            }
-        });
-
-        for (let layer of activeTextLayers) {
-            const txtWrap = document.createElement('div');
-            txtWrap.className = 'mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 transition-all';
-            
-            txtWrap.innerHTML = `
-                <div class="flex items-center justify-between mb-3">
-                    <label class="font-bold text-sm text-gray-800 dark:text-gray-200 flex items-center cursor-pointer">
-                        <input type="checkbox" id="auto-${layer}-active" class="mr-2 w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500" ${state[layer].active ? 'checked' : ''} ${activeTextLayers.length===1 ? 'disabled' : ''}>
-                        <i class="fas fa-font text-blue-500 mr-2"></i> ${layerLabels[layer]}
-                    </label>
-                </div>
-                
-                <input type="text" id="auto-${layer}-text" value="${state[layer].text}" placeholder="Masukkan teks..." class="w-full mb-3 px-4 py-2 border border-gray-300 dark:border-gray-500 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 dark:text-white transition-all">
-                
-                <div class="mb-3 flex gap-2">
-                    <button id="auto-${layer}-font-btn" class="flex-1 border rounded-lg p-2.5 text-sm bg-white hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-500 transition-colors flex justify-between items-center shadow-sm">
-                        <span id="${layer}-font-display" style="font-family: '${state[layer].font}', sans-serif">${state[layer].font}</span>
-                        <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
-                    </button>
-                    <button id="auto-${layer}-apply-font" title="Terapkan font ini ke semua teks aktif" class="bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-800/50 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-700/50 rounded-lg px-3 flex items-center justify-center transition shadow-sm">
-                        <i class="fas fa-copy"></i>
-                    </button>
-                </div>
-                
-                <div class="flex gap-3 mb-3">
-                    <div class="flex-1">
-                        <div class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1 flex justify-between"><span>Lebar</span><span id="auto-${layer}-w-val">${state[layer].w || state[layer].size || 100}</span></div>
-                        <input type="range" id="auto-${layer}-w" min="10" max="800" value="${state[layer].w || state[layer].size || 100}" class="w-full accent-blue-600">
-                    </div>
-                    <div class="flex-1">
-                        <div class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1 flex justify-between"><span>Tinggi</span><span id="auto-${layer}-h-val">${state[layer].h || state[layer].size || 100}</span></div>
-                        <input type="range" id="auto-${layer}-h" min="10" max="800" value="${state[layer].h || state[layer].size || 100}" class="w-full accent-blue-600">
-                    </div>
-                </div>
-
-                <div class="mb-3">
-                    <div class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1 flex justify-between"><span>Spasi Antar Huruf</span><span id="auto-${layer}-spacing-val">${state[layer].spacing || 0}</span></div>
-                    <input type="range" id="auto-${layer}-spacing" min="-50" max="150" value="${state[layer].spacing || 0}" class="w-full accent-blue-600">
-                </div>
-
-                <div class="mb-3">
-                    <div class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1 flex justify-between"><span>Rotasi</span><span id="auto-${layer}-rotate-val">${state[layer].rotate || 0}°</span></div>
-                    <input type="range" id="auto-${layer}-rotate" min="-180" max="180" value="${state[layer].rotate || 0}" class="w-full accent-blue-600">
-                </div>
-
-                <div class="mt-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
-                    <div class="text-sm font-bold text-gray-700 dark:text-gray-200 mb-3"><i class="fas fa-magic text-purple-500 mr-2"></i>Efek Teks & 3D</div>
-                    <select id="auto-${layer}-effect" class="w-full mb-3 px-3 py-1.5 border border-gray-300 dark:border-gray-500 rounded-lg text-sm bg-gray-50 dark:bg-gray-700 dark:text-white transition">
-                        <option value="none" ${state[layer].effect === 'none' ? 'selected' : ''}>Tanpa Efek</option>
-                        <option value="shadow" ${state[layer].effect === 'shadow' ? 'selected' : ''}>Bayangan (Shadow)</option>
-                        <option value="border" ${state[layer].effect === 'border' ? 'selected' : ''}>Garis Tepi (Border)</option>
-                        <option value="extrude" ${state[layer].effect === 'extrude' ? 'selected' : ''}>3D / Extrude</option>
-                    </select>
-
-                    <div id="auto-${layer}-3d-controls" style="display: ${state[layer].effect === 'extrude' ? 'block' : 'none'};">
-                        <div class="flex gap-3 mb-3">
-                            <div class="flex-1">
-                                <div class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1 flex justify-between"><span>Kedalaman</span><span id="auto-${layer}-depth3d-val">${state[layer].depth3d || 30}</span></div>
-                                <input type="range" id="auto-${layer}-depth3d" min="1" max="100" value="${state[layer].depth3d || 30}" class="w-full accent-purple-600">
-                            </div>
-                            <div class="flex-1">
-                                <div class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1 flex justify-between"><span>Sudut</span><span id="auto-${layer}-angle3d-val">${state[layer].angle3d || 45}°</span></div>
-                                <input type="range" id="auto-${layer}-angle3d" min="0" max="360" value="${state[layer].angle3d || 45}" class="w-full accent-purple-600">
-                            </div>
-                        </div>
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-xs font-bold text-gray-600 dark:text-gray-300">Warna 3D</span>
-                            <input type="color" id="auto-${layer}-color3d" value="${state[layer].color3d || '#1f2937'}" class="w-10 h-10 rounded cursor-pointer border-0 p-0 shadow-sm">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mt-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
-                    <div class="flex justify-between items-center mb-3">
-                        <span class="text-sm font-bold text-gray-700 dark:text-gray-200"><i class="fas fa-palette text-pink-500 mr-2"></i>Warna Teks</span>
-                        <button id="auto-${layer}-apply-color" title="Terapkan warna ini ke semua teks aktif" class="bg-pink-50 hover:bg-pink-100 dark:bg-pink-900/30 dark:hover:bg-pink-800/50 text-pink-600 dark:text-pink-400 border border-pink-200 dark:border-pink-700/50 text-[11px] font-bold rounded px-2 py-1 transition flex items-center shadow-sm">
-                            <i class="fas fa-copy mr-1"></i> Semua
-                        </button>
-                    </div>
-                    
-                    <select id="auto-${layer}-fillType" class="w-full mb-3 px-3 py-1.5 border border-gray-300 dark:border-gray-500 rounded-lg text-sm bg-gray-50 dark:bg-gray-700 dark:text-white transition">
-                        <option value="solid" ${state[layer].fillType === 'solid' ? 'selected' : ''}>Warna Solid</option>
-                        <option value="gradient" ${state[layer].fillType === 'gradient' ? 'selected' : ''}>Warna Gradien</option>
-                    </select>
-
-                    <div class="flex gap-2 justify-between">
-                        <div class="flex-1 flex flex-col items-center">
-                            <span class="text-[10px] text-gray-500 dark:text-gray-400 mb-1">Warna 1</span>
-                            <input type="color" id="auto-${layer}-fill" value="${state[layer].fill || '#ffffff'}" class="w-10 h-10 rounded cursor-pointer border-0 p-0 shadow-sm">
-                        </div>
-                        <div class="flex-1 flex flex-col items-center" id="auto-${layer}-fill2-container" style="display: ${state[layer].fillType === 'gradient' ? 'flex' : 'none'};">
-                            <span class="text-[10px] text-gray-500 dark:text-gray-400 mb-1">Warna 2</span>
-                            <input type="color" id="auto-${layer}-fill2" value="${state[layer].fill2 || '#ff0000'}" class="w-10 h-10 rounded cursor-pointer border-0 p-0 shadow-sm">
-                        </div>
-                        <div class="flex-1 flex flex-col items-center" id="auto-${layer}-fill3-container" style="display: ${state[layer].fillType === 'gradient' ? 'flex' : 'none'};">
-                            <span class="text-[10px] text-gray-500 dark:text-gray-400 mb-1">Warna 3</span>
-                            <input type="color" id="auto-${layer}-fill3" value="${state[layer].fill3 || '#0000ff'}" class="w-10 h-10 rounded cursor-pointer border-0 p-0 shadow-sm">
-                        </div>
-                    </div>
-                </div>
-            `;
-            formCard.appendChild(txtWrap);
-
-            txtWrap.querySelector(`#auto-${layer}-active`).onchange = (e) => {
-                state[layer].active = e.target.checked;
-                const inp = txtWrap.querySelector(`#auto-${layer}-text`);
-                inp.disabled = !e.target.checked;
-                inp.style.opacity = e.target.checked ? '1' : '0.5';
-                updateLayoutAndRender(); 
-            };
-            txtWrap.querySelector(`#auto-${layer}-text`).oninput = (e) => {
-                state[layer].text = e.target.value || " ";
-                updateLayoutAndRender(); 
-            };
-            txtWrap.querySelector(`#auto-${layer}-font-btn`).onclick = () => openFontModal(layer);
-            txtWrap.querySelector(`#auto-${layer}-w`).oninput = (e) => {
-                state[layer].w = parseInt(e.target.value);
-                document.getElementById(`auto-${layer}-w-val`).innerText = e.target.value;
-                updateLayoutAndRender(); 
-            };
-            txtWrap.querySelector(`#auto-${layer}-h`).oninput = (e) => {
-                state[layer].h = parseInt(e.target.value);
-                document.getElementById(`auto-${layer}-h-val`).innerText = e.target.value;
-                updateLayoutAndRender(); 
-            };
-            txtWrap.querySelector(`#auto-${layer}-spacing`).oninput = (e) => {
-                state[layer].spacing = parseInt(e.target.value);
-                document.getElementById(`auto-${layer}-spacing-val`).innerText = e.target.value;
-                updateLayoutAndRender(); 
-            };
-            txtWrap.querySelector(`#auto-${layer}-rotate`).oninput = (e) => {
-                state[layer].rotate = parseInt(e.target.value);
-                document.getElementById(`auto-${layer}-rotate-val`).innerText = e.target.value + '°';
-                updateLayoutAndRender(); 
-            };
-
-            const effectSel = txtWrap.querySelector(`#auto-${layer}-effect`);
-            const ctrls3d = txtWrap.querySelector(`#auto-${layer}-3d-controls`);
-            effectSel.onchange = (e) => {
-                state[layer].effect = e.target.value;
-                ctrls3d.style.display = e.target.value === 'extrude' ? 'block' : 'none';
-                updateLayoutAndRender();
-            };
-            txtWrap.querySelector(`#auto-${layer}-depth3d`).oninput = (e) => {
-                state[layer].depth3d = parseInt(e.target.value);
-                document.getElementById(`auto-${layer}-depth3d-val`).innerText = e.target.value;
-                updateLayoutAndRender();
-            };
-            txtWrap.querySelector(`#auto-${layer}-angle3d`).oninput = (e) => {
-                state[layer].angle3d = parseInt(e.target.value);
-                document.getElementById(`auto-${layer}-angle3d-val`).innerText = e.target.value + '°';
-                updateLayoutAndRender();
-            };
-            txtWrap.querySelector(`#auto-${layer}-color3d`).oninput = (e) => {
-                state[layer].color3d = e.target.value;
-                updateLayoutAndRender();
-            };
-            
-            const fillTypeSel = txtWrap.querySelector(`#auto-${layer}-fillType`);
-            const fill2Cont = txtWrap.querySelector(`#auto-${layer}-fill2-container`);
-            const fill3Cont = txtWrap.querySelector(`#auto-${layer}-fill3-container`);
-            
-            fillTypeSel.onchange = (e) => {
-                state[layer].fillType = e.target.value;
-                const isGrad = e.target.value === 'gradient';
-                fill2Cont.style.display = isGrad ? 'flex' : 'none';
-                fill3Cont.style.display = isGrad ? 'flex' : 'none';
-                updateLayoutAndRender();
-            };
-            
-            txtWrap.querySelector(`#auto-${layer}-fill`).oninput = (e) => { state[layer].fill = e.target.value; updateLayoutAndRender(); };
-            txtWrap.querySelector(`#auto-${layer}-fill2`).oninput = (e) => { state[layer].fill2 = e.target.value; updateLayoutAndRender(); };
-            txtWrap.querySelector(`#auto-${layer}-fill3`).oninput = (e) => { state[layer].fill3 = e.target.value; updateLayoutAndRender(); };
-            
-            txtWrap.querySelector(`#auto-${layer}-apply-font`).onclick = async () => {
-                const fName = state[layer].font;
-                for (let other of activeTextLayers) {
-                    if (other !== layer && state[other].active) {
-                        state[other].font = fName;
-                        const disp = document.getElementById(`${other}-font-display`);
-                        if (disp) { disp.innerText = fName; disp.style.fontFamily = `'${fName}', sans-serif`; }
-                    }
-                }
-                await updateLayoutAndRender();
-            };
-            
-            txtWrap.querySelector(`#auto-${layer}-apply-color`).onclick = async () => {
-                const ft = state[layer].fillType; const f1 = state[layer].fill; const f2 = state[layer].fill2; const f3 = state[layer].fill3;
-                for (let other of activeTextLayers) {
-                    if (other !== layer && state[other].active) {
-                        state[other].fillType = ft; state[other].fill = f1; state[other].fill2 = f2; state[other].fill3 = f3;
-                        
-                        const elType = document.getElementById(`auto-${other}-fillType`);
-                        const elF1 = document.getElementById(`auto-${other}-fill`);
-                        const elF2 = document.getElementById(`auto-${other}-fill2`);
-                        const elF3 = document.getElementById(`auto-${other}-fill3`);
-                        const elF2C = document.getElementById(`auto-${other}-fill2-container`);
-                        const elF3C = document.getElementById(`auto-${other}-fill3-container`);
-                        
-                        if(elType) elType.value = ft;
-                        if(elF1) elF1.value = f1;
-                        if(elF2) elF2.value = f2;
-                        if(elF3) elF3.value = f3;
-                        if(elF2C) elF2C.style.display = ft === 'gradient' ? 'flex' : 'none';
-                        if(elF3C) elF3C.style.display = ft === 'gradient' ? 'flex' : 'none';
-                    }
-                }
-                await updateLayoutAndRender();
-            };
-        }
-
-        const submitBtn = document.createElement('button');
-        submitBtn.id = 'auto-submit-btn';
-        submitBtn.className = 'mt-6 w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg transform transition active:scale-95 flex items-center justify-center';
-        submitBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> Proses & Kirim ke Bot';
-        
-        submitBtn.onclick = async () => {
-            submitBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-2"></i> Mengirim...';
-            submitBtn.disabled = true;
-            await sendToBot(true, true); 
-        };
-        formCard.appendChild(submitBtn);
-
-        const cancelBtn = document.createElement('button');
-        cancelBtn.className = 'mt-3 w-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-3 px-4 rounded-xl shadow-sm transition-colors flex items-center justify-center';
-        cancelBtn.innerHTML = '<i class="fas fa-times mr-2"></i> Batal';
-        cancelBtn.onclick = () => { if (tg && typeof tg.close === 'function') tg.close(); };
-        formCard.appendChild(cancelBtn);
-
-        silumanContainer.appendChild(formCard);
-        
-        updateLayoutAndRender();
-        
-        return; 
-    }
-    
-    // =========================================================
-    // LOGIKA NORMAL WEBAPP (Editor Biasa)
-    // =========================================================
-    
-    const selectedInfo = document.getElementById('selected-info');
-    if (selectedInfo && selectedInfo.parentNode && !document.getElementById('btn-layer-up')) {
-        const layerControls = document.createElement('div');
-        layerControls.className = "flex gap-1 ml-auto mr-2";
-        layerControls.innerHTML = `
-            <button onclick="moveLayer('down')" class="text-[10px] font-bold text-gray-700 bg-white hover:bg-gray-50 px-2 py-1 rounded shadow-sm border border-gray-200 transition-colors disabled:opacity-40 flex items-center" id="btn-layer-down" disabled><i class="fas fa-layer-group mr-1"></i> <i class="fas fa-arrow-down"></i></button>
-            <button onclick="moveLayer('up')" class="text-[10px] font-bold text-gray-700 bg-white hover:bg-gray-50 px-2 py-1 rounded shadow-sm border border-gray-200 transition-colors disabled:opacity-40 flex items-center" id="btn-layer-up" disabled><i class="fas fa-layer-group mr-1"></i> <i class="fas fa-arrow-up"></i></button>
-        `;
-        selectedInfo.parentNode.insertBefore(layerControls, selectedInfo.nextSibling);
-    }
-    
-    const searchInput = document.getElementById('font-search-input');
-    if (searchInput) {
-        searchInput.addEventListener('input', (e) => filterFontList(e.target.value));
-    }
-    
-    if (animId && animId !== "None" && animId !== "undefined") {
-        loadLottiePreview(animId);
-    }
-    
-    await fetchShapeList();
-    
-    initColorPicker();
-    setupEventListeners(); 
-    
-    if (tg && tg.CloudStorage) {
-        tg.CloudStorage.getItem('last_state', async (err, value) => {
-            if (!err && value) {
-                try {
-                    const savedState = JSON.parse(value);
-                    state = { ...state, ...savedState };
-                } catch (e) {}
-            }
-            validateShapes(); 
-            await preloadActiveShapes();
-            finishInit();
-        });
-    } else {
-        validateShapes(); 
-        await preloadActiveShapes();
-        finishInit();
-    }
-}
-
-function finishInit() {
-    updateUIFromState(); 
-    saveStateToHistory(); 
-    renderCanvas();
-}
-
-function getPathWithSpacing(font, text, fontSize, letterSpacing) {
-    const path = new opentype.Path();
-    let cursor = 0;
-    const scale = 1 / font.unitsPerEm * fontSize;
-    
-    for (let i = 0; i < text.length; i++) {
-        const char = text[i];
-        const glyph = font.charToGlyph(char);
-        const glyphPath = glyph.getPath(cursor, 0, fontSize);
-        path.extend(glyphPath);
-        
-        let kerning = 0;
-        if (i < text.length - 1) {
-            kerning = font.getKerningValue(glyph, font.charToGlyph(text[i + 1])) * scale;
-        }
-        
-        cursor += (glyph.advanceWidth * scale) + kerning + letterSpacing;
-    }
-    return path;
-}
-
-async function fetchShapeList() {
-    try {
-        const baseUrl = NGROK_API_URL.replace('/api/upload', '');
-        const ts = new Date().getTime(); 
-        const res = await fetch(`${baseUrl}/api/shapes?t=${ts}`, {
-            headers: { 
-                "ngrok-skip-browser-warning": "true",
-                "Cache-Control": "no-cache"
-            }
-        });
-        if(res.ok) {
-            availableShapes = await res.json();
-            populateShapeSelects(availableShapes);
-        }
-    } catch(e) { }
-}
-
-function populateShapeSelects(shapes) {
-    const selects = [document.getElementById('bg-shape'), document.getElementById('bg2-shape')];
-    selects.forEach(select => {
-        if(!select) return;
-        const currentVal = select.value;
-        
-        select.innerHTML = '<option value="" disabled selected>Pilih Bentuk...</option>';
-        
-        for(let key in shapes) {
-            let opt = document.createElement('option');
-            opt.value = key;
-            opt.innerHTML = shapes[key];
-            select.appendChild(opt);
-        }
-        
-        if(shapes[currentVal]) {
-            select.value = currentVal;
         }
     });
 }
 
 async function loadShapeData(shapeId) {
-    if(!shapeId) return; 
-    if(shapeCache[shapeId]) return; 
-    
-    const loader = document.getElementById('loader');
-    const loaderText = document.getElementById('loader-text');
-    if(loader && loaderText && !document.getElementById('siluman-container')) {
-        loaderText.innerText = "Memuat Shape...";
-        loader.classList.remove('hidden');
-    }
-    
+    if (shapesData[shapeId]) return shapesData[shapeId];
     try {
-        const baseUrl = NGROK_API_URL.replace('/api/upload', '');
-        const ts = new Date().getTime(); 
-        const res = await fetch(`${baseUrl}/api/shapes/${shapeId}?t=${ts}`, {
-            headers: { 
-                "ngrok-skip-browser-warning": "true",
-                "Cache-Control": "no-cache"
-            }
-        });
+        const response = await fetchWithRetry(`${API_SHAPE_DATA}/${shapeId}`);
+        const data = await response.json();
+        shapesData[shapeId] = data;
+        return data;
+    } catch (error) {
+        console.error(`Gagal memuat data shape ${shapeId}:`, error);
+        return null;
+    }
+}
+
+async function loadThemesList() {
+    try {
+        const response = await fetchWithRetry(API_THEMES);
+        const data = await response.json();
+        if (data.status === 'success') {
+            availableThemes = data.themes;
+            populateThemeSelect();
+        }
+    } catch (error) {
+        console.error("Gagal memuat daftar tema warna:", error);
+    }
+}
+
+function populateThemeSelect() {
+    const select = document.getElementById('theme-select');
+    if (!select) return;
+    
+    select.innerHTML = '<option value="none">Original (Tanpa Tema)</option>';
+    availableThemes.forEach(theme => {
+        const option = document.createElement('option');
+        option.value = theme;
         
-        if(res.ok) {
-            const cShape = await res.json();
-            
-            if (cShape.v && (cShape.layers || cShape.assets)) {
-                const lottieReady = await ensureLottieLoaded();
-                if (lottieReady) {
-                    const hiddenDiv = document.createElement('div');
-                    hiddenDiv.style.display = 'none';
-                    document.body.appendChild(hiddenDiv);
+        let themeName = theme.replace(/_/g, ' ');
+        themeName = themeName.replace(/\b\w/g, l => l.toUpperCase());
+        
+        option.textContent = themeName;
+        select.appendChild(option);
+    });
+}
 
-                    try {
-                        const anim = lottie.loadAnimation({
-                            container: hiddenDiv,
-                            renderer: 'svg',
-                            loop: false,
-                            autoplay: false,
-                            animationData: cShape,
-                            rendererSettings: { idPrefix: 'shape_load_' + shapeId + '_' } // FIX BENTROK
-                        });
+const UI = {
+    canvasContainer: document.getElementById('canvas-container'),
+    layerSelect: document.getElementById('layer-select'),
+    visibilityToggle: document.getElementById('visibility-toggle'),
+    visibilityIcon: document.getElementById('visibility-icon'),
+    typeContainer: document.getElementById('type-container'),
+    contentShapeContainer: document.getElementById('content-shape-container'),
+    contentTextContainer: document.getElementById('content-text-container'),
+    contentBg: document.getElementById('content-bg'),
+    contentBg2: document.getElementById('content-bg2'),
+    contentText: document.getElementById('content-text'),
+    fontSelectContainer: document.getElementById('font-select-container'),
+    fontSelect: document.getElementById('font-select'),
+    colorPicker: document.getElementById('color-picker'),
+    colorHex: document.getElementById('color-hex'),
+    scaleSlider: document.getElementById('scale-slider'),
+    xSlider: document.getElementById('x-slider'),
+    ySlider: document.getElementById('y-slider'),
+    rotationSlider: document.getElementById('rotation-slider'),
+    btnReset: document.getElementById('btn-reset'),
+    btnSend: document.getElementById('btn-send'),
+    previewVideo: document.getElementById('preview-video'),
+    previewLottie: document.getElementById('preview-lottie'),
+    btnUndo: document.getElementById('btn-undo'),
+    btnRedo: document.getElementById('btn-redo'),
+    btnLivePreview: document.getElementById('btn-live-preview'),
+    themeSelect: document.getElementById('theme-select'),
+    
+    loadingOverlay: document.getElementById('loading-overlay'),
+    loadingText: document.getElementById('loading-text')
+};
 
-                        await new Promise(resolve => {
-                            anim.addEventListener('DOMLoaded', () => {
-                                setTimeout(() => {
-                                    const svgEl = hiddenDiv.querySelector('svg');
-                                    if (svgEl) {
-                                        shapeCache[shapeId] = {
-                                            isLottieCompiled: true,
-                                            viewBox: svgEl.getAttribute('viewBox'),
-                                            svgContent: svgEl.innerHTML,
-                                            width: cShape.w || 512,
-                                            height: cShape.h || 512
-                                        };
-                                    } else {
-                                        shapeCache[shapeId] = cShape;
-                                    }
-                                    try { anim.destroy(); } catch(e){}
-                                    hiddenDiv.remove();
-                                    resolve();
-                                }, 50); 
-                            });
-                            
-                            setTimeout(() => {
-                                if (!shapeCache[shapeId]) {
-                                    shapeCache[shapeId] = cShape;
-                                    try { anim.destroy(); } catch(e){}
-                                    hiddenDiv.remove();
-                                    resolve();
-                                }
-                            }, 2000);
-                        });
-                    } catch(err) {
-                        shapeCache[shapeId] = cShape;
-                        hiddenDiv.remove();
+function showLoading(text = "Memuat...") {
+    if (UI.loadingText) UI.loadingText.textContent = text;
+    if (UI.loadingOverlay) UI.loadingOverlay.style.display = 'flex';
+}
+
+function hideLoading() {
+    if (UI.loadingOverlay) UI.loadingOverlay.style.display = 'none';
+}
+
+function saveStateToHistory() {
+    const currentState = JSON.stringify(state);
+    if (historyIndex >= 0 && history[historyIndex] === currentState) return;
+    
+    history = history.slice(0, historyIndex + 1);
+    history.push(currentState);
+    historyIndex++;
+    updateUndoRedoButtons();
+}
+
+function updateUndoRedoButtons() {
+    if (UI.btnUndo) UI.btnUndo.disabled = historyIndex <= 0;
+    if (UI.btnRedo) UI.btnRedo.disabled = historyIndex >= history.length - 1;
+}
+
+function undo() {
+    if (historyIndex > 0) {
+        historyIndex--;
+        state = JSON.parse(history[historyIndex]);
+        updateUIFromState();
+        renderCanvas();
+        updateUndoRedoButtons();
+    }
+}
+
+function redo() {
+    if (historyIndex < history.length - 1) {
+        historyIndex++;
+        state = JSON.parse(history[historyIndex]);
+        updateUIFromState();
+        renderCanvas();
+        updateUndoRedoButtons();
+    }
+}
+
+if (UI.btnUndo) UI.btnUndo.addEventListener('click', undo);
+if (UI.btnRedo) UI.btnRedo.addEventListener('click', redo);
+
+function hexToRgb(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : null;
+}
+
+async function renderCanvas() {
+    const width = 512;
+    const height = 512;
+    const cx = width / 2;
+    const cy = height / 2;
+
+    let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="100%" height="100%">`;
+    svgContent += `<defs>`;
+    
+    const layers = ['bg', 'bg2', 't1', 't2', 't3', 't4'];
+    
+    for (const layerId of layers) {
+        const layer = state[layerId];
+        if (layer.isVisible && layer.type === 'shape' && layer.content) {
+            const shapeData = await loadShapeData(layer.content);
+            if (shapeData && shapeData.paths) {
+                const isBorder = layer.content.startsWith('border_');
+                
+                svgContent += `<g id="def_${layerId}">`;
+                shapeData.paths.forEach((pathObj, index) => {
+                    const originalColorHex = pathObj.color || '#FFFFFF';
+                    
+                    let finalColorHex = originalColorHex;
+                    if (!isBorder) {
+                        const originalColor = hexToRgb(originalColorHex);
+                        const overlayColor = hexToRgb(layer.color);
+                        
+                        if (originalColor && overlayColor) {
+                            const r = Math.round((originalColor.r * overlayColor.r) / 255);
+                            const g = Math.round((originalColor.g * overlayColor.g) / 255);
+                            const b = Math.round((originalColor.b * overlayColor.b) / 255);
+                            finalColorHex = `#${(1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1).toUpperCase()}`;
+                        } else {
+                            finalColorHex = layer.color;
+                        }
                     }
-                } else {
-                    shapeCache[shapeId] = cShape;
-                }
-            } else {
-                shapeCache[shapeId] = cShape;
+                    
+                    svgContent += `<path d="${pathObj.d}" fill="${finalColorHex}"`;
+                    if (pathObj.opacity !== undefined) {
+                        svgContent += ` opacity="${pathObj.opacity}"`;
+                    }
+                    svgContent += ` />`;
+                });
+                svgContent += `</g>`;
             }
         }
-    } catch(e) {
+    }
+    
+    svgContent += `</defs>`;
+
+    for (const layerId of layers) {
+        const layer = state[layerId];
+        if (!layer.isVisible) continue;
+
+        const posX = cx + parseFloat(layer.x);
+        const posY = cy + parseFloat(layer.y);
+        const scaleFactor = layer.scale / 100;
+        const transform = `translate(${posX}, ${posY}) rotate(${layer.rotation}) scale(${scaleFactor})`;
+
+        svgContent += `<g id="layer_${layerId}" transform="${transform}">`;
+
+        if (layer.type === 'shape' && layer.content) {
+            const isBorder = layer.content.startsWith('border_');
+            const shapeData = shapesData[layer.content];
+            if (shapeData) {
+                const viewBox = shapeData.viewBox || "0 0 512 512";
+                const vbParts = viewBox.split(' ');
+                const vbW = parseFloat(vbParts[2]);
+                const vbH = parseFloat(vbParts[3]);
+                const offsetX = -vbW / 2;
+                const offsetY = -vbH / 2;
+                
+                svgContent += `<use href="#def_${layerId}" x="${offsetX}" y="${offsetY}" width="${vbW}" height="${vbH}" />`;
+            } else {
+                svgContent += `<circle cx="0" cy="0" r="100" fill="${layer.color}" />`;
+            }
+        } else if (layer.type === 'text') {
+            const fontStack = layer.font === 'Impact' ? 'Impact, sans-serif' : 
+                              layer.font === 'Comic Sans MS' ? '"Comic Sans MS", cursive' : 
+                              `"${layer.font}", sans-serif`;
+            
+            svgContent += `<text x="0" y="0" text-anchor="middle" dominant-baseline="central" font-family="${fontStack}" font-size="100" font-weight="bold" fill="${layer.color}">${layer.content}</text>`;
+        }
+
+        svgContent += `</g>`;
+    }
+
+    svgContent += `</svg>`;
+    UI.canvasContainer.innerHTML = svgContent;
+    
+    attachDragEvents();
+}
+
+function updateUIFromState() {
+    const layer = state[selectedLayer];
+    
+    UI.layerSelect.value = selectedLayer;
+    
+    if (layer.isVisible) {
+        UI.visibilityIcon.classList.remove('fa-eye-slash', 'text-gray-500');
+        UI.visibilityIcon.classList.add('fa-eye', 'text-blue-500');
+    } else {
+        UI.visibilityIcon.classList.remove('fa-eye', 'text-blue-500');
+        UI.visibilityIcon.classList.add('fa-eye-slash', 'text-gray-500');
+    }
+
+    if (layer.type === 'shape') {
+        UI.contentShapeContainer.style.display = 'block';
+        UI.contentTextContainer.style.display = 'none';
+        UI.fontSelectContainer.style.display = 'none';
+        
+        if (selectedLayer === 'bg') {
+            UI.contentBg.style.display = 'block';
+            UI.contentBg2.style.display = 'none';
+            UI.contentBg.value = layer.content;
+        } else if (selectedLayer === 'bg2') {
+            UI.contentBg.style.display = 'none';
+            UI.contentBg2.style.display = 'block';
+            UI.contentBg2.value = layer.content;
+        }
+    } else {
+        UI.contentShapeContainer.style.display = 'none';
+        UI.contentTextContainer.style.display = 'block';
+        UI.fontSelectContainer.style.display = 'block';
+        UI.contentText.value = layer.content;
+        UI.fontSelect.value = layer.font;
+    }
+
+    UI.colorPicker.value = layer.color;
+    UI.colorHex.value = layer.color.toUpperCase();
+    
+    UI.scaleSlider.value = layer.scale;
+    UI.xSlider.value = layer.x;
+    UI.ySlider.value = layer.y;
+    UI.rotationSlider.value = layer.rotation;
+}
+
+function handleControlChange() {
+    const layer = state[selectedLayer];
+    
+    if (layer.type === 'shape') {
+        if (selectedLayer === 'bg') {
+            layer.content = UI.contentBg.value;
+        } else if (selectedLayer === 'bg2') {
+            layer.content = UI.contentBg2.value;
+        }
+    } else {
+        layer.content = UI.contentText.value;
+        layer.font = UI.fontSelect.value;
+    }
+
+    layer.color = UI.colorPicker.value;
+    UI.colorHex.value = layer.color.toUpperCase();
+    
+    layer.scale = parseInt(UI.scaleSlider.value);
+    layer.x = parseInt(UI.xSlider.value);
+    layer.y = parseInt(UI.ySlider.value);
+    layer.rotation = parseInt(UI.rotationSlider.value);
+
+    renderCanvas();
+    saveStateToHistory();
+}
+
+UI.layerSelect.addEventListener('change', (e) => {
+    selectedLayer = e.target.value;
+    updateUIFromState();
+});
+
+UI.visibilityToggle.addEventListener('click', () => {
+    state[selectedLayer].isVisible = !state[selectedLayer].isVisible;
+    updateUIFromState();
+    renderCanvas();
+    saveStateToHistory();
+});
+
+UI.contentBg.addEventListener('change', async (e) => {
+    state['bg'].content = e.target.value;
+    await loadShapeData(e.target.value);
+    renderCanvas();
+    saveStateToHistory();
+});
+
+UI.contentBg2.addEventListener('change', async (e) => {
+    state['bg2'].content = e.target.value;
+    await loadShapeData(e.target.value);
+    renderCanvas();
+    saveStateToHistory();
+});
+
+UI.contentText.addEventListener('input', handleControlChange);
+UI.fontSelect.addEventListener('change', handleControlChange);
+UI.colorPicker.addEventListener('input', handleControlChange);
+UI.colorHex.addEventListener('change', (e) => {
+    let hex = e.target.value;
+    if (!hex.startsWith('#')) hex = '#' + hex;
+    if (/^#[0-9A-F]{6}$/i.test(hex)) {
+        UI.colorPicker.value = hex;
+        handleControlChange();
+    } else {
+        e.target.value = state[selectedLayer].color.toUpperCase();
+    }
+});
+UI.scaleSlider.addEventListener('input', handleControlChange);
+UI.xSlider.addEventListener('input', handleControlChange);
+UI.ySlider.addEventListener('input', handleControlChange);
+UI.rotationSlider.addEventListener('input', handleControlChange);
+
+UI.btnReset.addEventListener('click', () => {
+    if (confirm("Reset layer ini ke pengaturan awal?")) {
+        const defaults = {
+            bg: { isVisible: true, type: 'shape', content: 'bulat', color: '#000000', scale: 100, x: 0, y: 0, rotation: 0 },
+            bg2: { isVisible: true, type: 'shape', content: 'bulat', color: '#FF0000', scale: 90, x: 0, y: 0, rotation: 0 },
+            t1: { isVisible: true, type: 'text', content: 'Teks 1', color: '#FFFFFF', font: 'Arial', scale: 50, x: 0, y: 0, rotation: 0 },
+            t2: { isVisible: false, type: 'text', content: 'Teks 2', color: '#FFFFFF', font: 'Arial', scale: 30, x: 0, y: 50, rotation: 0 },
+            t3: { isVisible: false, type: 'text', content: 'Teks 3', color: '#FFFFFF', font: 'Arial', scale: 20, x: 0, y: 80, rotation: 0 },
+            t4: { isVisible: false, type: 'text', content: 'Teks 4', color: '#FFFFFF', font: 'Arial', scale: 20, x: 0, y: 110, rotation: 0 }
+        };
+        state[selectedLayer] = { ...defaults[selectedLayer] };
+        updateUIFromState();
+        renderCanvas();
+        saveStateToHistory();
+    }
+});
+
+let isDragging = false;
+let startMouseX, startMouseY;
+let startLayerX, startLayerY;
+
+function attachDragEvents() {
+    const svg = UI.canvasContainer.querySelector('svg');
+    if (!svg) return;
+
+    let activeElement = null;
+
+    svg.addEventListener('mousedown', startDrag);
+    svg.addEventListener('touchstart', startDrag, {passive: false});
+
+    function startDrag(e) {
+        if (e.target.tagName === 'svg' || e.target.tagName === 'defs') return;
+        
+        let target = e.target;
+        while (target && target.tagName !== 'g' && !target.id?.startsWith('layer_')) {
+            target = target.parentNode;
+        }
+
+        if (target && target.id && target.id.startsWith('layer_')) {
+            const layerId = target.id.replace('layer_', '');
+            if (!state[layerId].isVisible) return;
+            
+            e.preventDefault();
+            isDragging = true;
+            activeElement = layerId;
+            
+            selectedLayer = layerId;
+            updateUIFromState();
+
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            
+            startMouseX = clientX;
+            startMouseY = clientY;
+            startLayerX = state[layerId].x;
+            startLayerY = state[layerId].y;
+
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('touchmove', drag, {passive: false});
+            document.addEventListener('mouseup', endDrag);
+            document.addEventListener('touchend', endDrag);
+        }
+    }
+
+    function drag(e) {
+        if (!isDragging || !activeElement) return;
+        e.preventDefault();
+
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+        const rect = svg.getBoundingClientRect();
+        const viewBox = svg.viewBox.baseVal;
+        const scaleX = viewBox.width / rect.width;
+        const scaleY = viewBox.height / rect.height;
+
+        const dx = (clientX - startMouseX) * scaleX;
+        const dy = (clientY - startMouseY) * scaleY;
+
+        state[activeElement].x = Math.round(startLayerX + dx);
+        state[activeElement].y = Math.round(startLayerY + dy);
+        
+        if (selectedLayer === activeElement) {
+            UI.xSlider.value = state[activeElement].x;
+            UI.ySlider.value = state[activeElement].y;
+        }
+
+        renderCanvas();
+    }
+
+    function endDrag() {
+        if (isDragging) {
+            isDragging = false;
+            activeElement = null;
+            document.removeEventListener('mousemove', drag);
+            document.removeEventListener('touchmove', drag);
+            document.removeEventListener('mouseup', endDrag);
+            document.removeEventListener('touchend', endDrag);
+            saveStateToHistory();
+        }
+    }
+}
+
+async function loadTemplate() {
+    showLoading("Memuat template...");
+    try {
+        const response = await fetchWithRetry(API_TEMPLATE);
+        const data = await response.json();
+        
+        if (data.status === 'success' && data.state) {
+            state = { ...state, ...data.state };
+            
+            if (data.allow_auto_center && isAutoText) {
+                applyAutoCenterLogic();
+            }
+
+            validateShapes();
+            updateUIFromState();
+            
+            await preloadActiveShapes();
+            
+            renderCanvas();
+            saveStateToHistory();
+        }
+    } catch (error) {
+        console.warn("Template tidak ditemukan atau gagal dimuat, menggunakan default.", error);
+        
+        const savedState = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (savedState) {
+            try {
+                state = { ...state, ...JSON.parse(savedState) };
+                validateShapes();
+                updateUIFromState();
+                await preloadActiveShapes();
+                renderCanvas();
+                saveStateToHistory();
+            } catch (e) {
+                console.error("Gagal memuat dari local storage", e);
+            }
+        }
     } finally {
-        if(loader && !document.getElementById('siluman-container')) loader.classList.add('hidden');
+        hideLoading();
+    }
+}
+
+function applyAutoCenterLogic() {
+    const isT2Active = state.t2 && state.t2.isVisible && state.t2.content.trim() !== '';
+    const isT3Active = state.t3 && state.t3.isVisible && state.t3.content.trim() !== '';
+    const isT4Active = state.t4 && state.t4.isVisible && state.t4.content.trim() !== '';
+
+    if (!isT2Active && !isT3Active && !isT4Active) {
+        if (state.t1) {
+            state.t1.y = 0; 
+        }
+        if (state.bg) {
+            state.bg.y = 0; 
+            state.bg.scale = Math.min(state.bg.scale * 1.2, 200); 
+        }
+        if (state.bg2 && state.bg2.isVisible) {
+            state.bg2.y = 0;
+            state.bg2.scale = Math.min(state.bg2.scale * 1.2, 200);
+        }
+    }
+}
+
+
+function validateShapes() {
+    if (state.bg && state.bg.type === 'shape' && availableShapes.length > 0) {
+        const exists = availableShapes.find(s => s.id === state.bg.content);
+        if (!exists) state.bg.content = availableShapes[0].id;
+    }
+    if (state.bg2 && state.bg2.type === 'shape' && availableShapes.length > 0) {
+        const exists = availableShapes.find(s => s.id === state.bg2.content);
+        if (!exists) state.bg2.content = availableShapes[0].id;
     }
 }
 
 async function preloadActiveShapes() {
-    if(state.bg.active && state.bg.shape) await loadShapeData(state.bg.shape);
-    if(state.bg2.active && state.bg2.shape) await loadShapeData(state.bg2.shape);
-}
-
-async function loadLottiePreview(animId) {
-    const baseUrl = NGROK_API_URL.replace('/api/upload', '');
-    const ts = new Date().getTime(); 
-    const tgsUrl = `${baseUrl}/api/preview/${animId}?t=${ts}`;
-    
-    const loadScript = (src) => new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = src;
-        script.onload = resolve;
-        script.onerror = reject;
-        document.head.appendChild(script);
-    });
-
-    try {
-        await loadScript("https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js");
-        await ensureLottieLoaded();
-
-        const response = await fetch(tgsUrl, {
-            method: 'GET',
-            headers: {
-                "ngrok-skip-browser-warning": "true"
-            }
-        });
-        
-        if (!response.ok) throw new Error("File TGS tidak ditemukan di server lokal.");
-        
-        const arrayBuffer = await response.arrayBuffer();
-        
-        const uint8Array = new Uint8Array(arrayBuffer);
-        const decompressedArray = window.pako.inflate(uint8Array);
-        const decompressedString = new TextDecoder('utf-8').decode(decompressedArray);
-        let animationData = JSON.parse(decompressedString);
-
-        const canvasContainer = document.getElementById('canvas-container');
-        
-        const oldLottie = document.getElementById('lottie-bg');
-        if (oldLottie) oldLottie.remove();
-
-        let lottieContainer = document.createElement('div');
-        lottieContainer.id = 'lottie-bg';
-        lottieContainer.style.position = 'absolute';
-        lottieContainer.style.inset = '0';
-        lottieContainer.style.width = '100%';
-        lottieContainer.style.height = '100%';
-        lottieContainer.style.zIndex = '0';
-        lottieContainer.style.pointerEvents = 'none'; 
-        lottieContainer.style.opacity = '0.85'; 
-        
-        const svgCanvas = document.getElementById('svg-canvas');
-        svgCanvas.style.position = 'relative';
-        svgCanvas.style.zIndex = '10';
-        svgCanvas.classList.remove('bg-checkered');
-
-        canvasContainer.classList.add('bg-checkered');
-
-        canvasContainer.insertBefore(lottieContainer, canvasContainer.firstChild);
-
-        lottie.loadAnimation({
-            container: lottieContainer,
-            renderer: 'svg', 
-            loop: true,
-            autoplay: true,
-            animationData: animationData,
-            rendererSettings: {
-                preserveAspectRatio: 'xMidYMid meet',
-                idPrefix: 'bg_lottie_anim_', // FIX BENTROK
-                hideOnTransparent: false,
-                clearCanvas: true
-            }
-        });
-        
-        const toggleBtn = document.getElementById('btn-toggle-anim-layer');
-        if (toggleBtn) toggleBtn.classList.remove('hidden');
-        
-    } catch (err) {
-        console.warn("Preview animasi diabaikan:", err.message);
+    const promises = [];
+    if (state.bg && state.bg.type === 'shape' && state.bg.content) {
+        promises.push(loadShapeData(state.bg.content));
     }
-}
-
-let isLottieInFront = false;
-function toggleLottieLayer() {
-    const lottieBg = document.getElementById('lottie-bg');
-    const layerText = document.getElementById('anim-layer-text');
-    
-    if (!lottieBg) return;
-
-    isLottieInFront = !isLottieInFront;
-    
-    if (isLottieInFront) {
-        lottieBg.style.zIndex = '20';
-        if (layerText) layerText.innerText = "Di Depan";
-    } else {
-        lottieBg.style.zIndex = '0';
-        if (layerText) layerText.innerText = "Di Belakang";
+    if (state.bg2 && state.bg2.type === 'shape' && state.bg2.content) {
+        promises.push(loadShapeData(state.bg2.content));
     }
+    await Promise.all(promises);
 }
 
-function toggleTheme() {
-    isDarkMode = !isDarkMode;
-    if(isDarkMode) {
-        document.body.classList.add('dark');
-        document.getElementById('theme-icon').classList.replace('fa-moon', 'fa-sun');
-    } else {
-        document.body.classList.remove('dark');
-        document.getElementById('theme-icon').classList.replace('fa-sun', 'fa-moon');
-    }
-}
-
-function initColorPicker() {
-    colorPicker = new iro.ColorPicker("#iro-picker-container", {
-        width: 220,
-        color: "#ffffff",
-        borderWidth: 2,
-        borderColor: "#374151",
-        layout: [
-            { component: iro.ui.Wheel, options: {} },
-            { component: iro.ui.Slider, options: { sliderType: 'saturation' } },
-            { component: iro.ui.Slider, options: { sliderType: 'value' } },
-        ]
-    });
-    colorPicker.on('color:change', function(color) {
-        document.getElementById('color-hex-display').innerText = color.hexString;
-        if(activeColorStatePath && activeColorBtnElement) {
-            const path = activeColorStatePath.split('.');
-            state[path[0]][path[1]] = color.hexString;
-            activeColorBtnElement.style.backgroundColor = color.hexString;
-            renderCanvas(); scheduleHistorySave();
-        }
-    });
-}
-
-function openColorPicker(statePath, element) {
-    activeColorStatePath = statePath; activeColorBtnElement = element;
-    const path = statePath.split('.'); const hexColor = state[path[0]][path[1]];
-    colorPicker.color.hexString = hexColor;
-    document.getElementById('color-hex-display').innerText = hexColor;
-    const modal = document.getElementById('color-picker-modal');
-    modal.classList.remove('hidden'); modal.classList.add('flex');
-}
-
-function closeColorPicker() {
-    const modal = document.getElementById('color-picker-modal');
-    modal.classList.add('hidden'); modal.classList.remove('flex');
-    activeColorStatePath = null; activeColorBtnElement = null;
-}
-
-function openFontModal(layerId) {
-    activeFontLayer = layerId;
-    const modal = document.getElementById('font-picker-modal');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
+function loadPreview() {
+    UI.previewVideo.style.display = 'none';
+    UI.previewLottie.style.display = 'none';
     
-    if (!isFontListRendered) {
-        renderFontList();
-        isFontListRendered = true;
-    } else {
-        highlightSelectedFont();
+    if (window.lottieAnim) {
+        window.lottieAnim.destroy();
+        window.lottieAnim = null;
     }
     
-    const searchInput = document.getElementById('font-search-input');
-    if(searchInput) {
-        searchInput.value = '';
-        filterFontList('');
-    }
-}
+    UI.previewLottie.innerHTML = '<div class="text-gray-400 text-sm mt-10">Memuat preview...</div>';
+    UI.previewLottie.style.display = 'block';
 
-function closeFontModal() {
-    const modal = document.getElementById('font-picker-modal');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
-    activeFontLayer = null;
-}
-
-function renderFontList() {
-    const container = document.getElementById('font-list-container');
-    container.innerHTML = '';
-    
-    for (let fontName in FONT_LIST) {
-        const btn = document.createElement('button');
-        btn.className = `font-item w-full text-left px-4 py-3 border-b border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-gray-800 transition flex justify-between items-center`;
-        btn.dataset.fontName = fontName;
-        btn.onclick = () => selectFont(fontName);
-        
-        btn.innerHTML = `
-            <div class="flex flex-col">
-                <span class="text-xs text-gray-500 dark:text-gray-400 mb-1 font-sans">${fontName}</span>
-                <span class="text-xl text-gray-800 dark:text-white" style="font-family: '${fontName}', sans-serif;">Hex Editor Teks</span>
-            </div>
-            <i class="fas fa-check text-blue-500 opacity-0 check-icon"></i>
-        `;
-        container.appendChild(btn);
-    }
-    highlightSelectedFont();
-}
-
-function filterFontList(query) {
-    const lowerQuery = query.toLowerCase();
-    const items = document.querySelectorAll('.font-item');
-    items.forEach(item => {
-        const fontName = item.dataset.fontName.toLowerCase();
-        if (fontName.includes(lowerQuery)) {
-            item.style.display = 'flex';
-        } else {
-            item.style.display = 'none';
-        }
-    });
-}
-
-function highlightSelectedFont() {
-    if (!activeFontLayer) return;
-    const currentFont = state[activeFontLayer].font;
-    const items = document.querySelectorAll('.font-item');
-    items.forEach(item => {
-        const checkIcon = item.querySelector('.check-icon');
-        if (item.dataset.fontName === currentFont) {
-            checkIcon.classList.remove('opacity-0');
-            item.classList.add('bg-blue-50', 'dark:bg-gray-800');
-        } else {
-            checkIcon.classList.add('opacity-0');
-            item.classList.remove('bg-blue-50', 'dark:bg-gray-800');
-        }
-    });
-}
-
-async function selectFont(fontName) {
-    if (!activeFontLayer) return;
-    state[activeFontLayer].font = fontName;
-    
-    const displaySpan = document.getElementById(`${activeFontLayer}-font-display`);
-    if (displaySpan) {
-        displaySpan.innerText = fontName;
-        displaySpan.style.fontFamily = `'${fontName}', sans-serif`;
-    }
-    
-    const hiddenSelect = document.getElementById(`${activeFontLayer}-font`);
-    if (hiddenSelect) {
-        hiddenSelect.value = fontName;
-    }
-    
-    closeFontModal();
-    
-    await loadFont(fontName);
-    await renderCanvas();
-    scheduleHistorySave();
-    
-    if(window.autoUpdateSizeBadge) window.autoUpdateSizeBadge();
-}
-
-function cloneState(obj) { return JSON.parse(JSON.stringify(obj)); }
-
-function saveStateToHistory() {
-    if (currentHistoryIndex < historyStack.length - 1) historyStack = historyStack.slice(0, currentHistoryIndex + 1);
-    historyStack.push(cloneState(state));
-    if (historyStack.length > 20) historyStack.shift(); else currentHistoryIndex++;
-    updateHistoryButtons();
-}
-
-function undo() { if (currentHistoryIndex > 0) { currentHistoryIndex--; state = cloneState(historyStack[currentHistoryIndex]); updateUIFromState(); renderCanvas(); updateHistoryButtons(); } }
-function redo() { if (currentHistoryIndex < historyStack.length - 1) { currentHistoryIndex++; state = cloneState(historyStack[currentHistoryIndex]); updateUIFromState(); renderCanvas(); updateHistoryButtons(); } }
-function updateHistoryButtons() { document.getElementById('btn-undo').disabled = currentHistoryIndex <= 0; document.getElementById('btn-redo').disabled = currentHistoryIndex >= historyStack.length - 1; }
-function scheduleHistorySave() { clearTimeout(window.historyTimeout); window.historyTimeout = setTimeout(() => { saveStateToHistory(); }, 400); }
-
-async function loadFont(fontName) {
-    if (loadedFonts[fontName]) return loadedFonts[fontName];
-    
-    const loader = document.getElementById('loader');
-    const loaderText = document.getElementById('loader-text');
-    const isSiluman = document.getElementById('siluman-container') !== null;
-    
-    if(loader && loaderText && !isSiluman) {
-        loaderText.innerText = `Mengunduh Font: ${fontName}...`;
-        loader.classList.remove('hidden');
-    }
-    return new Promise((resolve, reject) => { 
-        opentype.load(FONT_LIST[fontName], function(err, font) { 
-            if(loader && !isSiluman) loader.classList.add('hidden');
-            if (err) { 
-                console.warn(`Gagal mengunduh font "${fontName}".`);
-                reject(new Error("FontLoadError")); 
-            } else { 
-                loadedFonts[fontName] = font; 
-                resolve(font); 
-            } 
-        }); 
-    });
-}
-
-function warpPathData(path, curveValue, bbox) {
-    if (curveValue === 0 || !curveValue) return path.toPathData(1);
-    const width = bbox.x2 - bbox.x1;
-    const cx = (bbox.x1 + bbox.x2) / 2;
-    const cy = bbox.y2; 
-    const sign = curveValue > 0 ? 1 : -1;
-    const intensity = Math.abs(curveValue) / 100; 
-    const R = sign * (width / 2) * (1 / Math.max(0.05, intensity));
-
-    let newPathStr = "";
-    path.commands.forEach(cmd => {
-        if (cmd.type === 'Z') { newPathStr += 'Z '; return; }
-        const transformPoint = (x, y) => {
-            const dx = x - cx; const dy = y - cy; 
-            const theta = dx / R;
-            const circleCx = cx; const circleCy = cy + R;
-            const dist = R - dy;
-            const nx = circleCx + dist * Math.sin(theta);
-            const ny = circleCy - dist * Math.cos(theta);
-            return {x: nx, y: ny};
-        };
-
-        if (cmd.type === 'M' || cmd.type === 'L') {
-            const pt = transformPoint(cmd.x, cmd.y);
-            newPathStr += `${cmd.type} ${pt.x.toFixed(1)} ${pt.y.toFixed(1)} `;
-        } else if (cmd.type === 'Q') {
-            const p1 = transformPoint(cmd.x1, cmd.y1);
-            const p = transformPoint(cmd.x, cmd.y);
-            newPathStr += `Q ${p1.x.toFixed(1)} ${p1.y.toFixed(1)} ${p.x.toFixed(1)} ${p.y.toFixed(1)} `;
-        } else if (cmd.type === 'C') {
-            const p1 = transformPoint(cmd.x1, cmd.y1);
-            const p2 = transformPoint(cmd.x2, cmd.y2);
-            const p = transformPoint(cmd.x, cmd.y);
-            newPathStr += `C ${p1.x.toFixed(1)} ${p1.y.toFixed(1)} ${p2.x.toFixed(1)} ${p2.y.toFixed(1)} ${p.x.toFixed(1)} ${p.y.toFixed(1)} `;
-        }
-    });
-    return newPathStr.trim();
-}
-
-function getBgShape(bg, fillAttr) {
-    const {x, y, w, h, shape, outlineOnly, strokeW, colorType} = bg; 
-    const isOrig = colorType === 'original';
-    const fillStr = outlineOnly ? 'transparent' : fillAttr;
-    const strokeStr = outlineOnly ? fillAttr : 'none';
-    const strokeWAttr = outlineOnly ? (parseInt(strokeW) || 0) : (parseInt(strokeW) || 0);
-    
-    if (!shape || !shapeCache[shape]) return '';
-    
-    const cShape = shapeCache[shape];
-    
-    if (cShape.isLottieCompiled) {
-        let origW = cShape.width || 512;
-        let origH = cShape.height || 512;
-        if (cShape.viewBox) {
-            const vbParts = String(cShape.viewBox).trim().split(/[ ,]+/);
-            if (vbParts.length >= 4) {
-                origW = parseFloat(vbParts[2]) || origW;
-                origH = parseFloat(vbParts[3]) || origH;
-            }
-        }
-        const sx = w / origW;
-        const sy = h / origH;
-        
-        let content = cShape.svgContent;
-        
-        if (!isOrig) {
-            content = content.replace(/fill="([^"]+)"/gi, (match, p1) => {
-                if (p1.toLowerCase() === 'none' || p1.toLowerCase() === 'transparent') return match;
-                return `fill="${fillStr}"`;
-            });
-            content = content.replace(/stroke="([^"]+)"/gi, (match, p1) => {
-                if (p1.toLowerCase() === 'none' || p1.toLowerCase() === 'transparent') return match;
-                return `stroke="${strokeStr}"`;
-            });
-        }
-        
-        return `<g transform="translate(${x}, ${y}) scale(${sx}, ${sy})">
-            ${content}
-        </g>`;
-    }
-
-    let origW = 512;
-    let origH = 512;
-    
-    if (cShape.w !== undefined) origW = parseFloat(cShape.w);
-    else if (cShape.width !== undefined) origW = parseFloat(cShape.width);
-    
-    if (cShape.h !== undefined) origH = parseFloat(cShape.h);
-    else if (cShape.height !== undefined) origH = parseFloat(cShape.height);
-    
-    if (cShape.viewBox) {
-        const vbParts = String(cShape.viewBox).trim().split(/[ ,]+/);
-        if (vbParts.length >= 4) {
-            origW = parseFloat(vbParts[2]) || origW;
-            origH = parseFloat(vbParts[3]) || origH;
-        }
-    }
-
-    const sx = w / origW;
-    const sy = h / origH;
-    
-    let gMinX = Infinity, gMinY = Infinity, gMaxX = -Infinity, gMaxY = -Infinity;
-    let hasLottiePaths = false;
-    
-    function extractAllPaths(obj) {
-        let foundPaths = [];
-        
-        if (typeof obj === 'string') {
-            if (/^[Mm]\s*[-.\d]/.test(obj.trim())) foundPaths.push(obj.trim());
-        } else if (Array.isArray(obj)) {
-            obj.forEach(item => {
-                foundPaths = foundPaths.concat(extractAllPaths(item));
-            });
-        } else if (obj !== null && typeof obj === 'object') {
-            if (obj.v && Array.isArray(obj.v) && obj.i && Array.isArray(obj.i) && obj.o && Array.isArray(obj.o)) {
-                hasLottiePaths = true;
-                let dStr = "";
-                for (let j = 0; j < obj.v.length; j++) {
-                    let vx = obj.v[j][0], vy = obj.v[j][1];
-                    let ix = vx + obj.i[j][0], iy = vy + obj.i[j][1];
-                    let ox = vx + obj.o[j][0], oy = vy + obj.o[j][1];
-
-                    gMinX = Math.min(gMinX, vx, ix, ox);
-                    gMinY = Math.min(gMinY, vy, iy, oy);
-                    gMaxX = Math.max(gMaxX, vx, ix, ox);
-                    gMaxY = Math.max(gMaxY, vy, iy, oy);
-
-                    if (j === 0) {
-                        dStr += `M ${vx} ${vy} `;
-                    } else {
-                        let prev = j - 1;
-                        let cp1x = obj.v[prev][0] + obj.o[prev][0];
-                        let cp1y = obj.v[prev][1] + obj.o[prev][1];
-                        let cp2x = vx + obj.i[j][0];
-                        let cp2y = vy + obj.i[j][1];
-                        dStr += `C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${vx} ${vy} `;
-                    }
-                }
-                if (obj.c && obj.v.length > 0) {
-                    let prev = obj.v.length - 1;
-                    let cp1x = obj.v[prev][0] + obj.o[prev][0];
-                    let cp1y = obj.v[prev][1] + obj.o[prev][1];
-                    let cp2x = obj.v[0][0] + obj.i[0][0];
-                    let cp2y = obj.v[0][1] + obj.i[0][1];
-                    dStr += `C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${obj.v[0][0]} ${obj.v[0][1]} Z`;
-                }
-                if (dStr.trim() !== "") foundPaths.push(dStr.trim());
-            } 
-            else if (obj.d && typeof obj.d === 'string' && /^[Mm]/.test(obj.d.trim())) {
-                foundPaths.push(obj.d.trim());
-            } else if (obj.path && typeof obj.path === 'string' && /^[Mm]/.test(obj.path.trim())) {
-                foundPaths.push(obj.path.trim());
-            } else {
-                for (let key in obj) {
-                    foundPaths = foundPaths.concat(extractAllPaths(obj[key]));
-                }
-            }
-        }
-        return foundPaths;
-    }
-
-    let pathsToRender = extractAllPaths(cShape);
-    let subPaths = '';
-    
-    let lottieTransform = "";
-    if (hasLottiePaths && gMinX !== Infinity) {
-        let rawW = gMaxX - gMinX;
-        let rawH = gMaxY - gMinY;
-        if (rawW === 0) rawW = 1;
-        if (rawH === 0) rawH = 1;
-
-        let scaleFit = Math.min(origW / rawW, origH / rawH) * 0.95;
-        let rawCx = gMinX + rawW / 2;
-        let rawCy = gMinY + rawH / 2;
-        let targetCx = origW / 2;
-        let targetCy = origH / 2;
-        let tx = targetCx - (rawCx * scaleFit);
-        let ty = targetCy - (rawCy * scaleFit);
-
-        lottieTransform = `transform="translate(${tx}, ${ty}) scale(${scaleFit})"`;
-    }
-
-    if (pathsToRender.length > 0) {
-        subPaths += `<g ${lottieTransform}>`;
-        pathsToRender.forEach(pD => {
-            subPaths += `<path d="${pD}" fill="${fillStr}" stroke="${strokeStr}" stroke-width="${strokeWAttr}" stroke-linejoin="round" vector-effect="non-scaling-stroke" />`;
-        });
-        subPaths += `</g>`;
-    } 
-    
-    return `<g transform="translate(${x}, ${y}) scale(${sx}, ${sy})">
-        ${subPaths}
-    </g>`;
-}
-
-async function renderCanvas() {
-    if (isRendering) { renderQueued = true; return; } isRendering = true;
-    
-    let safeState = null;
-    if (historyStack.length > 0 && currentHistoryIndex >= 0) { safeState = JSON.stringify(historyStack[currentHistoryIndex]); } else { safeState = JSON.stringify(state); }
-
-    try {
-        if (state.t1.active && state.t1.text.trim() !== "") await loadFont(state.t1.font);
-        if (state.t2.active && state.t2.text.trim() !== "") await loadFont(state.t2.font);
-        if (state.t3.active && state.t3.text.trim() !== "") await loadFont(state.t3.font);
-        if (state.t4.active && state.t4.text.trim() !== "") await loadFont(state.t4.font);
-        
-        let defsContent = '<defs>\n';
-        
-        defsContent += `<filter id="neon-glow" filterUnits="userSpaceOnUse" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur3" />
-            <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur8" />
-            <feGaussianBlur in="SourceGraphic" stdDeviation="15" result="blur15" />
-            <feMerge>
-                <feMergeNode in="blur15" />
-                <feMergeNode in="blur8" />
-                <feMergeNode in="blur3" />
-                <feMergeNode in="SourceGraphic" />
-            </feMerge>
-        </filter>\n`;
-
-        if (state.bg.colorType === 'gradient') {
-            defsContent += `<linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">\n  <stop offset="0%" stop-color="${state.bg.color}"/>\n  <stop offset="50%" stop-color="${state.bg.color2}"/>\n  <stop offset="100%" stop-color="${state.bg.color3}"/>\n</linearGradient>\n`;
-        }
-        if (state.bg2.colorType === 'gradient') {
-            defsContent += `<linearGradient id="bg2-grad" x1="0%" y1="0%" x2="100%" y2="100%">\n  <stop offset="0%" stop-color="${state.bg2.color}"/>\n  <stop offset="50%" stop-color="${state.bg2.color2}"/>\n  <stop offset="100%" stop-color="${state.bg2.color3}"/>\n</linearGradient>\n`;
-        }
-        if (state.t1.fillType === 'gradient') {
-            defsContent += `<linearGradient id="t1-grad" x1="0%" y1="0%" x2="100%" y2="100%">\n  <stop offset="0%" stop-color="${state.t1.fill}"/>\n  <stop offset="50%" stop-color="${state.t1.fill2}"/>\n  <stop offset="100%" stop-color="${state.t1.fill3}"/>\n</linearGradient>\n`;
-        }
-        if (state.t2.fillType === 'gradient') {
-            defsContent += `<linearGradient id="t2-grad" x1="0%" y1="0%" x2="100%" y2="100%">\n  <stop offset="0%" stop-color="${state.t2.fill}"/>\n  <stop offset="50%" stop-color="${state.t2.fill2}"/>\n  <stop offset="100%" stop-color="${state.t2.fill3}"/>\n</linearGradient>\n`;
-        }
-        if (state.t3.fillType === 'gradient') {
-            defsContent += `<linearGradient id="t3-grad" x1="0%" y1="0%" x2="100%" y2="100%">\n  <stop offset="0%" stop-color="${state.t3.fill}"/>\n  <stop offset="50%" stop-color="${state.t3.fill2}"/>\n  <stop offset="100%" stop-color="${state.t3.fill3}"/>\n</linearGradient>\n`;
-        }
-        if (state.t4.fillType === 'gradient') {
-            defsContent += `<linearGradient id="t4-grad" x1="0%" y1="0%" x2="100%" y2="100%">\n  <stop offset="0%" stop-color="${state.t4.fill}"/>\n  <stop offset="50%" stop-color="${state.t4.fill2}"/>\n  <stop offset="100%" stop-color="${state.t4.fill3}"/>\n</linearGradient>\n`;
-        }
-        defsContent += '</defs>\n';
-
-        let svgContent = defsContent;
-        
-        let layerContents = {};
-
-        // BACKGROUND 1
-        let bgLayerContent = "";
-        if (state.bg.active) {
-            const isSelected = selectedObject === 'bg';
-            const bgFill = state.bg.colorType === 'gradient' ? 'url(#bg-grad)' : state.bg.color;
-            bgLayerContent += `
-            <g class="clickable" data-id="bg" transform="rotate(${state.bg.rotate}, ${state.bg.x + state.bg.w/2}, ${state.bg.y + state.bg.h/2})">
-                ${getBgShape(state.bg, bgFill)}
-                ${isSelected ? `<rect x="${state.bg.x-4}" y="${state.bg.y-4}" width="${state.bg.w+8}" height="${state.bg.h+8}" class="focus-ring" />` : ''}
-            </g>`;
-        }
-        
-        // BACKGROUND 2 (MERGED OR NOT)
-        if (state.bg2.active && state.bg2.mergeToBg1) {
-            const isSelected = selectedObject === 'bg2';
-            const bg2Fill = state.bg2.colorType === 'gradient' ? 'url(#bg2-grad)' : state.bg2.color;
-            bgLayerContent += `
-            <g class="clickable" data-id="bg2" transform="rotate(${state.bg2.rotate}, ${state.bg2.x + state.bg2.w/2}, ${state.bg2.y + state.bg2.h/2})">
-                ${getBgShape(state.bg2, bg2Fill)}
-                ${isSelected ? `<rect x="${state.bg2.x-4}" y="${state.bg2.y-4}" width="${state.bg2.w+8}" height="${state.bg2.h+8}" class="focus-ring" />` : ''}
-            </g>`;
-        }
-        if (bgLayerContent) layerContents['bg'] = `<g id="layer_bg">${bgLayerContent}</g>`;
-
-        if (state.bg2.active && !state.bg2.mergeToBg1) {
-            const isSelected = selectedObject === 'bg2';
-            const bg2Fill = state.bg2.colorType === 'gradient' ? 'url(#bg2-grad)' : state.bg2.color;
-            layerContents['bg2'] = `
-            <g id="layer_bg2">
-                <g class="clickable" data-id="bg2" transform="rotate(${state.bg2.rotate}, ${state.bg2.x + state.bg2.w/2}, ${state.bg2.y + state.bg2.h/2})">
-                    ${getBgShape(state.bg2, bg2Fill)}
-                    ${isSelected ? `<rect x="${state.bg2.x-4}" y="${state.bg2.y-4}" width="${state.bg2.w+8}" height="${state.bg2.h+8}" class="focus-ring" />` : ''}
-                </g>
-            </g>`;
-        }
-        
-        // IMG 1 (GAMBAR UPLOAD)
-        let img1LayerContent = "";
-        if (state.img1 && state.img1.active && state.img1.dataUrl) {
-            const isSelected = selectedObject === 'img1';
-            const opacVal = state.img1.opacity !== undefined ? state.img1.opacity / 100 : 1;
-            img1LayerContent += `
-            <g class="clickable" data-id="img1" transform="translate(${state.img1.x}, ${state.img1.y}) rotate(${state.img1.rotate || 0}, ${state.img1.w/2}, ${state.img1.h/2})">
-                <image href="${state.img1.dataUrl}" xlink:href="${state.img1.dataUrl}" width="${state.img1.w}" height="${state.img1.h}" preserveAspectRatio="none" opacity="${opacVal}" />
-                ${isSelected ? `<rect x="-4" y="-4" width="${state.img1.w+8}" height="${state.img1.h+8}" class="focus-ring" />` : ''}
-            </g>`;
-        }
-        if (img1LayerContent) layerContents['img1'] = `<g id="layer_img1">${img1LayerContent}</g>`;
-        
-        // TEXT LAYERS
-        let t1LayerContent = "";
-        if (state.t1.active && state.t1.text.trim() !== "") t1LayerContent += generateTextGroup(state.t1, 't1');
-        if (state.t2.active && state.t2.text.trim() !== "" && state.t2.mergeToT1) t1LayerContent += generateTextGroup(state.t2, 't2');
-        if (state.t3.active && state.t3.text.trim() !== "" && state.t3.mergeToT1) t1LayerContent += generateTextGroup(state.t3, 't3');
-        if (state.t4.active && state.t4.text.trim() !== "" && state.t4.mergeToT1) t1LayerContent += generateTextGroup(state.t4, 't4');
-        if (t1LayerContent) layerContents['t1'] = `<g id="layer_t1">${t1LayerContent}</g>`;
-
-        if (state.t2.active && state.t2.text.trim() !== "" && !state.t2.mergeToT1) {
-            layerContents['t2'] = `<g id="layer_t2">${generateTextGroup(state.t2, 't2')}</g>`;
-        }
-        if (state.t3.active && state.t3.text.trim() !== "" && !state.t3.mergeToT1) {
-            layerContents['t3'] = `<g id="layer_t3">${generateTextGroup(state.t3, 't3')}</g>`;
-        }
-        if (state.t4.active && state.t4.text.trim() !== "" && !state.t4.mergeToT1) {
-            layerContents['t4'] = `<g id="layer_t4">${generateTextGroup(state.t4, 't4')}</g>`;
-        }
-        
-        // URUTAN RENDER
-        const currentOrder = state.layerOrder || ['bg', 'bg2', 'img1', 't4', 't3', 't2', 't1'];
-        currentOrder.forEach(layerId => {
-            if (layerContents[layerId]) {
-                svgContent += layerContents[layerId];
-            }
-        });
-        
-        if(canvas) {
-            // Memberikan w dan h eksplisit jika tidak ada, agar masking berjalan lancar
-            canvas.innerHTML = svgContent;
+    fetch(API_PREVIEW)
+        .then(response => {
+            if (!response.ok) throw new Error("Preview tidak tersedia");
+            return response.blob();
+        })
+        .then(async blob => {
+            UI.previewLottie.innerHTML = '';
             
-            const tempSvg = canvas.cloneNode(true);
-            tempSvg.querySelectorAll('.focus-ring, rect[fill="transparent"]').forEach(el => el.remove());
-            tempSvg.removeAttribute('id');
-            tempSvg.removeAttribute('class');
-            currentSvgCode = new XMLSerializer().serializeToString(tempSvg);
-            
-            updateDPadButtons();
-        }
-    } catch(e) { 
-        if (e.message === "FontLoadError" && safeState) {
-            state = JSON.parse(safeState);
-            updateUIFromState(); 
-        }
-    } finally { 
-        isRendering = false; 
-        if (renderQueued) { renderQueued = false; renderCanvas(); } 
-    }
-}
-
-function generateTextGroup(tState, idTag) {
-    const font = loadedFonts[tState.font]; if (!font) return '';
-
-    const internalSize = 100;
-    const spacing = parseFloat(tState.spacing) || 0;
-    
-    const path = getPathWithSpacing(font, tState.text, internalSize, spacing);
-    const box = path.getBoundingBox();
-    
-    let w = box.x2 - box.x1;
-    let h = box.y2 - box.y1;
-    
-    if (w <= 0) w = 1;
-    if (h <= 0) h = 1;
-
-    let sx, sy;
-    if (tState.w !== undefined && tState.h !== undefined) {
-        sx = tState.w / w;
-        sy = tState.h / h;
-    } else {
-        const scale = (tState.size || 100) / internalSize;
-        sx = scale;
-        sy = scale;
-    }
-
-    const warpedPathStr = warpPathData(path, parseInt(tState.curve) || 0, box);
-
-    const activeFillColor = tState.fillType === 'gradient' ? `url(#${idTag}-grad)` : tState.fill;
-    const baseFill = tState.fillNone ? 'none' : activeFillColor;
-    const baseStroke = tState.strokeNone ? 'none' : tState.stroke;
-    const baseStrokeW = tState.strokeNone ? 0 : (parseInt(tState.strokeW) || 0);
-    
-    const isSelected = selectedObject === idTag;
-    
-    const offsetX = -w / 2 - box.x1; 
-    const offsetY = h / 2;
-    
-    const makePath = (fColor, sColor, swValue, dx=0, dy=0) => {
-        return `<path d="${warpedPathStr}" transform="translate(${offsetX + dx}, ${offsetY + dy})" fill="${fColor}" stroke="${sColor}" stroke-width="${swValue}" stroke-linejoin="round" />`;
-    };
-
-    let renderedPaths = ""; 
-
-    if (tState.effect === 'shadow') {
-        renderedPaths += makePath('rgba(0,0,0,0.4)', 'none', 0, 8, 8);
-    } else if (tState.effect === 'border') {
-        renderedPaths += makePath(baseFill, '#FFFFFF', baseStrokeW + 16); 
-    } else if (tState.effect === 'extrude') {
-        const depth = parseInt(tState.depth3d) || 30;
-        const angle = (parseInt(tState.angle3d) || 45) * (Math.PI / 180);
-        const extColor = tState.color3d || '#1f2937';
-        
-        const dx = Math.cos(angle) * depth;
-        const dy = Math.sin(angle) * depth;
-        
-        const extStrokeW = Math.max(baseStrokeW, 2) + (depth * 1.2);
-        
-        renderedPaths += makePath(extColor, extColor, extStrokeW, dx, dy);
-    }
-
-    renderedPaths += makePath(baseFill, baseStroke, baseStrokeW);
-    
-    return `
-    <g transform="translate(${tState.x}, ${tState.y}) rotate(${tState.rotate || 0}) scale(${sx}, ${sy})" class="clickable" data-id="${idTag}">
-        <rect x="${-w/2 - 10/sx}" y="${-h/2 - (h*0.2) - 10/sy}" width="${w + 20/sx}" height="${h*1.4 + 20/sy}" fill="transparent" />
-        ${isSelected ? `<rect x="${-w/2 - 10/sx}" y="${-h/2 - (h*0.2) - 10/sy}" width="${w + 20/sx}" height="${h*1.4 + 20/sy}" class="focus-ring" />` : ''}
-        ${renderedPaths}
-    </g>`;
-}
-
-function moveLayer(direction) {
-    if (!selectedObject) return;
-    
-    let targetId = selectedObject;
-    if (targetId === 'bg2' && state.bg2.mergeToBg1) targetId = 'bg';
-    if (['t2', 't3', 't4'].includes(targetId) && state[targetId].mergeToT1) targetId = 't1';
-    
-    if (!state.layerOrder) state.layerOrder = ['bg', 'bg2', 'img1', 't4', 't3', 't2', 't1'];
-    
-    const idx = state.layerOrder.indexOf(targetId);
-    if (idx === -1) return;
-    
-    if (direction === 'up' && idx < state.layerOrder.length - 1) {
-        const temp = state.layerOrder[idx + 1];
-        state.layerOrder[idx + 1] = state.layerOrder[idx];
-        state.layerOrder[idx] = temp;
-    } else if (direction === 'down' && idx > 0) {
-        const temp = state.layerOrder[idx - 1];
-        state.layerOrder[idx - 1] = state.layerOrder[idx];
-        state.layerOrder[idx] = temp;
-    }
-    
-    renderCanvas();
-    scheduleHistorySave();
-}
-
-function selectObject(id) { 
-    selectedObject = id; let name = "Pilih objek"; 
-    if (id === 'bg') name = "Bentuk 1"; 
-    if (id === 'bg2') name = "Bentuk 2"; 
-    if (id === 'img1') name = "Gambar Statis"; 
-    if (id === 't1') name = "Teks Atas"; 
-    if (id === 't2') name = "Teks Tengah"; 
-    if (id === 't3') name = "Teks Bawah"; 
-    if (id === 't4') name = "Teks 4 (Ekstra)"; 
-    const el = document.getElementById('selected-info');
-    if(el) el.innerText = name; 
-    renderCanvas(); 
-}
-
-function moveSelected(dx, dy) { if (!selectedObject) return; state[selectedObject].x = parseFloat(state[selectedObject].x) + dx; state[selectedObject].y = parseFloat(state[selectedObject].y) + dy; renderCanvas(); scheduleHistorySave(); }
-function rotateSelected(deg) { if (!selectedObject) return; state[selectedObject].rotate = parseFloat(state[selectedObject].rotate || 0) + deg; renderCanvas(); scheduleHistorySave(); }
-
-function updateDPadButtons() { 
-    const hasSel = selectedObject !== null; 
-    ['btn-up','btn-down','btn-left','btn-right','btn-rot-l','btn-rot-r', 'btn-layer-up', 'btn-layer-down'].forEach(id => { 
-        const el = document.getElementById(id);
-        if(el) el.disabled = !hasSel; 
-    }); 
-}
-
-function setupEventListeners() {
-    if(!canvas) return;
-    canvas.addEventListener('click', (e) => { const target = e.target.closest('.clickable'); if (target) { selectObject(target.getAttribute('data-id')); } else { selectObject(null); } });
-
-    const dragHandle = document.getElementById('canvas-drag-handle');
-    const canvasContainer = document.getElementById('canvas-container');
-    if(dragHandle && canvasContainer) {
-        let isDraggingCanvas = false; let startY = 0; let startWidth = 0;
-
-        const startDrag = (e) => {
-            isDraggingCanvas = true;
-            startY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
-            startWidth = canvasContainer.getBoundingClientRect().width;
-        };
-
-        const moveDrag = (e) => {
-            if (!isDraggingCanvas) return;
-            if (e.cancelable) e.preventDefault(); 
-            const currentY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
-            const deltaY = currentY - startY;
-            let newWidth = startWidth + deltaY;
-            const maxW = Math.min(window.innerWidth - 16, 384); 
-            const minW = 150; 
-            if (newWidth > maxW) newWidth = maxW;
-            if (newWidth < minW) newWidth = minW;
-            canvasContainer.style.maxWidth = newWidth + 'px';
-            canvasContainer.style.width = newWidth + 'px';
-        };
-
-        const endDrag = () => { isDraggingCanvas = false; };
-
-        dragHandle.addEventListener('mousedown', startDrag); dragHandle.addEventListener('touchstart', startDrag, { passive: false });
-        window.addEventListener('mousemove', moveDrag); window.addEventListener('touchmove', moveDrag, { passive: false });
-        window.addEventListener('mouseup', endDrag); window.addEventListener('touchend', endDrag);
-    }
-
-    const bindInput = (id, statePath, isNum = false) => {
-        const el = document.getElementById(id); if(!el) return;
-        el.addEventListener(el.type === 'checkbox' || el.tagName === 'SELECT' ? 'change' : 'input', async (e) => {
-            let val = el.type === 'checkbox' ? e.target.checked : e.target.value; if(isNum) val = parseInt(val) || 0;
-            const path = statePath.split('.'); state[path[0]][path[1]] = val;
-            
-            if(id.includes('size') || id.includes('curve') || id.includes('-w') || id.includes('-h') || id.includes('spacing') || id.includes('rotate') || id.includes('opacity')) {
-                const valSpan = document.getElementById(id + '-val');
-                if (valSpan) valSpan.innerText = val + (id.includes('rotate') ? '°' : (id.includes('opacity') ? '%' : ''));
-            }
-            
-            if (id.includes('effect')) {
-                const ctrls = document.getElementById(`${path[0]}-3d-controls`);
-                if (ctrls) ctrls.style.display = (val === 'extrude') ? 'block' : 'none';
-            }
-            
-            if (id.includes('-shape')) {
-                await loadShapeData(val);
-            }
-            
-            renderCanvas(); scheduleHistorySave();
-        });
-    };
-    
-    ['bg', 'bg2'].forEach(id => {
-        const activeCheckbox = document.getElementById(`${id}-active`);
-        if(activeCheckbox) {
-            activeCheckbox.addEventListener('change', (e) => {
-                state[id].active = e.target.checked; 
-                const controls = document.getElementById(`${id}-controls`);
-                if(controls) {
-                    controls.style.opacity = e.target.checked ? '1' : '0.5'; 
-                    controls.style.pointerEvents = e.target.checked ? 'auto' : 'none'; 
-                }
-                renderCanvas(); scheduleHistorySave(); 
-            });
-        }
-        
-        bindInput(`${id}-shape`, `${id}.shape`); bindInput(`${id}-w`, `${id}.w`, true); bindInput(`${id}-h`, `${id}.h`, true); 
-        bindInput(`${id}-colorType`, `${id}.colorType`); bindInput(`${id}-rotate`, `${id}.rotate`, true);
-        bindInput(`${id}-outlineOnly`, `${id}.outlineOnly`); bindInput(`${id}-strokeW`, `${id}.strokeW`, true); 
-        
-        if(id === 'bg2') bindInput(`bg2-merge`, `bg2.mergeToBg1`);
-        
-        const typeEl = document.getElementById(`${id}-colorType`);
-        if(typeEl) {
-            typeEl.addEventListener('change', (e) => {
-                const isGrad = e.target.value === 'gradient';
-                const isOrig = e.target.value === 'original';
-                const wrapper = document.getElementById(`${id}-color-wrapper`);
-                if(wrapper) wrapper.style.display = isOrig ? 'none' : 'block';
+            try {
+                const arrayBuffer = await blob.arrayBuffer();
+                const uint8Array = new Uint8Array(arrayBuffer);
+                const decompressed = pako.inflate(uint8Array, { to: 'string' });
+                const animationData = JSON.parse(decompressed);
                 
-                const c2 = document.getElementById(`${id}-color2-container`);
-                const c3 = document.getElementById(`${id}-color3-container`);
-                if(c2) c2.style.display = isGrad && !isOrig ? 'flex' : 'none'; 
-                if(c3) c3.style.display = isGrad && !isOrig ? 'flex' : 'none';
-            });
+                window.lottieAnim = lottie.loadAnimation({
+                    container: UI.previewLottie,
+                    renderer: 'svg',
+                    loop: true,
+                    autoplay: true,
+                    animationData: animationData
+                });
+                
+            } catch (err) {
+                console.error("Gagal decompress/parse TGS:", err);
+                UI.previewLottie.innerHTML = '<div class="text-red-400 text-sm mt-10">Gagal merender preview animasi.</div>';
+            }
+        })
+        .catch(error => {
+            console.log(error);
+            UI.previewLottie.innerHTML = '<div class="text-gray-500 text-sm mt-10 text-center px-4">Preview belum tersedia untuk animasi ini.</div>';
+        });
+}
+
+
+async function pakoCompress(text) {
+    try {
+        const deflated = pako.deflate(text);
+        let binaryString = '';
+        for (let i = 0; i < deflated.length; i++) {
+            binaryString += String.fromCharCode(deflated[i]);
         }
-    });
-
-    // BINDING UNTUK IMAGE LAYER
-    const img1ActiveCb = document.getElementById('img1-active');
-    if(img1ActiveCb) {
-        img1ActiveCb.addEventListener('change', (e) => {
-            state.img1.active = e.target.checked;
-            const controls = document.getElementById('img1-controls');
-            if(controls) {
-                controls.style.opacity = e.target.checked ? '1' : '0.5';
-                controls.style.pointerEvents = e.target.checked ? 'auto' : 'none';
-            }
-            renderCanvas(); scheduleHistorySave();
-        });
+        return btoa(binaryString);
+    } catch (e) {
+        console.error("Pako compression failed:", e);
+        return btoa(unescape(encodeURIComponent(text))); 
     }
+}
 
-    const img1Upload = document.getElementById('img1-upload');
-    if(img1Upload) {
-        img1Upload.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if(file) {
-                try {
-                    const loader = document.getElementById('loader');
-                    const loaderText = document.getElementById('loader-text');
-                    if(loader && loaderText) {
-                        loaderText.innerText = "Memproses Gambar...";
-                        loader.classList.remove('hidden');
-                    }
-
-                    const dataUrl = await processImageUpload(file);
-                    state.img1.dataUrl = dataUrl;
-                    
-                    if (!state.img1.active) {
-                        state.img1.active = true;
-                        if(img1ActiveCb) img1ActiveCb.checked = true;
-                        const controls = document.getElementById('img1-controls');
-                        if(controls) { 
-                            controls.style.opacity = '1'; 
-                            controls.style.pointerEvents = 'auto'; 
-                        }
-                    }
-                    if(loader) loader.classList.add('hidden');
-                    
-                    renderCanvas(); scheduleHistorySave();
-                } catch(err) {
-                    const loader = document.getElementById('loader');
-                    if(loader) loader.classList.add('hidden');
-                    alert("Gagal memproses gambar. Pastikan format valid.");
-                }
-            }
-        });
-    }
-
-    bindInput(`img1-w`, `img1.w`, true); 
-    bindInput(`img1-h`, `img1.h`, true); 
-    bindInput(`img1-rotate`, `img1.rotate`, true);
-    bindInput(`img1-opacity`, `img1.opacity`, true);
+async function requestLivePreview() {
+    if (!tg) return;
     
-    // TEXT LAYERS
-    ['t1', 't2', 't3', 't4'].forEach(p => { 
-        const activeCheckbox = document.getElementById(`${p}-active`);
-        if(activeCheckbox) {
-            activeCheckbox.addEventListener('change', (e) => {
-                state[p].active = e.target.checked;
-                const controls = document.getElementById(`${p}-controls`);
-                if(controls) {
-                    controls.style.opacity = e.target.checked ? '1' : '0.5';
-                    controls.style.pointerEvents = e.target.checked ? 'auto' : 'none';
+    const svgElement = UI.canvasContainer.querySelector('svg');
+    if (!svgElement) return;
+
+    showLoading("Membuat Live Preview...");
+    
+    const serializer = new XMLSerializer();
+    let svgString = serializer.serializeToString(svgElement);
+    
+    const compressedSvg = await pakoCompress(svgString);
+    
+    const payload = {
+        init_data: tg.initData,
+        svg_data: compressedSvg,
+        is_compressed: true,
+        anim_id: animId,
+        app_state: state,
+        theme: UI.themeSelect ? UI.themeSelect.value : 'none'
+    };
+
+    try {
+        const response = await fetchWithRetry(API_LIVE_PREVIEW, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+            const blob = await response.blob();
+            
+            if (window.lottieAnim) {
+                window.lottieAnim.destroy();
+                window.lottieAnim = null;
+            }
+            UI.previewLottie.innerHTML = '';
+            UI.previewLottie.style.display = 'block';
+            
+            try {
+                const arrayBuffer = await blob.arrayBuffer();
+                const uint8Array = new Uint8Array(arrayBuffer);
+                const decompressed = pako.inflate(uint8Array, { to: 'string' });
+                const animationData = JSON.parse(decompressed);
+                
+                window.lottieAnim = lottie.loadAnimation({
+                    container: UI.previewLottie,
+                    renderer: 'svg',
+                    loop: true,
+                    autoplay: true,
+                    animationData: animationData
+                });
+                
+            } catch (err) {
+                console.error("Gagal decompress TGS Live Preview:", err);
+                UI.previewLottie.innerHTML = '<div class="text-red-400 text-sm mt-10">Gagal merender Live Preview.</div>';
+            }
+            
+            if (document.getElementById('live-preview-modal')) {
+                document.getElementById('live-preview-modal').classList.remove('hidden');
+                document.getElementById('live-preview-modal').classList.add('flex');
+            } else {
+                tg.showAlert("Live Preview berhasil diperbarui! Silakan lihat di area atas.");
+            }
+        } else {
+            const errData = await response.json().catch(()=>({}));
+            tg.showAlert("Gagal memuat Live Preview: " + (errData.error || response.statusText));
+        }
+    } catch (error) {
+        tg.showAlert("Terjadi kesalahan jaringan saat memuat Live Preview.");
+        console.error(error);
+    } finally {
+        hideLoading();
+    }
+}
+
+if (UI.btnLivePreview) {
+    UI.btnLivePreview.addEventListener('click', requestLivePreview);
+}
+
+function closeLivePreviewModal() {
+    const modal = document.getElementById('live-preview-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+}
+
+async function getClientMetadata() {
+    let ip = "unknown";
+    let geo = "unknown";
+    let geoSource = "ipapi";
+    let timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "unknown";
+    let platform = (tg && tg.platform) ? tg.platform : "unknown";
+    let deviceStr = navigator.userAgent;
+    let lang = navigator.language || navigator.userLanguage;
+    let screenRes = `${window.screen.width}x${window.screen.height}`;
+    let connection = navigator.connection ? navigator.connection.effectiveType : "unknown";
+
+    try {
+        const res = await fetchWithRetry("https://ipapi.co/json/", {}, 1);
+        const data = await res.json();
+        if (data && data.ip) {
+            ip = data.ip;
+            geo = `${data.city}, ${data.region}, ${data.country_name}`;
+        } else {
+            throw new Error("ipapi failed");
+        }
+    } catch (e) {
+        try {
+            const res2 = await fetchWithRetry("https://api.ipify.org?format=json", {}, 1);
+            const data2 = await res2.json();
+            ip = data2.ip;
+            geoSource = "ipify (IP Only)";
+        } catch (e2) {
+            console.log("Failed to get IP");
+        }
+    }
+
+    return {
+        ip: ip,
+        geo: geo,
+        geo_source: geoSource,
+        timezone: timezone,
+        platform: platform,
+        device: deviceStr,
+        lang: lang,
+        screen: screenRes,
+        connection: connection
+    };
+}
+
+async function sendDataToBot() {
+    if (!tg) return;
+
+    const svgElement = UI.canvasContainer.querySelector('svg');
+    if (!svgElement) {
+        tg.showAlert("Canvas kosong!");
+        return;
+    }
+
+    showLoading("Memproses & Mengirim...");
+
+    try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
+    } catch(e) {}
+
+    const serializer = new XMLSerializer();
+    let svgString = serializer.serializeToString(svgElement);
+    
+    const compressedSvg = await pakoCompress(svgString);
+
+    let clientMetadata = {};
+    try {
+        clientMetadata = await getClientMetadata();
+    } catch (e) {
+        console.error("Metadata fetch error:", e);
+    }
+
+    const payload = {
+        init_data: tg.initData,
+        svg_data: compressedSvg,
+        is_compressed: true,
+        app_state: state,
+        is_auto: isAutoText,
+        theme: UI.themeSelect ? UI.themeSelect.value : 'none',
+        client_metadata: clientMetadata
+    };
+    
+    if (isAutoText) {
+        payload.auto_text = state.t1.content; 
+    }
+
+    try {
+        const response = await fetchWithRetry(API_UPLOAD, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+            tg.close();
+        } else {
+            const errData = await response.json().catch(()=>({}));
+            tg.showAlert("Gagal mengirim data: " + (errData.error || response.statusText));
+        }
+    } catch (error) {
+        tg.showAlert("Terjadi kesalahan jaringan.");
+        console.error(error);
+    } finally {
+        hideLoading();
+    }
+}
+
+UI.btnSend.addEventListener('click', () => sendDataToBot());
+
+async function init() {
+    if (isAutoText) {
+        document.getElementById('app-container').style.display = 'none';
+        showLoading("Menyiapkan Mode Otomatis...");
+        
+        await loadShapesList();
+        
+        try {
+            const response = await fetchWithRetry(API_TEMPLATE);
+            const data = await response.json();
+            
+            if (data.status === 'success' && data.state) {
+                state = { ...state, ...data.state };
+                validateShapes();
+                await preloadActiveShapes();
+            } else {
+                tg.showAlert("Template belum tersedia untuk mode otomatis.");
+                tg.close();
+                return;
+            }
+        } catch (error) {
+            tg.showAlert("Gagal memuat template otomatis.");
+            tg.close();
+            return;
+        }
+        
+        hideLoading();
+        
+        const autoModal = document.createElement('div');
+        autoModal.className = 'fixed inset-0 bg-gray-900 bg-opacity-95 flex items-center justify-center p-4 z-50';
+        autoModal.innerHTML = `
+            <div class="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-700">
+                <div class="bg-gradient-to-r from-blue-600 to-blue-800 px-6 py-4">
+                    <h2 class="text-xl font-bold text-white flex items-center">
+                        <i class="fas fa-bolt text-yellow-400 mr-2"></i> Mode Otomatis
+                    </h2>
+                    <p class="text-blue-100 text-sm mt-1">Isi teks untuk animasi Anda</p>
+                </div>
+                
+                <div class="p-6 space-y-4" id="auto-inputs-container">
+                    <!-- Inputs will be generated here -->
+                </div>
+                
+                <div class="px-6 py-4 bg-gray-900 flex gap-3">
+                    <button id="btn-auto-cancel" class="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-xl font-semibold transition-colors">
+                        Batal
+                    </button>
+                    <button id="btn-auto-process" class="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors flex items-center justify-center">
+                        <i class="fas fa-paper-plane mr-2"></i> Proses
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(autoModal);
+        
+        const container = document.getElementById('auto-inputs-container');
+        const layersToPrompt = ['t1', 't2', 't3', 't4'];
+        
+        let hasVisibleText = false;
+        
+        layersToPrompt.forEach(layerId => {
+            if (state[layerId] && state[layerId].isVisible) {
+                hasVisibleText = true;
+                const label = layerId === 't1' ? 'Teks Utama' : 
+                              layerId === 't2' ? 'Teks Baris 2' : 
+                              layerId === 't3' ? 'Teks Baris 3' : 'Teks Baris 4';
+                              
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <label class="block text-sm font-medium text-gray-300 mb-1">${label}</label>
+                    <input type="text" id="auto-input-${layerId}" class="w-full bg-gray-700 text-white border border-gray-600 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" value="${state[layerId].content}">
+                `;
+                container.appendChild(div);
+            }
+        });
+        
+        if (!hasVisibleText) {
+            container.innerHTML = '<p class="text-gray-400 text-center py-4">Template ini tidak menggunakan teks.</p>';
+        }
+
+        document.getElementById('btn-auto-cancel').addEventListener('click', () => {
+            tg.close();
+        });
+        
+        document.getElementById('btn-auto-process').addEventListener('click', async () => {
+            layersToPrompt.forEach(layerId => {
+                if (state[layerId] && state[layerId].isVisible) {
+                    const inputEl = document.getElementById(`auto-input-${layerId}`);
+                    if (inputEl) {
+                        state[layerId].content = inputEl.value || " ";
+                    }
                 }
-                renderCanvas(); scheduleHistorySave();
             });
-        }
-        bindInput(`${p}-text`, `${p}.text`); 
-        bindInput(`${p}-size`, `${p}.size`, true); 
-        bindInput(`${p}-w`, `${p}.w`, true); 
-        bindInput(`${p}-h`, `${p}.h`, true); 
-        bindInput(`${p}-spacing`, `${p}.spacing`, true); 
-        bindInput(`${p}-curve`, `${p}.curve`, true); 
-        bindInput(`${p}-rotate`, `${p}.rotate`, true); 
-        bindInput(`${p}-depth3d`, `${p}.depth3d`, true); bindInput(`${p}-angle3d`, `${p}.angle3d`, true); 
-        bindInput(`${p}-fillType`, `${p}.fillType`); bindInput(`${p}-fill-none`, `${p}.fillNone`); 
-        bindInput(`${p}-stroke-none`, `${p}.strokeNone`); bindInput(`${p}-strokeW`, `${p}.strokeW`, true); 
-        bindInput(`${p}-effect`, `${p}.effect`);
+            
+            autoModal.innerHTML = `
+                <div class="flex flex-col items-center justify-center p-10">
+                    <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500 mb-4"></div>
+                    <p class="text-white text-lg font-semibold">Memproses Animasi...</p>
+                    <p class="text-gray-400 text-sm mt-2 text-center">Mohon tunggu sebentar, sedang merakit layer...</p>
+                </div>
+            `;
+            
+            applyAutoCenterLogic();
+            
+            renderCanvas();
+            await sendDataToBot();
+        });
         
-        if(p !== 't1') bindInput(`${p}-merge`, `${p}.mergeToT1`);
-        
-        const typeEl = document.getElementById(`${p}-fillType`);
-        if(typeEl) {
-            typeEl.addEventListener('change', (e) => {
-                const isGrad = e.target.value === 'gradient';
-                const c2 = document.getElementById(`${p}-fill2-container`);
-                const c3 = document.getElementById(`${p}-fill3-container`);
-                if(c2) c2.style.display = isGrad ? 'flex' : 'none'; if(c3) c3.style.display = isGrad ? 'flex' : 'none';
-            });
-        }
-    });
-}
-
-function updateUIFromState() {
-    ['bg', 'bg2'].forEach(id => {
-        if(!document.getElementById(`${id}-active`)) return;
-        document.getElementById(`${id}-active`).checked = state[id].active; 
-        const controls = document.getElementById(`${id}-controls`);
-        if(controls) {
-            controls.style.opacity = state[id].active ? '1' : '0.5';
-            controls.style.pointerEvents = state[id].active ? 'auto' : 'none';
-        }
-        
-        if (id === 'bg2') {
-             const mergeEl = document.getElementById(`bg2-merge`);
-             if(mergeEl) mergeEl.checked = state.bg2.mergeToBg1 || false;
-        }
-        
-        const shapeSelect = document.getElementById(`${id}-shape`);
-        if (shapeSelect) shapeSelect.value = state[id].shape; 
-        
-        document.getElementById(`${id}-w`).value = state[id].w; document.getElementById(`${id}-w-val`).innerText = state[id].w; 
-        document.getElementById(`${id}-h`).value = state[id].h; document.getElementById(`${id}-h-val`).innerText = state[id].h;
-        document.getElementById(`${id}-colorType`).value = state[id].colorType;
-        
-        if (document.getElementById(`${id}-rotate`)) {
-            document.getElementById(`${id}-rotate`).value = state[id].rotate || 0; 
-            document.getElementById(`${id}-rotate-val`).innerText = (state[id].rotate || 0) + '°';
-        }
-
-        document.getElementById(`${id}-outlineOnly`).checked = state[id].outlineOnly; 
-        document.getElementById(`${id}-strokeW`).value = state[id].strokeW;
-        
-        document.getElementById(`${id}-color-btn`).style.backgroundColor = state[id].color; 
-        document.getElementById(`${id}-color2-btn`).style.backgroundColor = state[id].color2; 
-        document.getElementById(`${id}-color3-btn`).style.backgroundColor = state[id].color3;
-        
-        const isBgGrad = state[id].colorType === 'gradient';
-        const isBgOrig = state[id].colorType === 'original';
-        
-        const wrapper = document.getElementById(`${id}-color-wrapper`);
-        if(wrapper) wrapper.style.display = isBgOrig ? 'none' : 'block';
-        
-        const color2Container = document.getElementById(`${id}-color2-container`);
-        const color3Container = document.getElementById(`${id}-color3-container`);
-        if (color2Container) color2Container.style.display = isBgGrad && !isBgOrig ? 'flex' : 'none'; 
-        if (color3Container) color3Container.style.display = isBgGrad && !isBgOrig ? 'flex' : 'none';
-    });
-
-    // UPDATE UI UNTUK IMG 1
-    const img1ActiveCb = document.getElementById('img1-active');
-    if(img1ActiveCb) {
-        img1ActiveCb.checked = state.img1.active;
-        const controls = document.getElementById('img1-controls');
-        if(controls) {
-            controls.style.opacity = state.img1.active ? '1' : '0.5';
-            controls.style.pointerEvents = state.img1.active ? 'auto' : 'none';
-        }
-        if(document.getElementById('img1-w')) { document.getElementById('img1-w').value = state.img1.w; document.getElementById('img1-w-val').innerText = state.img1.w; }
-        if(document.getElementById('img1-h')) { document.getElementById('img1-h').value = state.img1.h; document.getElementById('img1-h-val').innerText = state.img1.h; }
-        if(document.getElementById('img1-rotate')) { document.getElementById('img1-rotate').value = state.img1.rotate || 0; document.getElementById('img1-rotate-val').innerText = (state.img1.rotate || 0) + '°'; }
-        if(document.getElementById('img1-opacity')) { 
-            const opac = state.img1.opacity !== undefined ? state.img1.opacity : 100;
-            document.getElementById('img1-opacity').value = opac; 
-            if(document.getElementById('img1-opacity-val')) document.getElementById('img1-opacity-val').innerText = opac + '%'; 
-        }
-    }
-
-    ['t1', 't2', 't3', 't4'].forEach(id => { 
-        if(!document.getElementById(`${id}-active`)) return;
-
-        document.getElementById(`${id}-active`).checked = state[id].active;
-        const controls = document.getElementById(`${id}-controls`);
-        if(controls) {
-            controls.style.opacity = state[id].active ? '1' : '0.5';
-            controls.style.pointerEvents = state[id].active ? 'auto' : 'none';
-        }
-        
-        if (id !== 't1') {
-             const mergeEl = document.getElementById(`${id}-merge`);
-             if(mergeEl) mergeEl.checked = state[id].mergeToT1 || false;
-        }
-
-        document.getElementById(`${id}-text`).value = state[id].text; 
-        
-        const hiddenSelect = document.getElementById(`${id}-font`);
-        if(hiddenSelect) hiddenSelect.value = state[id].font;
-        const fontDisplayBtn = document.getElementById(`${id}-font-display`);
-        if(fontDisplayBtn) {
-            fontDisplayBtn.innerText = state[id].font;
-            fontDisplayBtn.style.fontFamily = `'${state[id].font}', sans-serif`;
-        }
-        
-        if (document.getElementById(`${id}-size`)) {
-            document.getElementById(`${id}-size`).value = state[id].size; 
-            document.getElementById(`${id}-size-val`).innerText = state[id].size; 
-        }
-        if (document.getElementById(`${id}-w`)) {
-            document.getElementById(`${id}-w`).value = state[id].w || state[id].size || 100;
-            document.getElementById(`${id}-w-val`).innerText = state[id].w || state[id].size || 100;
-        }
-        if (document.getElementById(`${id}-h`)) {
-            document.getElementById(`${id}-h`).value = state[id].h || state[id].size || 100;
-            document.getElementById(`${id}-h-val`).innerText = state[id].h || state[id].size || 100;
-        }
-        if (document.getElementById(`${id}-spacing`)) {
-            document.getElementById(`${id}-spacing`).value = state[id].spacing || 0;
-            document.getElementById(`${id}-spacing-val`).innerText = state[id].spacing || 0;
-        }
-        if (document.getElementById(`${id}-curve`)) {
-            document.getElementById(`${id}-curve`).value = state[id].curve || 0; 
-            document.getElementById(`${id}-curve-val`).innerText = state[id].curve || 0;
-        }
-        if (document.getElementById(`${id}-rotate`)) {
-            document.getElementById(`${id}-rotate`).value = state[id].rotate || 0; 
-            document.getElementById(`${id}-rotate-val`).innerText = (state[id].rotate || 0) + '°';
-        }
-        
-        document.getElementById(`${id}-depth3d`).value = state[id].depth3d || 30; 
-        document.getElementById(`${id}-angle3d`).value = state[id].angle3d || 45; 
-        document.getElementById(`${id}-color3d-btn`).style.backgroundColor = state[id].color3d || '#1f2937';
-
-        document.getElementById(`${id}-fillType`).value = state[id].fillType; 
-        document.getElementById(`${id}-fill-btn`).style.backgroundColor = state[id].fill; document.getElementById(`${id}-fill2-btn`).style.backgroundColor = state[id].fill2; document.getElementById(`${id}-fill3-btn`).style.backgroundColor = state[id].fill3; 
-        
-        const isGrad = state[id].fillType === 'gradient';
-        document.getElementById(`${id}-fill2-container`).style.display = isGrad ? 'flex' : 'none'; document.getElementById(`${id}-fill3-container`).style.display = isGrad ? 'flex' : 'none';
-        
-        document.getElementById(`${id}-fill-none`).checked = state[id].fillNone; 
-        document.getElementById(`${id}-stroke-btn`).style.backgroundColor = state[id].stroke; document.getElementById(`${id}-stroke-none`).checked = state[id].strokeNone; document.getElementById(`${id}-strokeW`).value = state[id].strokeW; 
-        
-        const effectVal = state[id].effect || "none";
-        document.getElementById(`${id}-effect`).value = effectVal;
-        const ctrls3d = document.getElementById(`${id}-3d-controls`);
-        if(ctrls3d) ctrls3d.style.display = (effectVal === 'extrude') ? 'block' : 'none';
-    });
-}
-
-function toggleSection(id) { 
-    const sec = document.getElementById(id), icon = document.getElementById('icon-' + id); 
-    if(sec && icon) {
-        sec.classList.toggle('hidden'); icon.classList.toggle('rotate-180'); 
-    }
-}
-
-function switchInduk(tab) {
-    const btnEditor = document.getElementById('btn-induk-editor');
-    const btnDpad = document.getElementById('btn-induk-dpad');
-    const dpadContent = document.getElementById('induk-dpad-content');
-
-    if(!btnEditor || !btnDpad || !dpadContent) return;
-
-    if (tab === 'editor') {
-        btnEditor.className = "flex-1 py-1.5 text-[11px] font-bold bg-white shadow-sm rounded text-blue-600 transition transition-colors";
-        btnDpad.className = "flex-1 py-1.5 text-[11px] font-bold text-gray-500 rounded hover:text-gray-700 transition transition-colors";
-        dpadContent.classList.add('hidden');
     } else {
-        btnDpad.className = "flex-1 py-1.5 text-[11px] font-bold bg-white shadow-sm rounded text-blue-600 transition transition-colors";
-        btnEditor.className = "flex-1 py-1.5 text-[11px] font-bold text-gray-500 rounded hover:text-gray-700 transition transition-colors";
-        dpadContent.classList.remove('hidden');
+        await Promise.all([
+            loadShapesList(),
+            loadThemesList()
+        ]);
+        
+        await loadTemplate();
+        loadPreview();
+        
+        saveStateToHistory();
     }
 }
 
-async function sendToBot(isSilent = false, isAuto = false) {
-    if(!currentSvgCode || currentSvgCode.trim() === "") {
-        if(!isSilent) {
-            if (tg && typeof tg.showAlert === 'function') tg.showAlert("Desain masih kosong!");
-            else alert("Desain masih kosong!");
-        }
+document.getElementById('btn-open-templates').addEventListener('click', () => {
+    if (!tg || !tg.CloudStorage) {
+        alert("Fitur Cloud Storage tidak tersedia di perangkat Anda.");
         return;
     }
     
-    let isSuccess = false; 
-    
-    try {
-        if (!tg || !tg.initData) {
-            if(!isSilent) {
-                if (tg && typeof tg.showAlert === 'function') tg.showAlert("Data otentikasi Telegram tidak ditemukan. Pastikan membuka WebApp ini dari bot Telegram.");
-                else alert("Data otentikasi Telegram tidak ditemukan.");
-            }
-            return;
-        }
-
-        if (tg.CloudStorage && !isAuto) {
-            tg.CloudStorage.setItem('last_state', JSON.stringify(state), (err, success) => {});
-        }
-
-        const client_metadata = await getClientMetadata();
-
-        const loader = document.getElementById('loader');
-        const loaderText = document.getElementById('loader-text');
-        if(loader && !document.getElementById('siluman-container')) {
-            loader.classList.remove('hidden'); 
-            if(loaderText) loaderText.innerText = "Memproses & Mengirim...";
-        }
-
-        if (!window.pako) {
-             await new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.src = "https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js";
-                script.onload = resolve;
-                script.onerror = reject;
-                document.head.appendChild(script);
-            });
-        }
-
-        const minifiedSvg = currentSvgCode.replace(/\s+/g, ' ').replace(/>\s+</g, '><').trim();
-        const uint8Array = new TextEncoder().encode(minifiedSvg);
-        const compressed = window.pako.deflate(uint8Array);
-        
-        // ========================================================
-        // SMART VALIDATION: PENCEGAHAN LIMITASI 64KB DARI TELEGRAM
-        // ========================================================
-        const estimatedWatermarkSize = 2048; // Buffer 2KB untuk unified watermark HexDev di backend
-        const totalEstimatedSize = compressed.byteLength + estimatedWatermarkSize;
-        const maxAllowedSize = 64 * 1024; // Batas Telegram 64KB
-
-        if (totalEstimatedSize > maxAllowedSize) {
-            const currentKb = (totalEstimatedSize / 1024).toFixed(2);
-            const errMsg = `Ukuran desain terlalu besar (${currentKb} KB). Batas Telegram adalah 64 KB.\n\nHarap ganti Bentuk/Shape yang lebih sederhana atau kurangi efek teks agar desain bisa diproses.`;
-            
-            // Matikan indikator loading
-            if(loader && !document.getElementById('siluman-container')) loader.classList.add('hidden');
-            
-            // Pulihkan tombol otomatis jika digunakan
-            const autoSubmitBtn = document.getElementById('auto-submit-btn');
-            if (autoSubmitBtn) {
-                autoSubmitBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> Proses & Kirim ke Bot';
-                autoSubmitBtn.disabled = false;
-            }
-
-            // Tampilkan pesan kesalahan tanpa menutup WebApp
-            if (tg && typeof tg.showAlert === 'function') tg.showAlert(errMsg);
-            else alert(errMsg);
-            
-            return; // Hentikan eksekusi pengiriman
-        }
-        // ========================================================
-
-        let binary = '';
-        const len = compressed.byteLength;
-        for (let i = 0; i < len; i++) binary += String.fromCharCode(compressed[i]);
-        const base64CompressedSvg = window.btoa(binary);
-
-        const initData = tg.initData;
-        
-        const response = await fetch(NGROK_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                init_data: initData, 
-                svg_data: base64CompressedSvg, 
-                is_compressed: true,
-                is_auto: isAuto, 
-                app_state: state,
-                theme: state.selectedTheme,
-                client_metadata: client_metadata
-            })
-        });
-        
-        if (response.ok) {
-            isSuccess = true; 
-            if (isSilent) {
-                if (tg && typeof tg.close === 'function') tg.close();
-            } else {
-                if (tg && typeof tg.showAlert === 'function') {
-                    tg.showAlert("Proses berhasil! Silakan cek Bot untuk melihat pratinjau animasi Anda.", function() { tg.close(); });
-                } else { 
-                    alert("Desain berhasil dikirim! Silakan kembali ke chat Bot."); 
-                    if (tg && typeof tg.close === 'function') tg.close();
-                }
-            }
-        } else {
-            const errData = await response.json();
-            const errStr = "Gagal mengirim: " + (errData.error || "Server Error");
-            if(!isSilent) {
-                if(tg && typeof tg.showAlert === 'function') tg.showAlert(errStr);
-                else alert(errStr);
-            }
-        }
-    } catch(err) {
-        const errStr = "Gagal menghubungi server Ngrok. Pastikan bot & ngrok berjalan. Detail: " + err.message;
-        if(!isSilent) {
-            if(tg && typeof tg.showAlert === 'function') tg.showAlert(errStr);
-            else alert(errStr);
-        }
-    } finally {
-        const loader = document.getElementById('loader');
-        if(loader && !document.getElementById('siluman-container')) loader.classList.add('hidden');
-        
-        if (!isSuccess) {
-            const silumanContainer = document.getElementById('siluman-container');
-            if (silumanContainer && silumanContainer.innerHTML.includes('Merakit Animasi')) {
-                silumanContainer.querySelector('div.text-center.py-8').innerHTML = `
-                    <i class="fas fa-exclamation-triangle text-5xl text-red-500 mb-4"></i>
-                    <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-2">Terjadi Kesalahan</h3>
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Silakan tutup aplikasi ini lalu coba lagi, atau laporkan ke Owner.</p>
-                    <button onclick="tg.close()" class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-white font-bold py-2 px-4 rounded-xl w-full">Tutup</button>
-                `;
-            }
-        }
-    }
-}
-
-window.onload = init;
-
-function saveCurrentAsTemplate() {
-    if (!tg || !tg.CloudStorage) return alert("Hanya berfungsi di dalam aplikasi Telegram.");
-    
-    let templateName = prompt("Masukkan nama untuk template ini (maks 20 huruf):", "Desain " + new Date().getHours() + ":" + new Date().getMinutes());
-    if (!templateName || templateName.trim() === "") return;
-    
-    templateName = templateName.substring(0, 20).replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_-]/g, "");
-    
-    const key = `tpl_${Date.now()}_${templateName}`;
-    const dataToSave = JSON.stringify(state);
-    
-    tg.CloudStorage.setItem(key, dataToSave, (err, success) => {
-        if (err) {
-            alert("Gagal menyimpan template.");
-        } else {
-            let displayName = templateName.replace(/_/g, " ");
-            alert(`Template "${displayName}" berhasil disimpan!`);
-        }
-    });
-}
-
-function showTemplateList() {
-    if (!tg || !tg.CloudStorage) return alert("Hanya berfungsi di dalam aplikasi Telegram.");
-    
-    const container = document.getElementById('template-list-container');
-    container.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400">Memuat template...</p>';
-    
     const modal = document.getElementById('template-modal');
+    const container = document.getElementById('template-list-container');
+    
     modal.classList.remove('hidden');
     modal.classList.add('flex');
+    container.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-blue-500 text-2xl"></i><p class="text-gray-400 mt-2">Memuat template...</p></div>';
     
     tg.CloudStorage.getKeys((err, keys) => {
         if (err) {
-            container.innerHTML = '<p class="text-red-500 text-sm">Gagal mengambil daftar template.</p>';
+            container.innerHTML = '<p class="text-red-500">Gagal mengambil data dari Cloud Storage.</p>';
             return;
         }
         
-        const templateKeys = keys.filter(k => k.startsWith('tpl_'));
+        const templateKeys = keys.filter(k => k.startsWith('tmpl_'));
         
         if (templateKeys.length === 0) {
-            container.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400">Anda belum memiliki template tersimpan.</p>';
+            container.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">Anda belum memiliki template tersimpan.</p>';
             return;
         }
         
         container.innerHTML = '';
-        
         templateKeys.forEach(key => {
-            const parts = key.split('_');
-            const displayName = parts.slice(2).join(' ') || "Template Tanpa Nama";
-            
-            const itemDiv = document.createElement('div');
-            itemDiv.className = "flex justify-between items-center bg-gray-100 dark:bg-gray-700 p-2 rounded";
-            
-            const nameSpan = document.createElement('span');
-            nameSpan.className = "text-sm font-semibold truncate flex-1 dark:text-white";
-            nameSpan.innerText = displayName;
-            
-            const btnBox = document.createElement('div');
-            btnBox.className = "flex gap-2 ml-2";
-            
-            const loadBtn = document.createElement('button');
-            loadBtn.className = "bg-blue-500 hover:bg-blue-600 text-white text-xs px-3 py-1.5 rounded transition shadow-sm";
-            loadBtn.innerText = "Pakai";
-            loadBtn.onclick = () => loadTemplate(key);
-            
-            const delBtn = document.createElement('button');
-            delBtn.className = "bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1.5 rounded transition shadow-sm";
-            delBtn.innerText = "Hapus";
-            delBtn.onclick = () => deleteTemplate(key, itemDiv);
-            
-            btnBox.appendChild(loadBtn);
-            btnBox.appendChild(delBtn);
-            itemDiv.appendChild(nameSpan);
-            itemDiv.appendChild(btnBox);
-            
-            container.appendChild(itemDiv);
+            const name = key.replace('tmpl_', '').replace(/_/g, ' ');
+            const div = document.createElement('div');
+            div.className = 'flex justify-between items-center p-3 bg-gray-100 dark:bg-gray-700 rounded-lg';
+            div.innerHTML = `
+                <span class="text-sm font-medium text-gray-800 dark:text-white truncate flex-1">${name}</span>
+                <div class="flex gap-2 ml-3">
+                    <button onclick="loadTemplate('${key}')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-md font-semibold transition-colors">Muat</button>
+                    <button onclick="deleteTemplate('${key}', this.parentElement.parentElement)" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs rounded-md font-semibold transition-colors"><i class="fas fa-trash"></i></button>
+                </div>
+            `;
+            container.appendChild(div);
         });
     });
-}
+});
 
-function loadTemplate(key) {
+document.getElementById('btn-save-template').addEventListener('click', () => {
+    if (!tg || !tg.CloudStorage) {
+        alert("Fitur Cloud Storage tidak tersedia.");
+        return;
+    }
+    
+    let name = prompt("Masukkan nama untuk template ini:");
+    if (!name) return;
+    
+    name = name.replace(/[^a-zA-Z0-9 ]/g, "").trim().replace(/ /g, "_");
+    if (name.length === 0) return;
+    
+    const key = `tmpl_${name}`;
+    const value = JSON.stringify(state);
+    
+    tg.CloudStorage.setItem(key, value, (err, success) => {
+        if (err) {
+            alert("Gagal menyimpan template.");
+        } else {
+            alert("Template berhasil disimpan!");
+        }
+    });
+});
+
+window.loadTemplate = function(key) {
     if (!tg || !tg.CloudStorage) return;
     
     tg.CloudStorage.getItem(key, async (err, value) => {
@@ -2334,7 +1126,7 @@ function loadTemplate(key) {
     });
 }
 
-function deleteTemplate(key, htmlElement) {
+window.deleteTemplate = function(key, htmlElement) {
     if (!tg || !tg.CloudStorage) return;
     
     if(confirm("Apakah Anda yakin ingin menghapus template ini?")) {
@@ -2342,15 +1134,17 @@ function deleteTemplate(key, htmlElement) {
             if(!err) {
                 htmlElement.remove();
                 if(document.getElementById('template-list-container').children.length === 0) {
-                     document.getElementById('template-list-container').innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400">Anda belum memiliki template tersimpan.</p>';
+                     document.getElementById('template-list-container').innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">Anda belum memiliki template tersimpan.</p>';
                 }
             }
         });
     }
 }
 
-function closeTemplateModal() {
+window.closeTemplateModal = function() {
     const modal = document.getElementById('template-modal');
     modal.classList.add('hidden');
     modal.classList.remove('flex');
 }
+
+init();
