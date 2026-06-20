@@ -114,8 +114,8 @@ let isFontListRendered = false;
 
 let state = {
     layerOrder: ['bg', 'bg2', 'img1', 't4', 't3', 't2', 't1'],
-    bg: { active: true, shape: "", x: -59, y: 31, w: 630, h: 450, colorType: "gradient", color: "#161417", color2: "#0000ff", color3: "#201833", rotate: 0, outlineOnly: false, strokeW: 8 },
-    bg2: { active: false, mergeToBg1: false, shape: "", x: 156, y: 50, w: 200, h: 200, colorType: "original", color: "#FFD700", color2: "#FFA500", color3: "#FF4500", rotate: 0, outlineOnly: false, strokeW: 8 },
+    bg: { active: true, shape: "", x: -59, y: 31, w: 630, h: 450, colorType: "gradient", color: "#161417", color2: "#0000ff", color3: "#201833", rotate: 0, outlineOnly: false, strokeW: 8, fillActive: false, fillColor: "#ffffff", fillOpacity: 100, cornerStyle: "round" },
+    bg2: { active: false, mergeToBg1: false, shape: "", x: 156, y: 50, w: 200, h: 200, colorType: "original", color: "#FFD700", color2: "#FFA500", color3: "#FF4500", rotate: 0, outlineOnly: false, strokeW: 8, fillActive: false, fillColor: "#ffffff", fillOpacity: 100, cornerStyle: "round" },
     img1: { active: false, dataUrl: "", x: 156, y: 156, w: 200, h: 200, rotate: 0, opacity: 100 },
     t1: { active: true, text: "HEX", font: "Luckiest Guy", size: 231, w: 250, h: 80, spacing: 0, x: 256, y: 280, curve: 0, depth3d: 30, angle3d: 45, color3d: "#1f2937", fillType: "gradient", fill: "#6b3200", fill2: "#ff1b00", fill3: "#692800", stroke: "#000000", strokeW: 8, fillNone: false, strokeNone: false, rotate: 0, effect: "shadow" },
     t2: { active: false, mergeToT1: false, text: "TERBATAS!", font: "Luckiest Guy", size: 60, w: 200, h: 60, spacing: 0, x: 256, y: 340, curve: 0, depth3d: 20, angle3d: 45, color3d: "#1f2937", fillType: "solid", fill: "#FFEB3B", fill2: "#FF8800", fill3: "#FF0000", stroke: "#000000", strokeW: 4, fillNone: false, strokeNone: false, rotate: 0, effect: "none" },
@@ -1308,11 +1308,20 @@ function warpPathData(path, curveValue, bbox) {
 }
 
 function getBgShape(bg, fillAttr) {
-    const {x, y, w, h, shape, outlineOnly, strokeW, colorType} = bg; 
+    const {x, y, w, h, shape, outlineOnly, strokeW, colorType, fillActive, fillColor, fillOpacity, cornerStyle} = bg; 
     const isOrig = colorType === 'original';
-    const fillStr = outlineOnly ? 'transparent' : fillAttr;
-    const strokeStr = outlineOnly ? fillAttr : 'none';
-    const strokeWAttr = outlineOnly ? (parseInt(strokeW) || 0) : (parseInt(strokeW) || 0);
+    const strokeJoin = cornerStyle || 'round';
+
+    let finalFill = outlineOnly ? 'transparent' : fillAttr;
+    let finalFillOpacity = 1;
+    const finalStroke = outlineOnly ? fillAttr : 'none';
+    const finalStrokeW = outlineOnly ? (parseInt(strokeW) || 0) : (parseInt(strokeW) || 0);
+
+    // Aktifkan inner fill saat mode Outline/Border jika fitur centang dihidupkan
+    if (outlineOnly && fillActive) {
+        finalFill = fillColor || "#ffffff";
+        finalFillOpacity = (fillOpacity !== undefined ? fillOpacity : 100) / 100;
+    }
     
     if (!shape || !shapeCache[shape]) return '';
     
@@ -1333,14 +1342,33 @@ function getBgShape(bg, fillAttr) {
         
         let content = cShape.svgContent;
         
+        // Terapkan pengaturan sudut (stroke-linejoin) secara paksa dengan aman 
+        content = content.replace(/stroke-linejoin="[^"]*"/gi, '');
+        content = content.replace(/<path /gi, `<path stroke-linejoin="${strokeJoin}" `);
+        
         if (!isOrig) {
             content = content.replace(/fill="([^"]+)"/gi, (match, p1) => {
-                if (p1.toLowerCase() === 'none' || p1.toLowerCase() === 'transparent') return match;
-                return `fill="${fillStr}"`;
+                if (p1.toLowerCase() === 'none' && !outlineOnly) return match; 
+                let res = `fill="${finalFill}"`;
+                if (finalFillOpacity !== 1) res += ` fill-opacity="${finalFillOpacity}"`;
+                return res;
             });
-            content = content.replace(/stroke="([^"]+)"/gi, (match, p1) => {
+            
+            if (outlineOnly) {
+                content = content.replace(/stroke="[^"]*"/gi, '');
+                content = content.replace(/stroke-width="[^"]*"/gi, '');
+                content = content.replace(/<path /gi, `<path stroke="${finalStroke}" stroke-width="${finalStrokeW}" `);
+            } else {
+                content = content.replace(/stroke="([^"]+)"/gi, (match, p1) => {
+                    if (p1.toLowerCase() === 'none' || p1.toLowerCase() === 'transparent') return match;
+                    return `stroke="${finalStroke}"`;
+                });
+            }
+        } else if (outlineOnly && fillActive) {
+            // Memastikan transparansi isi jika mode asli dengan kombinasi fill kustom tetap bekerja sedikit lebih baik
+            content = content.replace(/fill="([^"]+)"/gi, (match, p1) => {
                 if (p1.toLowerCase() === 'none' || p1.toLowerCase() === 'transparent') return match;
-                return `stroke="${strokeStr}"`;
+                return `fill="${finalFill}" fill-opacity="${finalFillOpacity}"`;
             });
         }
         
@@ -1453,7 +1481,7 @@ function getBgShape(bg, fillAttr) {
     if (pathsToRender.length > 0) {
         subPaths += `<g ${lottieTransform}>`;
         pathsToRender.forEach(pD => {
-            subPaths += `<path d="${pD}" fill="${fillStr}" stroke="${strokeStr}" stroke-width="${strokeWAttr}" stroke-linejoin="round" vector-effect="non-scaling-stroke" />`;
+            subPaths += `<path d="${pD}" fill="${finalFill}" fill-opacity="${finalFillOpacity}" stroke="${finalStroke}" stroke-width="${finalStrokeW}" stroke-linejoin="${strokeJoin}" vector-effect="non-scaling-stroke" />`;
         });
         subPaths += `</g>`;
     } 
@@ -1774,9 +1802,9 @@ function setupEventListeners() {
             let val = el.type === 'checkbox' ? e.target.checked : e.target.value; if(isNum) val = parseInt(val) || 0;
             const path = statePath.split('.'); state[path[0]][path[1]] = val;
             
-            if(id.includes('size') || id.includes('curve') || id.includes('-w') || id.includes('-h') || id.includes('spacing') || id.includes('rotate') || id.includes('opacity')) {
+            if(id.includes('size') || id.includes('curve') || id.includes('-w') || id.includes('-h') || id.includes('spacing') || id.includes('rotate') || id.includes('opacity') || id.includes('fillOpacity')) {
                 const valSpan = document.getElementById(id + '-val');
-                if (valSpan) valSpan.innerText = val + (id.includes('rotate') ? '°' : (id.includes('opacity') ? '%' : ''));
+                if (valSpan) valSpan.innerText = val + (id.includes('rotate') ? '°' : (id.includes('Opacity') ? '%' : ''));
             }
             
             if (id.includes('effect')) {
@@ -1809,6 +1837,22 @@ function setupEventListeners() {
         bindInput(`${id}-shape`, `${id}.shape`); bindInput(`${id}-w`, `${id}.w`, true); bindInput(`${id}-h`, `${id}.h`, true); 
         bindInput(`${id}-colorType`, `${id}.colorType`); bindInput(`${id}-rotate`, `${id}.rotate`, true);
         bindInput(`${id}-outlineOnly`, `${id}.outlineOnly`); bindInput(`${id}-strokeW`, `${id}.strokeW`, true); 
+        
+        bindInput(`${id}-fillActive`, `${id}.fillActive`);
+        bindInput(`${id}-fillOpacity`, `${id}.fillOpacity`, true);
+        bindInput(`${id}-cornerStyle`, `${id}.cornerStyle`);
+        
+        const fillActiveCb = document.getElementById(`${id}-fillActive`);
+        if(fillActiveCb) {
+            fillActiveCb.addEventListener('change', (e) => {
+                const cont = document.getElementById(`${id}-fillOpacity-container`);
+                if(cont) {
+                    cont.style.opacity = e.target.checked ? '1' : '0.5';
+                    cont.style.pointerEvents = e.target.checked ? 'auto' : 'none';
+                }
+                renderCanvas(); scheduleHistorySave();
+            });
+        }
         
         if(id === 'bg2') bindInput(`bg2-merge`, `bg2.mergeToBg1`);
         
@@ -1953,6 +1997,27 @@ function updateUIFromState() {
 
         document.getElementById(`${id}-outlineOnly`).checked = state[id].outlineOnly; 
         document.getElementById(`${id}-strokeW`).value = state[id].strokeW;
+        
+        if(document.getElementById(`${id}-fillActive`)) {
+            document.getElementById(`${id}-fillActive`).checked = state[id].fillActive || false;
+            const cont = document.getElementById(`${id}-fillOpacity-container`);
+            if(cont) {
+                cont.style.opacity = state[id].fillActive ? '1' : '0.5';
+                cont.style.pointerEvents = state[id].fillActive ? 'auto' : 'none';
+            }
+        }
+        if(document.getElementById(`${id}-fillOpacity`)) {
+            document.getElementById(`${id}-fillOpacity`).value = state[id].fillOpacity !== undefined ? state[id].fillOpacity : 100;
+            if(document.getElementById(`${id}-fillOpacity-val`)) {
+                document.getElementById(`${id}-fillOpacity-val`).innerText = (state[id].fillOpacity !== undefined ? state[id].fillOpacity : 100) + '%';
+            }
+        }
+        if(document.getElementById(`${id}-fillColor-btn`)) {
+            document.getElementById(`${id}-fillColor-btn`).style.backgroundColor = state[id].fillColor || '#ffffff';
+        }
+        if(document.getElementById(`${id}-cornerStyle`)) {
+            document.getElementById(`${id}-cornerStyle`).value = state[id].cornerStyle || 'round';
+        }
         
         document.getElementById(`${id}-color-btn`).style.backgroundColor = state[id].color; 
         document.getElementById(`${id}-color2-btn`).style.backgroundColor = state[id].color2; 
