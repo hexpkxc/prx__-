@@ -1069,7 +1069,7 @@
 
     </div>
 
-    <!-- SCRIPT PRESET SHAPE MURNI (1 GARIS) -->
+    <!-- SCRIPT PRESET SHAPE KOMBINASI (KOTAK GANDA DITAMBAHKAN) -->
     <script>
         const PRESETS = {
             'preset_neon_default': { 
@@ -1094,7 +1094,7 @@
                 </g>`
             },
             'preset_neon_twin': { 
-                name: '🪟 Garis Ganda (Twin)', 
+                name: '🪟 Garis Ganda Kiri Kanan', 
                 svg: (layer) => `<g>
                     <path class="isi-dalam" d="M 68 151 L 444 151 L 444 361 L 68 361 Z" fill="#000000" fill-opacity="0" />
                     <path class="garis-pembatas" d="M 40 123 L 472 123 L 472 389 L 40 389 Z M 48 131 L 48 381 L 464 381 L 464 131 Z M 60 143 L 452 143 L 452 369 L 60 369 Z M 68 151 L 68 361 L 444 361 L 444 151 Z" fill="#ffffff" fill-rule="evenodd" stroke="none" />
@@ -1113,10 +1113,17 @@
                     <path class="isi-dalam" d="M 56 155 A 16 16 0 0 0 72 139 L 440 139 A 16 16 0 0 0 456 155 L 456 357 A 16 16 0 0 0 440 373 L 72 373 A 16 16 0 0 0 56 357 Z" fill="#000000" fill-opacity="0" />
                     <path class="garis-pembatas" d="M 40 155 A 32 32 0 0 0 72 123 L 440 123 A 32 32 0 0 0 472 155 L 472 357 A 32 32 0 0 0 440 389 L 72 389 A 32 32 0 0 0 40 357 Z M 56 155 L 56 357 A 16 16 0 0 1 72 373 L 440 373 A 16 16 0 0 1 456 357 L 456 155 A 16 16 0 0 1 440 139 L 72 139 A 16 16 0 0 1 56 155 Z" fill="#ffffff" fill-rule="evenodd" stroke="none" />
                 </g>`
+            },
+            'preset_neon_double_rounded': { 
+                name: '⭕ Kotak Garis Ganda', 
+                svg: (layer) => `<g>
+                    <path class="isi-dalam" d="M 80 147 L 432 147 A 16 16 0 0 1 448 163 L 448 349 A 16 16 0 0 1 432 365 L 80 365 A 16 16 0 0 1 64 349 L 64 163 A 16 16 0 0 1 80 147 Z" fill="#000000" fill-opacity="0" />
+                    <path class="garis-pembatas" d="M 80 123 L 432 123 A 40 40 0 0 1 472 163 L 472 349 A 40 40 0 0 1 432 389 L 80 389 A 40 40 0 0 1 40 349 L 40 163 A 40 40 0 0 1 80 123 Z M 80 131 L 432 131 A 32 32 0 0 1 464 163 L 464 349 A 32 32 0 0 1 432 381 L 80 381 A 32 32 0 0 1 48 349 L 48 163 A 32 32 0 0 1 80 131 Z M 80 139 L 432 139 A 24 24 0 0 1 456 163 L 456 349 A 24 24 0 0 1 432 373 L 80 373 A 24 24 0 0 1 56 349 L 56 163 A 24 24 0 0 1 80 139 Z M 80 147 L 432 147 A 16 16 0 0 1 448 163 L 448 349 A 16 16 0 0 1 432 365 L 80 365 A 16 16 0 0 1 64 349 L 64 163 A 16 16 0 0 1 80 147 Z" fill="#ffffff" fill-rule="evenodd" stroke="none" />
+                </g>`
             }
         };
 
-        // 1. Intercept fetch API (Supaya 6 Shape Terekstrak Sempurna ke app.js)
+        // 1. Intercept fetch API (Supaya 7 Shape Terekstrak Sempurna ke app.js)
         const originalFetch = window.fetch;
         window.fetch = async function(...args) {
             const url = args[0];
@@ -1181,3 +1188,4 @@
 
 </body>
 </html>
+
