@@ -112,7 +112,6 @@ let availableShapes = {};
 let activeFontLayer = null;
 let isFontListRendered = false;
 
-// FIX: Update nilai fillColor default menjadi "#000000" (Hitam)
 let state = {
     layerOrder: ['bg', 'bg2', 'img1', 't4', 't3', 't2', 't1'],
     bg: { active: true, shape: "", x: -59, y: 31, w: 630, h: 450, colorType: "gradient", color: "#161417", color2: "#0000ff", color3: "#201833", rotate: 0, outlineOnly: false, strokeW: 8, fillActive: false, fillColor: "#000000", fillOpacity: 100, cornerStyle: "round" },
@@ -177,7 +176,6 @@ async function getClientMetadata() {
     isFetchingMetadata = false;
     return meta;
 }
-// ===============================================
 
 // ===============================================
 // AUTO KOMPRESI GAMBAR (BYPASS LIMIT 64KB)
@@ -189,7 +187,6 @@ async function processImageUpload(file) {
             const img = new Image();
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                // Limitasi tajam agar ukuran SVG + Gambar tidak over 64KB (Diturunkan ke 150 agar PNG aman)
                 const MAX_DIMENSION = 150; 
                 let width = img.width;
                 let height = img.height;
@@ -209,7 +206,6 @@ async function processImageUpload(file) {
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
                 
-                // Gunakan format png untuk dukungan webview yang lebih baik menjaga transparansi
                 const dataUrl = canvas.toDataURL('image/png');
                 resolve(dataUrl);
             };
@@ -220,7 +216,6 @@ async function processImageUpload(file) {
         reader.readAsDataURL(file);
     });
 }
-// ===============================================
 
 async function ensureLottieLoaded() {
     if (window.lottie) return true;
@@ -301,8 +296,6 @@ async function init() {
     canvas = document.getElementById('svg-canvas'); 
     const urlParams = new URLSearchParams(window.location.search);
     
-    // Pindahkan injectFontStyles ke sini agar gaya font langsung diunduh
-    // sehingga saat mode otomatis aktif, list fontnya tetap bisa memperlihatkan gaya font.
     injectFontStyles();
     
     // =========================================================
@@ -927,7 +920,7 @@ async function loadShapeData(shapeId) {
                             loop: false,
                             autoplay: false,
                             animationData: cShape,
-                            rendererSettings: { idPrefix: 'shape_load_' + shapeId + '_' } // FIX BENTROK
+                            rendererSettings: { idPrefix: 'shape_load_' + shapeId + '_' } 
                         });
 
                         await new Promise(resolve => {
@@ -1047,7 +1040,7 @@ async function loadLottiePreview(animId) {
             animationData: animationData,
             rendererSettings: {
                 preserveAspectRatio: 'xMidYMid meet',
-                idPrefix: 'bg_lottie_anim_', // FIX BENTROK
+                idPrefix: 'bg_lottie_anim_', 
                 hideOnTransparent: false,
                 clearCanvas: true
             }
@@ -1322,12 +1315,14 @@ function getBgShape(bg, fillAttr) {
     const isOrig = colorType === 'original';
     const strokeJoin = cornerStyle || 'round';
 
-    // Inisialisasi atribut visual utama
+    // KEMBALIKAN KE LOGIKA ASLI: fill dan stroke diterapkan bersamaan jika bukan outline mode,
+    // Jika outline mode, stroke mewarisi warna fill, dan fill utama menjadi 'none'.
     let finalFill = outlineOnly ? 'none' : fillAttr;
     let finalFillOpacity = 1;
-    let finalStroke = outlineOnly ? fillAttr : fillAttr; // Pada versi rombakan, stroke-color selalu mengikuti warna utama
-    let finalStrokeW = parseInt(strokeW) || 0; // Stroke width sekarang digunakan murni untuk ketebalan, baik outline maupun tidak
+    let finalStroke = outlineOnly ? fillAttr : 'none';
+    let finalStrokeW = outlineOnly ? (parseInt(strokeW) || 0) : 0;
 
+    // Aktifkan inner fill saat mode Outline/Border jika fitur centang dihidupkan
     if (outlineOnly && fillActive) {
         finalFill = fillColor || "#000000";
         finalFillOpacity = (fillOpacity !== undefined ? fillOpacity : 100) / 100;
@@ -1337,9 +1332,6 @@ function getBgShape(bg, fillAttr) {
     
     const cShape = shapeCache[shape];
     
-    // ========================================================
-    // LOGIKA RENDER BENTUK PRESET (Memiliki SVG Content)
-    // ========================================================
     if (cShape.isLottieCompiled) {
         let origW = cShape.width || 512;
         let origH = cShape.height || 512;
@@ -1367,101 +1359,41 @@ function getBgShape(bg, fillAttr) {
         }
 
         let glowLayer = '';
-        let baseStrokeLayer = '';
-        let innerFillLayer = '';
         let mainLayer = '';
 
-        // DETEKSI COMPOUND PATH: LOGIKA "KUE LAPIS"
-        if (content.includes('garis-pembatas') && content.includes('isi-dalam')) {
-            // Ekstrak path spesifik
+        if (outlineOnly && !isOrig) {
+            // FIX UNTUK TELEGRAM BOT: Glow tidak boleh menggunakan stroke (Bot gagal render blur pada stroke bertumpuk).
+            // Solusi: Kita ekstrak path dan berikan fill solid, bukan stroke.
             let matchGaris = content.match(/<path[^>]*class="garis-pembatas"[^>]*d="([^"]+)"/i);
-            let matchIsi = content.match(/<path[^>]*class="isi-dalam"[^>]*d="([^"]+)"/i);
-
-            if (matchGaris && matchIsi) {
-                const pathGaris = matchGaris[1];
-                const pathIsi = matchIsi[1];
-
-                // Penentuan warna isi dalam (Lapis 3)
-                let cInnerFill = 'none';
-                let cInnerOpac = 0;
-                
-                if (outlineOnly) {
-                    if (fillActive) {
-                        cInnerFill = fillColor || "#000000";
-                        cInnerOpac = (fillOpacity !== undefined ? fillOpacity : 100) / 100;
-                    } else {
-                        // Jika outline mode, isi dalam harus digelapkan untuk menutupi bengkakan stroke yang ke arah dalam
-                        cInnerFill = '#000000'; // Default penutup, bisa disesuaikan dengan background TMA jika dibutuhkan
-                        cInnerOpac = 1; 
-                    }
-                } else {
-                    cInnerFill = fillAttr; 
-                    cInnerOpac = 1;
-                }
-
-                if (!isOrig) {
-                    // LAPIS 1: Neon Glow (Hanya berlaku jika outlineOnly atau ada request khusus, tanpa stroke)
-                    if (outlineOnly) {
-                        glowLayer = `<path d="${pathGaris}" fill="${fillAttr}" stroke="none" filter="url(#neon-glow)" opacity="0.6" />`;
-                    }
-                    
-                    // LAPIS 2: Stroke Pembengkak (Diberi fill sesuai warna, dan stroke sesuai tebal untuk memperlebar ke luar dan ke dalam)
-                    baseStrokeLayer = `<path d="${pathGaris}" fill="${fillAttr}" stroke="${finalStroke}" stroke-width="${finalStrokeW}" stroke-linejoin="${strokeJoin}" vector-effect="non-scaling-stroke" />`;
-                    
-                    // LAPIS 3: Penutup Dalam (Menutupi bengkakan stroke dari Lapis 2 yang masuk ke dalam)
-                    innerFillLayer = `<path d="${pathIsi}" fill="${cInnerFill}" fill-opacity="${cInnerOpac}" stroke="none" />`;
-                } else {
-                    // Jika warna asli (original)
-                    let originalPathGaris = matchGaris[0];
-                    let originalPathIsi = matchIsi[0];
-                    
-                    if (outlineOnly && fillActive) {
-                        originalPathIsi = originalPathIsi.replace(/fill-opacity="[^"]*"/gi, '');
-                        originalPathIsi = originalPathIsi.replace(/>/i, ` fill-opacity="${cInnerOpac}">`);
-                        // Secara kasar memaksa warna fill diubah
-                        originalPathIsi = originalPathIsi.replace(/fill="[^"]*"/gi, `fill="${cInnerFill}"`);
-                    }
-                    
-                    baseStrokeLayer = originalPathGaris;
-                    innerFillLayer = originalPathIsi;
-                }
-
-                mainLayer = glowLayer + baseStrokeLayer + innerFillLayer;
+            if (matchGaris) {
+                glowLayer = `<path d="${matchGaris[1]}" fill="${fillAttr}" stroke="none" filter="url(#neon-glow)" opacity="0.6" />`;
             } else {
-               // Fallback jika regex gagal memisahkan
-               mainLayer = content;
-            }
-        } 
-        else {
-            // FALLBACK UNTUK BENTUK LAMA (Jalur Tunggal)
-            if (outlineOnly && !isOrig) {
-                // Glow layer tanpa stroke
                 let matchPath = content.match(/<path[^>]*d="([^"]+)"/i);
-                if(matchPath) {
-                   glowLayer = `<path d="${matchPath[1]}" fill="${fillAttr}" stroke="none" filter="url(#neon-glow)" opacity="0.6" />`;
+                if (matchPath) {
+                    glowLayer = `<path d="${matchPath[1]}" fill="${fillAttr}" stroke="none" filter="url(#neon-glow)" opacity="0.6" />`;
                 }
             }
-            
-            let injectStr = `stroke-linejoin="${strokeJoin}"`;
-            if (!isOrig) {
-                injectStr += ` fill="${finalFill}"`;
-                if (finalFillOpacity !== 1) injectStr += ` fill-opacity="${finalFillOpacity}"`;
-                injectStr += ` stroke="${finalStroke}" stroke-width="${finalStrokeW}" vector-effect="non-scaling-stroke"`;
-            } else if (outlineOnly && fillActive) {
-                injectStr += ` fill="${finalFill}" fill-opacity="${finalFillOpacity}"`;
-            }
-            
-            mainLayer = glowLayer + content.replace(/<path /gi, `<path ${injectStr} `);
         }
+        
+        // KEMBALIKAN KE INJEKSI ATRIBUT ASLI (Efek Garis Ganda / Wireframe)
+        let injectStr = `stroke-linejoin="${strokeJoin}"`;
+        if (!isOrig) {
+            injectStr += ` fill="${finalFill}"`;
+            if (finalFillOpacity !== 1) injectStr += ` fill-opacity="${finalFillOpacity}"`;
+            injectStr += ` stroke="${finalStroke}" stroke-width="${finalStrokeW}" vector-effect="non-scaling-stroke"`;
+        } else if (outlineOnly && fillActive) {
+            injectStr += ` fill="${finalFill}" fill-opacity="${finalFillOpacity}"`;
+        }
+        
+        mainLayer = content.replace(/<path /gi, `<path ${injectStr} `);
 
         return `<g transform="translate(${x}, ${y}) scale(${sx}, ${sy})">
+            ${glowLayer}
             ${mainLayer}
         </g>`;
     }
 
-    // ========================================================
-    // BAGIAN UNTUK BENTUK MANUAL (LOTTIE EXTERNAL)
-    // ========================================================
+    // --- BAGIAN UNTUK BENTUK MANUAL (LOTTIE EXTERNAL) ---
     let origW = 512;
     let origH = 512;
     
@@ -1545,9 +1477,8 @@ function getBgShape(bg, fillAttr) {
         subPaths += `<g ${lottieTransform}>`;
         pathsToRender.forEach(pD => {
             // Efek Neon otomatis untuk Lottie external yang dijadikan outline
-            // Terapkan perbaikan yang sama: Glow tanpa stroke, murni fill
             if (outlineOnly) {
-                subPaths += `<path d="${pD}" fill="${finalStroke}" stroke="none" filter="url(#neon-glow)" opacity="0.6" />`;
+                subPaths += `<path d="${pD}" fill="${fillAttr}" stroke="none" filter="url(#neon-glow)" opacity="0.6" />`;
             }
             subPaths += `<path d="${pD}" fill="${finalFill}" fill-opacity="${finalFillOpacity}" stroke="${finalStroke}" stroke-width="${finalStrokeW}" stroke-linejoin="${strokeJoin}" vector-effect="non-scaling-stroke" />`;
         });
@@ -1685,7 +1616,6 @@ async function renderCanvas() {
         });
         
         if(canvas) {
-            // Memberikan w dan h eksplisit jika tidak ada, agar masking berjalan lancar
             canvas.innerHTML = svgContent;
             
             const tempSvg = canvas.cloneNode(true);
@@ -1909,7 +1839,6 @@ function setupEventListeners() {
         bindInput(`${id}-fillActive`, `${id}.fillActive`);
         bindInput(`${id}-fillOpacity`, `${id}.fillOpacity`, true);
         
-        // FIX: Binding untuk Corner Style agar mendengarkan perubahan
         bindInput(`${id}-cornerStyle`, `${id}.cornerStyle`);
         
         const fillActiveCb = document.getElementById(`${id}-fillActive`);
@@ -1942,7 +1871,6 @@ function setupEventListeners() {
         }
     });
 
-    // BINDING UNTUK IMAGE LAYER
     const img1ActiveCb = document.getElementById('img1-active');
     if(img1ActiveCb) {
         img1ActiveCb.addEventListener('change', (e) => {
@@ -1998,7 +1926,6 @@ function setupEventListeners() {
     bindInput(`img1-rotate`, `img1.rotate`, true);
     bindInput(`img1-opacity`, `img1.opacity`, true);
     
-    // TEXT LAYERS
     ['t1', 't2', 't3', 't4'].forEach(p => { 
         const activeCheckbox = document.getElementById(`${p}-active`);
         if(activeCheckbox) {
@@ -2085,7 +2012,7 @@ function updateUIFromState() {
         if(document.getElementById(`${id}-fillColor-btn`)) {
             document.getElementById(`${id}-fillColor-btn`).style.backgroundColor = state[id].fillColor || '#000000';
         }
-        // FIX: Sinkronisasi Corner Style agar UI mencerminkan state yang benar
+
         if(document.getElementById(`${id}-cornerStyle`)) {
             document.getElementById(`${id}-cornerStyle`).value = state[id].cornerStyle || 'round';
         }
@@ -2106,7 +2033,6 @@ function updateUIFromState() {
         if (color3Container) color3Container.style.display = isBgGrad && !isBgOrig ? 'flex' : 'none';
     });
 
-    // UPDATE UI UNTUK IMG 1
     const img1ActiveCb = document.getElementById('img1-active');
     if(img1ActiveCb) {
         img1ActiveCb.checked = state.img1.active;
@@ -2278,21 +2204,18 @@ async function sendToBot(isSilent = false, isAuto = false) {
             const currentKb = (totalEstimatedSize / 1024).toFixed(2);
             const errMsg = `Ukuran desain terlalu besar (${currentKb} KB). Batas Telegram adalah 64 KB.\n\nHarap ganti Bentuk/Shape yang lebih sederhana atau kurangi efek teks agar desain bisa diproses.`;
             
-            // Matikan indikator loading
             if(loader && !document.getElementById('siluman-container')) loader.classList.add('hidden');
             
-            // Pulihkan tombol otomatis jika digunakan
             const autoSubmitBtn = document.getElementById('auto-submit-btn');
             if (autoSubmitBtn) {
                 autoSubmitBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> Proses & Kirim ke Bot';
                 autoSubmitBtn.disabled = false;
             }
 
-            // Tampilkan pesan kesalahan tanpa menutup WebApp
             if (tg && typeof tg.showAlert === 'function') tg.showAlert(errMsg);
             else alert(errMsg);
             
-            return; // Hentikan eksekusi pengiriman
+            return; 
         }
         // ========================================================
 
