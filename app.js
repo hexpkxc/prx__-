@@ -1315,14 +1315,11 @@ function getBgShape(bg, fillAttr) {
     const isOrig = colorType === 'original';
     const strokeJoin = cornerStyle || 'round';
 
-    // KEMBALIKAN KE LOGIKA ASLI: fill dan stroke diterapkan bersamaan jika bukan outline mode,
-    // Jika outline mode, stroke mewarisi warna fill, dan fill utama menjadi 'none'.
     let finalFill = outlineOnly ? 'none' : fillAttr;
     let finalFillOpacity = 1;
     let finalStroke = outlineOnly ? fillAttr : 'none';
     let finalStrokeW = outlineOnly ? (parseInt(strokeW) || 0) : 0;
 
-    // Aktifkan inner fill saat mode Outline/Border jika fitur centang dihidupkan
     if (outlineOnly && fillActive) {
         finalFill = fillColor || "#000000";
         finalFillOpacity = (fillOpacity !== undefined ? fillOpacity : 100) / 100;
@@ -1358,37 +1355,81 @@ function getBgShape(bg, fillAttr) {
             content = content.replace(/fill-opacity="[^"]*"/gi, '');
         }
 
-        let glowLayer = '';
         let mainLayer = '';
 
-        if (outlineOnly && !isOrig) {
-            // FIX UNTUK TELEGRAM BOT: Glow tidak boleh menggunakan stroke (Bot gagal render blur pada stroke bertumpuk).
-            // Solusi: Kita ekstrak path dan berikan fill solid, bukan stroke.
-            let matchGaris = content.match(/<path[^>]*class="garis-pembatas"[^>]*d="([^"]+)"/i);
-            if (matchGaris) {
-                glowLayer = `<path d="${matchGaris[1]}" fill="${fillAttr}" stroke="none" filter="url(#neon-glow)" opacity="0.6" />`;
-            } else {
-                let matchPath = content.match(/<path[^>]*d="([^"]+)"/i);
-                if (matchPath) {
-                    glowLayer = `<path d="${matchPath[1]}" fill="${fillAttr}" stroke="none" filter="url(#neon-glow)" opacity="0.6" />`;
-                }
+        // LOGIKA BARU: Pemisahan Compound Path (Kotak Ganda/Kapsul) secara eksplisit
+        let matchGaris = content.match(/<path[^>]*class="garis-pembatas"[^>]*d="([^"]+)"/i);
+        let matchIsi = content.match(/<path[^>]*class="isi-dalam"[^>]*d="([^"]+)"/i);
+
+        if (matchGaris && matchIsi) {
+            let pathGaris = matchGaris[1];
+            let pathIsi = matchIsi[1];
+            
+            // Garis pembatas (bingkai) memiliki warna dan stroke sesuai mode
+            let garisFill = outlineOnly ? 'none' : fillAttr;
+            let garisStroke = outlineOnly ? fillAttr : 'none';
+            let garisStrokeW = outlineOnly ? finalStrokeW : 0;
+            
+            // Isi dalam (lubang) dikendalikan murni oleh fitur "Isi Bagian Dalam"
+            let isiFill = 'none';
+            let isiOpac = 0;
+            
+            if (fillActive) {
+                isiFill = fillColor || "#000000";
+                isiOpac = (fillOpacity !== undefined ? fillOpacity : 100) / 100;
             }
+            
+            let glowLayer = '';
+            if (outlineOnly && !isOrig) {
+                // WAJIB fill-rule="evenodd" agar tengah glow tidak ikut terisi warna (Mencegah solid merah di tengah)
+                glowLayer = `<path d="${pathGaris}" fill="${fillAttr}" fill-rule="evenodd" stroke="none" filter="url(#neon-glow)" opacity="0.6" />`;
+            }
+            
+            let baseStrokeLayer = '';
+            let innerFillLayer = '';
+            
+            if (!isOrig) {
+                baseStrokeLayer = `<path d="${pathGaris}" fill="${garisFill}" fill-rule="evenodd" stroke="${garisStroke}" stroke-width="${garisStrokeW}" stroke-linejoin="${strokeJoin}" vector-effect="non-scaling-stroke" />`;
+                innerFillLayer = `<path d="${pathIsi}" fill="${isiFill}" fill-opacity="${isiOpac}" stroke="none" />`;
+            } else {
+                let originalPathGaris = matchGaris[0];
+                let originalPathIsi = matchIsi[0];
+                if (fillActive) {
+                    originalPathIsi = originalPathIsi.replace(/fill-opacity="[^"]*"/gi, '');
+                    originalPathIsi = originalPathIsi.replace(/fill="[^"]*"/gi, '');
+                    originalPathIsi = originalPathIsi.replace(/>/i, ` fill="${isiFill}" fill-opacity="${isiOpac}">`);
+                }
+                baseStrokeLayer = originalPathGaris;
+                innerFillLayer = originalPathIsi;
+            }
+            
+            // Susun layer: Glow paling bawah, lubang isi dalam, lalu bingkai garis
+            mainLayer = glowLayer + innerFillLayer + baseStrokeLayer;
+        } 
+        else {
+            // Logika untuk bentuk standar (1 garis path)
+            let matchPath = content.match(/<path[^>]*d="([^"]+)"/i);
+            let glowLayer = '';
+            
+            if (outlineOnly && !isOrig && matchPath) {
+                // Tambahkan evenodd untuk bentuk standar juga agar aman
+                glowLayer = `<path d="${matchPath[1]}" fill="${fillAttr}" fill-rule="evenodd" stroke="none" filter="url(#neon-glow)" opacity="0.6" />`;
+            }
+            
+            let injectStr = `stroke-linejoin="${strokeJoin}" fill-rule="evenodd"`;
+            if (!isOrig) {
+                injectStr += ` fill="${finalFill}"`;
+                if (finalFillOpacity !== 1) injectStr += ` fill-opacity="${finalFillOpacity}"`;
+                injectStr += ` stroke="${finalStroke}" stroke-width="${finalStrokeW}" vector-effect="non-scaling-stroke"`;
+            } else if (outlineOnly && fillActive) {
+                injectStr += ` fill="${finalFill}" fill-opacity="${finalFillOpacity}"`;
+            }
+            
+            let processedContent = content.replace(/<path /gi, `<path ${injectStr} `);
+            mainLayer = glowLayer + processedContent;
         }
-        
-        // KEMBALIKAN KE INJEKSI ATRIBUT ASLI (Efek Garis Ganda / Wireframe)
-        let injectStr = `stroke-linejoin="${strokeJoin}"`;
-        if (!isOrig) {
-            injectStr += ` fill="${finalFill}"`;
-            if (finalFillOpacity !== 1) injectStr += ` fill-opacity="${finalFillOpacity}"`;
-            injectStr += ` stroke="${finalStroke}" stroke-width="${finalStrokeW}" vector-effect="non-scaling-stroke"`;
-        } else if (outlineOnly && fillActive) {
-            injectStr += ` fill="${finalFill}" fill-opacity="${finalFillOpacity}"`;
-        }
-        
-        mainLayer = content.replace(/<path /gi, `<path ${injectStr} `);
 
         return `<g transform="translate(${x}, ${y}) scale(${sx}, ${sy})">
-            ${glowLayer}
             ${mainLayer}
         </g>`;
     }
@@ -1476,11 +1517,10 @@ function getBgShape(bg, fillAttr) {
     if (pathsToRender.length > 0) {
         subPaths += `<g ${lottieTransform}>`;
         pathsToRender.forEach(pD => {
-            // Efek Neon otomatis untuk Lottie external yang dijadikan outline
             if (outlineOnly) {
-                subPaths += `<path d="${pD}" fill="${fillAttr}" stroke="none" filter="url(#neon-glow)" opacity="0.6" />`;
+                subPaths += `<path d="${pD}" fill="${fillAttr}" fill-rule="evenodd" stroke="none" filter="url(#neon-glow)" opacity="0.6" />`;
             }
-            subPaths += `<path d="${pD}" fill="${finalFill}" fill-opacity="${finalFillOpacity}" stroke="${finalStroke}" stroke-width="${finalStrokeW}" stroke-linejoin="${strokeJoin}" vector-effect="non-scaling-stroke" />`;
+            subPaths += `<path d="${pD}" fill="${finalFill}" fill-opacity="${finalFillOpacity}" fill-rule="evenodd" stroke="${finalStroke}" stroke-width="${finalStrokeW}" stroke-linejoin="${strokeJoin}" vector-effect="non-scaling-stroke" />`;
         });
         subPaths += `</g>`;
     } 
