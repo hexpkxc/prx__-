@@ -75,6 +75,7 @@
             </div>
             
             <div id="font-list-container" class="flex-1 overflow-y-auto p-0 bg-gray-100 dark:bg-gray-900 relative">
+                <!-- Daftar Font dengan Preview akan dimuat di sini oleh app.js -->
                 <div class="flex flex-col items-center justify-center h-full text-gray-400">
                     <i class="fas fa-circle-notch fa-spin text-3xl mb-3"></i>
                     <p class="text-sm font-medium">Memuat pratinjau font...</p>
@@ -179,7 +180,6 @@
             </button>
         </div>
 
-        <!-- BENTUK 1 -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-3 overflow-hidden transition-colors duration-300">
             <button onclick="toggleSection('sec-bg')" class="w-full p-3 flex justify-between items-center bg-gray-50 hover:bg-gray-100 transition">
                 <span class="font-bold text-gray-700 text-sm">1. Bentuk 1 (Latar Utama)</span>
@@ -218,58 +218,21 @@
                             </div>
                         </div>
                         
-                        <!-- PENGATURAN RADIUS & KETEBALAN BORDER -->
                         <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
                             <div class="flex justify-between items-center mb-2">
-                                <label class="text-[11px] font-bold text-gray-800">Tampilan Garis Luar (Border)</label>
+                                <label class="text-[11px] font-bold text-gray-800">Tampilan Bentuk</label>
                                 <div class="flex items-center">
                                     <input type="checkbox" id="bg-outlineOnly" class="w-3.5 h-3.5">
                                     <label for="bg-outlineOnly" class="text-[10px] ml-1 text-gray-600">Hanya Garis Luar</label>
                                 </div>
                             </div>
-                            
-                            <div class="grid grid-cols-2 gap-3 mt-2">
-                                <div>
-                                    <div class="flex justify-between items-center mb-1">
-                                        <label class="block text-[10px] font-bold text-gray-600">Lengkungan</label>
-                                        <span class="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded" id="bg-radius-val">40px</span>
-                                    </div>
-                                    <input type="range" id="bg-radius" min="0" max="120" value="40" class="w-full accent-blue-600">
-                                </div>
-                                <div>
-                                    <div class="flex justify-between items-center mb-1">
-                                        <label class="block text-[10px] font-bold text-gray-600">Ketebalan</label>
-                                        <span class="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded" id="bg-strokeW-val">8px</span>
-                                    </div>
-                                    <input type="range" id="bg-strokeW" min="1" max="30" value="8" class="w-full accent-blue-600" oninput="document.getElementById('bg-strokeW-val').innerText = this.value + 'px'">
-                                </div>
+                            <div class="mb-3">
+                                <label class="block text-[11px] font-bold text-gray-600 mb-1">Ketebalan Garis Luar</label>
+                                <input type="range" id="bg-strokeW" min="1" max="30" value="8" class="w-full accent-blue-600">
                             </div>
                         </div>
-
-                        <!-- PENGATURAN LATAR TENGAH (INNER) -->
                         <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
-                            <label class="block text-[11px] font-bold text-gray-800 mb-3">Latar Tengah (Khusus Neon)</label>
-                            <div class="flex items-center gap-3">
-                                <div class="flex flex-col items-center">
-                                    <!-- HTML5 Color Picker Bawaan OS -->
-                                    <div class="w-10 h-10 rounded-lg border border-gray-300 cursor-pointer shadow-sm relative overflow-hidden" id="bg-innerColor-btn" style="background-color: #000000;">
-                                        <input type="color" value="#000000" class="absolute -top-2 -left-2 w-[200%] h-[200%] opacity-0 cursor-pointer" oninput="this.parentElement.style.backgroundColor = this.value;">
-                                    </div>
-                                    <span class="text-[9px] text-gray-500 mt-1 font-bold">Warna</span>
-                                </div>
-                                <div class="flex-1">
-                                    <div class="flex justify-between items-center mb-2">
-                                        <span class="text-[10px] text-gray-600 font-bold">Transparansi</span>
-                                        <span class="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded" id="bg-innerOpacity-val">80%</span>
-                                    </div>
-                                    <input type="range" id="bg-innerOpacity" min="0" max="100" value="80" class="w-full accent-blue-600">
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- WARNA UTAMA / NEON -->
-                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
-                            <label class="block text-[11px] font-bold text-gray-800 mb-1">Tipe Pewarnaan Neon / Tepi</label>
+                            <label class="block text-[11px] font-bold text-gray-800 mb-1">Tipe Pewarnaan</label>
                             <select id="bg-colorType" class="w-full border rounded-lg p-2 text-sm outline-blue-500 mb-3 bg-white transition-colors">
                                 <option value="solid">Solid</option>
                                 <option value="gradient">Gradien (3 Warna)</option>
@@ -277,7 +240,7 @@
                             </select>
                             
                             <div id="bg-color-wrapper" class="transition-opacity">
-                                <label class="block text-[11px] font-bold text-gray-800 mb-2">Warna Tepi (Mempengaruhi Neon Glow)</label>
+                                <label class="block text-[11px] font-bold text-gray-800 mb-2">Warna Latar (Mempengaruhi Neon Glow)</label>
                                 <div class="flex items-center gap-2">
                                     <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="bg-color-btn" onclick="openColorPicker('bg.color', this)"></div>
                                     <div id="bg-color2-container" class="items-center gap-2" style="display:none;">
@@ -296,7 +259,6 @@
             </div>
         </div>
 
-        <!-- BENTUK 2 -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-3 overflow-hidden transition-colors duration-300">
             <button onclick="toggleSection('sec-bg2')" class="w-full p-3 flex justify-between items-center bg-gray-50 hover:bg-gray-100 transition">
                 <span class="font-bold text-gray-700 text-sm">2. Bentuk 2 (Hiasan / Ornamen)</span>
@@ -342,57 +304,21 @@
                             </div>
                         </div>
                         
-                        <!-- PENGATURAN RADIUS & KETEBALAN BORDER -->
                         <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
                             <div class="flex justify-between items-center mb-2">
-                                <label class="text-[11px] font-bold text-gray-800">Tampilan Garis Luar (Border)</label>
+                                <label class="text-[11px] font-bold text-gray-800">Tampilan Bentuk</label>
                                 <div class="flex items-center">
                                     <input type="checkbox" id="bg2-outlineOnly" class="w-3.5 h-3.5">
                                     <label for="bg2-outlineOnly" class="text-[10px] ml-1 text-gray-600">Hanya Garis Luar</label>
                                 </div>
                             </div>
-                            
-                            <div class="grid grid-cols-2 gap-3 mt-2">
-                                <div>
-                                    <div class="flex justify-between items-center mb-1">
-                                        <label class="block text-[10px] font-bold text-gray-600">Lengkungan</label>
-                                        <span class="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded" id="bg2-radius-val">40px</span>
-                                    </div>
-                                    <input type="range" id="bg2-radius" min="0" max="120" value="40" class="w-full accent-blue-600">
-                                </div>
-                                <div>
-                                    <div class="flex justify-between items-center mb-1">
-                                        <label class="block text-[10px] font-bold text-gray-600">Ketebalan</label>
-                                        <span class="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded" id="bg2-strokeW-val">8px</span>
-                                    </div>
-                                    <input type="range" id="bg2-strokeW" min="1" max="30" value="8" class="w-full accent-blue-600" oninput="document.getElementById('bg2-strokeW-val').innerText = this.value + 'px'">
-                                </div>
+                            <div class="mb-3">
+                                <label class="block text-[11px] font-bold text-gray-600 mb-1">Ketebalan Garis Luar</label>
+                                <input type="range" id="bg2-strokeW" min="1" max="30" value="8" class="w-full accent-blue-600">
                             </div>
                         </div>
-
-                        <!-- PENGATURAN LATAR TENGAH (INNER) -->
                         <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
-                            <label class="block text-[11px] font-bold text-gray-800 mb-3">Latar Tengah (Khusus Neon)</label>
-                            <div class="flex items-center gap-3">
-                                <div class="flex flex-col items-center">
-                                    <!-- HTML5 Color Picker Bawaan OS -->
-                                    <div class="w-10 h-10 rounded-lg border border-gray-300 cursor-pointer shadow-sm relative overflow-hidden" id="bg2-innerColor-btn" style="background-color: #000000;">
-                                        <input type="color" value="#000000" class="absolute -top-2 -left-2 w-[200%] h-[200%] opacity-0 cursor-pointer" oninput="this.parentElement.style.backgroundColor = this.value;">
-                                    </div>
-                                    <span class="text-[9px] text-gray-500 mt-1 font-bold">Warna</span>
-                                </div>
-                                <div class="flex-1">
-                                    <div class="flex justify-between items-center mb-2">
-                                        <span class="text-[10px] text-gray-600 font-bold">Transparansi</span>
-                                        <span class="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded" id="bg2-innerOpacity-val">80%</span>
-                                    </div>
-                                    <input type="range" id="bg2-innerOpacity" min="0" max="100" value="80" class="w-full accent-blue-600">
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
-                            <label class="block text-[11px] font-bold text-gray-800 mb-1">Tipe Pewarnaan Neon / Tepi</label>
+                            <label class="block text-[11px] font-bold text-gray-800 mb-1">Tipe Pewarnaan</label>
                             <select id="bg2-colorType" class="w-full border rounded-lg p-2 text-sm outline-blue-500 mb-3 bg-white transition-colors">
                                 <option value="solid">Solid</option>
                                 <option value="gradient">Gradien (3 Warna)</option>
@@ -400,7 +326,7 @@
                             </select>
                             
                             <div id="bg2-color-wrapper" class="transition-opacity">
-                                <label class="block text-[11px] font-bold text-gray-800 mb-2">Warna Tepi (Mempengaruhi Neon Glow)</label>
+                                <label class="block text-[11px] font-bold text-gray-800 mb-2">Warna Latar (Mempengaruhi Neon Glow)</label>
                                 <div class="flex items-center gap-2">
                                     <div class="w-10 h-10 rounded border border-gray-300 cursor-pointer shadow-sm" id="bg2-color-btn" onclick="openColorPicker('bg2.color', this)"></div>
                                     <div id="bg2-color2-container" class="items-center gap-2" style="display:none;">
@@ -1086,73 +1012,60 @@
 
     </div>
 
-    <!-- SCRIPT INJEKSI PRESET & REAL-TIME CSS (TANPA BUG) -->
+    <!-- SCRIPT INJEKSI 6 PRESET NEON HD AMAN DARI BUG (TANPA MENGGANGGU APP.JS) -->
     <script>
         const PRESETS = {
-            'preset_neon_bubble': { 
-                name: '💬 Neon Bubble Border', 
-                svg: (layer) => `<g>
-                    <!-- Latar Tengah: Kini menggunakan tag rect agar radius (rx) dinamis -->
-                    <rect class="inner-shape-${layer}" x="64" y="131" width="384" height="250" rx="40" fill="#000000" fill-opacity="0.8" stroke="none" />
-                    <!-- Garis Luar (Blur/Neon) -->
-                    <rect class="glow-shape-${layer} has-filter" x="64" y="131" width="384" height="250" rx="40" fill="none" stroke="#ff0055" stroke-width="8" style="filter: drop-shadow(0 0 15px #ff0055) blur(6px); opacity: 0.7;" />
-                    <!-- Garis Luar (Solid) -->
-                    <rect class="glow-shape-${layer}" x="64" y="131" width="384" height="250" rx="40" fill="none" stroke="#ff0055" stroke-width="8" style="opacity: 0.9;" />
-                    <!-- Garis Dalam (Tipis) -->
-                    <rect class="glow-shape-${layer} inner-line" x="80" y="147" width="352" height="218" rx="24" fill="none" stroke="#ff0055" stroke-width="3" style="opacity: 0.8;" />
-                </g>`
-            },
             'preset_neon_default': { 
                 name: '🌟 Neon Default', 
                 svg: (layer) => `<g>
-                    <rect class="inner-shape-${layer}" x="64" y="131" width="384" height="250" rx="16" fill="#000000" fill-opacity="0.8" stroke="none" />
-                    <rect class="glow-shape-${layer} has-filter" x="64" y="131" width="384" height="250" rx="16" fill="none" stroke="#ff0055" stroke-width="8" style="filter: drop-shadow(0 0 15px #ff0055) blur(6px); opacity: 0.7;" />
-                    <rect class="glow-shape-${layer}" x="64" y="131" width="384" height="250" rx="16" fill="none" stroke="#ff0055" stroke-width="8" style="opacity: 0.9;" />
+                    <path class="glow-path-${layer} has-filter" d="M 64 131 L 448 131 A 16 16 0 0 1 464 147 L 464 365 A 16 16 0 0 1 448 381 L 64 381 A 16 16 0 0 1 48 365 L 48 147 A 16 16 0 0 1 64 131 Z M 64 143 A 4 4 0 0 0 60 147 L 60 365 A 4 4 0 0 0 64 369 L 448 369 A 4 4 0 0 0 452 365 L 452 147 A 4 4 0 0 0 448 143 Z" style="fill: #ff0055; filter: drop-shadow(0 0 15px #ff0055) blur(6px); opacity: 0.7;" />
+                    <path class="glow-path-${layer}" d="M 64 131 L 448 131 A 16 16 0 0 1 464 147 L 464 365 A 16 16 0 0 1 448 381 L 64 381 A 16 16 0 0 1 48 365 L 48 147 A 16 16 0 0 1 64 131 Z M 64 143 A 4 4 0 0 0 60 147 L 60 365 A 4 4 0 0 0 64 369 L 448 369 A 4 4 0 0 0 452 365 L 452 147 A 4 4 0 0 0 448 143 Z" style="fill: #ff0055; opacity: 0.9;" />
+                    <path d="M 64 131 L 448 131 A 16 16 0 0 1 464 147 L 464 365 A 16 16 0 0 1 448 381 L 64 381 A 16 16 0 0 1 48 365 L 48 147 A 16 16 0 0 1 64 131 Z M 64 143 A 4 4 0 0 0 60 147 L 60 365 A 4 4 0 0 0 64 369 L 448 369 A 4 4 0 0 0 452 365 L 452 147 A 4 4 0 0 0 448 143 Z" fill="#ffffff" stroke="none" />
                 </g>`
             },
             'preset_neon_cyber': { 
                 name: '🤖 Neon Cyber Edge', 
                 svg: (layer) => `<g>
-                    <path class="inner-shape-${layer}" d="M 116 131 L 396 131 L 466 201 L 466 311 L 396 381 L 116 381 L 46 311 L 46 201 Z" fill="#000000" fill-opacity="0.8" stroke="none" />
-                    <path class="glow-shape-${layer} has-filter" d="M 116 131 L 396 131 L 466 201 L 466 311 L 396 381 L 116 381 L 46 311 L 46 201 Z M 121 143 L 58 206 L 58 306 L 121 369 L 391 369 L 454 306 L 454 206 L 391 143 Z" style="fill: #ff0055; filter: drop-shadow(0 0 15px #ff0055) blur(6px); opacity: 0.7;" />
-                    <path class="glow-shape-${layer}" d="M 116 131 L 396 131 L 466 201 L 466 311 L 396 381 L 116 381 L 46 311 L 46 201 Z M 121 143 L 58 206 L 58 306 L 121 369 L 391 369 L 454 306 L 454 206 L 391 143 Z" style="fill: #ff0055; opacity: 0.9;" />
+                    <path class="glow-path-${layer} has-filter" d="M 116 131 L 396 131 L 466 201 L 466 311 L 396 381 L 116 381 L 46 311 L 46 201 Z M 121 143 L 58 206 L 58 306 L 121 369 L 391 369 L 454 306 L 454 206 L 391 143 Z" style="fill: #ff0055; filter: drop-shadow(0 0 15px #ff0055) blur(6px); opacity: 0.7;" />
+                    <path class="glow-path-${layer}" d="M 116 131 L 396 131 L 466 201 L 466 311 L 396 381 L 116 381 L 46 311 L 46 201 Z M 121 143 L 58 206 L 58 306 L 121 369 L 391 369 L 454 306 L 454 206 L 391 143 Z" style="fill: #ff0055; opacity: 0.9;" />
+                    <path d="M 116 131 L 396 131 L 466 201 L 466 311 L 396 381 L 116 381 L 46 311 L 46 201 Z M 121 143 L 58 206 L 58 306 L 121 369 L 391 369 L 454 306 L 454 206 L 391 143 Z" fill="#ffffff" stroke="none" />
                 </g>`
             },
             'preset_neon_capsule': { 
                 name: '💊 Neon Capsule', 
                 svg: (layer) => `<g>
-                    <path class="inner-shape-${layer}" d="M 176 131 L 336 131 A 125 125 0 0 1 336 381 L 176 381 A 125 125 0 0 1 176 131 Z" fill="#000000" fill-opacity="0.8" stroke="none" />
-                    <path class="glow-shape-${layer} has-filter" d="M 176 131 L 336 131 A 125 125 0 0 1 336 381 L 176 381 A 125 125 0 0 1 176 131 Z M 176 143 A 113 113 0 0 0 176 369 L 336 369 A 113 113 0 0 0 336 143 Z" style="fill: #ff0055; filter: drop-shadow(0 0 15px #ff0055) blur(6px); opacity: 0.7;" />
-                    <path class="glow-shape-${layer}" d="M 176 131 L 336 131 A 125 125 0 0 1 336 381 L 176 381 A 125 125 0 0 1 176 131 Z M 176 143 A 113 113 0 0 0 176 369 L 336 369 A 113 113 0 0 0 336 143 Z" style="fill: #ff0055; opacity: 0.9;" />
+                    <path class="glow-path-${layer} has-filter" d="M 176 131 L 336 131 A 125 125 0 0 1 336 381 L 176 381 A 125 125 0 0 1 176 131 Z M 176 143 A 113 113 0 0 0 176 369 L 336 369 A 113 113 0 0 0 336 143 Z" style="fill: #ff0055; filter: drop-shadow(0 0 15px #ff0055) blur(6px); opacity: 0.7;" />
+                    <path class="glow-path-${layer}" d="M 176 131 L 336 131 A 125 125 0 0 1 336 381 L 176 381 A 125 125 0 0 1 176 131 Z M 176 143 A 113 113 0 0 0 176 369 L 336 369 A 113 113 0 0 0 336 143 Z" style="fill: #ff0055; opacity: 0.9;" />
+                    <path d="M 176 131 L 336 131 A 125 125 0 0 1 336 381 L 176 381 A 125 125 0 0 1 176 131 Z M 176 143 A 113 113 0 0 0 176 369 L 336 369 A 113 113 0 0 0 336 143 Z" fill="#ffffff" stroke="none" />
                 </g>`
             },
             'preset_neon_twin': { 
                 name: '🪟 Neon Twin Lines', 
                 svg: (layer) => `<g>
-                    <path class="inner-shape-${layer}" d="M 64 131 L 448 131 A 16 16 0 0 1 464 147 L 464 365 A 16 16 0 0 1 448 381 L 64 381 A 16 16 0 0 1 48 365 L 48 147 A 16 16 0 0 1 64 131 Z" fill="#000000" fill-opacity="0.8" stroke="none" />
-                    <path class="glow-shape-${layer} has-filter" d="M 64 131 L 448 131 A 16 16 0 0 1 464 147 L 464 365 A 16 16 0 0 1 448 381 L 64 381 A 16 16 0 0 1 48 365 L 48 147 A 16 16 0 0 1 64 131 Z M 64 137 A 10 10 0 0 0 54 147 L 54 365 A 10 10 0 0 0 64 375 L 448 375 A 10 10 0 0 0 458 365 L 458 147 A 10 10 0 0 0 448 137 Z M 76 151 L 436 151 A 8 8 0 0 1 444 159 L 444 353 A 8 8 0 0 1 436 361 L 76 361 A 8 8 0 0 1 68 353 L 68 159 A 8 8 0 0 1 76 151 Z M 76 155 A 4 4 0 0 0 72 159 L 72 353 A 4 4 0 0 0 76 357 L 436 357 A 4 4 0 0 0 440 353 L 440 159 A 4 4 0 0 0 436 155 Z" style="fill: #ff0055; filter: drop-shadow(0 0 15px #ff0055) blur(6px); opacity: 0.7;" />
-                    <path class="glow-shape-${layer}" d="M 64 131 L 448 131 A 16 16 0 0 1 464 147 L 464 365 A 16 16 0 0 1 448 381 L 64 381 A 16 16 0 0 1 48 365 L 48 147 A 16 16 0 0 1 64 131 Z M 64 137 A 10 10 0 0 0 54 147 L 54 365 A 10 10 0 0 0 64 375 L 448 375 A 10 10 0 0 0 458 365 L 458 147 A 10 10 0 0 0 448 137 Z M 76 151 L 436 151 A 8 8 0 0 1 444 159 L 444 353 A 8 8 0 0 1 436 361 L 76 361 A 8 8 0 0 1 68 353 L 68 159 A 8 8 0 0 1 76 151 Z M 76 155 A 4 4 0 0 0 72 159 L 72 353 A 4 4 0 0 0 76 357 L 436 357 A 4 4 0 0 0 440 353 L 440 159 A 4 4 0 0 0 436 155 Z" style="fill: #ff0055; opacity: 0.9;" />
+                    <path class="glow-path-${layer} has-filter" d="M 64 131 L 448 131 A 16 16 0 0 1 464 147 L 464 365 A 16 16 0 0 1 448 381 L 64 381 A 16 16 0 0 1 48 365 L 48 147 A 16 16 0 0 1 64 131 Z M 64 137 A 10 10 0 0 0 54 147 L 54 365 A 10 10 0 0 0 64 375 L 448 375 A 10 10 0 0 0 458 365 L 458 147 A 10 10 0 0 0 448 137 Z M 76 151 L 436 151 A 8 8 0 0 1 444 159 L 444 353 A 8 8 0 0 1 436 361 L 76 361 A 8 8 0 0 1 68 353 L 68 159 A 8 8 0 0 1 76 151 Z M 76 155 A 4 4 0 0 0 72 159 L 72 353 A 4 4 0 0 0 76 357 L 436 357 A 4 4 0 0 0 440 353 L 440 159 A 4 4 0 0 0 436 155 Z" style="fill: #ff0055; filter: drop-shadow(0 0 15px #ff0055) blur(6px); opacity: 0.7;" />
+                    <path class="glow-path-${layer}" d="M 64 131 L 448 131 A 16 16 0 0 1 464 147 L 464 365 A 16 16 0 0 1 448 381 L 64 381 A 16 16 0 0 1 48 365 L 48 147 A 16 16 0 0 1 64 131 Z M 64 137 A 10 10 0 0 0 54 147 L 54 365 A 10 10 0 0 0 64 375 L 448 375 A 10 10 0 0 0 458 365 L 458 147 A 10 10 0 0 0 448 137 Z M 76 151 L 436 151 A 8 8 0 0 1 444 159 L 444 353 A 8 8 0 0 1 436 361 L 76 361 A 8 8 0 0 1 68 353 L 68 159 A 8 8 0 0 1 76 151 Z M 76 155 A 4 4 0 0 0 72 159 L 72 353 A 4 4 0 0 0 76 357 L 436 357 A 4 4 0 0 0 440 353 L 440 159 A 4 4 0 0 0 436 155 Z" style="fill: #ff0055; opacity: 0.9;" />
+                    <path d="M 64 131 L 448 131 A 16 16 0 0 1 464 147 L 464 365 A 16 16 0 0 1 448 381 L 64 381 A 16 16 0 0 1 48 365 L 48 147 A 16 16 0 0 1 64 131 Z M 64 137 A 10 10 0 0 0 54 147 L 54 365 A 10 10 0 0 0 64 375 L 448 375 A 10 10 0 0 0 458 365 L 458 147 A 10 10 0 0 0 448 137 Z M 76 151 L 436 151 A 8 8 0 0 1 444 159 L 444 353 A 8 8 0 0 1 436 361 L 76 361 A 8 8 0 0 1 68 353 L 68 159 A 8 8 0 0 1 76 151 Z M 76 155 A 4 4 0 0 0 72 159 L 72 353 A 4 4 0 0 0 76 357 L 436 357 A 4 4 0 0 0 440 353 L 440 159 A 4 4 0 0 0 436 155 Z" fill="#ffffff" stroke="none" />
                 </g>`
             },
             'preset_neon_focus': { 
                 name: '💠 Neon Focus Bracket', 
                 svg: (layer) => `<g>
-                    <path class="inner-shape-${layer}" d="M 116 131 L 64 131 A 16 16 0 0 0 48 147 L 48 191 L 60 191 L 60 147 A 4 4 0 0 1 64 143 L 116 143 Z M 396 131 L 448 131 A 16 16 0 0 1 464 147 L 464 191 L 452 191 L 452 147 A 4 4 0 0 0 448 143 L 396 143 Z M 464 321 L 464 365 A 16 16 0 0 1 448 381 L 396 381 L 396 369 L 448 369 A 4 4 0 0 0 452 365 L 452 321 Z M 48 321 L 48 365 A 16 16 0 0 0 64 381 L 116 381 L 116 369 L 64 369 A 4 4 0 0 1 60 365 L 60 321 Z" fill="#000000" fill-opacity="0.8" stroke="none" />
-                    <path class="glow-shape-${layer} has-filter" d="M 116 131 L 64 131 A 16 16 0 0 0 48 147 L 48 191 L 60 191 L 60 147 A 4 4 0 0 1 64 143 L 116 143 Z M 396 131 L 448 131 A 16 16 0 0 1 464 147 L 464 191 L 452 191 L 452 147 A 4 4 0 0 0 448 143 L 396 143 Z M 464 321 L 464 365 A 16 16 0 0 1 448 381 L 396 381 L 396 369 L 448 369 A 4 4 0 0 0 452 365 L 452 321 Z M 48 321 L 48 365 A 16 16 0 0 0 64 381 L 116 381 L 116 369 L 64 369 A 4 4 0 0 1 60 365 L 60 321 Z" style="fill: #ff0055; filter: drop-shadow(0 0 15px #ff0055) blur(6px); opacity: 0.7;" />
-                    <path class="glow-shape-${layer}" d="M 116 131 L 64 131 A 16 16 0 0 0 48 147 L 48 191 L 60 191 L 60 147 A 4 4 0 0 1 64 143 L 116 143 Z M 396 131 L 448 131 A 16 16 0 0 1 464 147 L 464 191 L 452 191 L 452 147 A 4 4 0 0 0 448 143 L 396 143 Z M 464 321 L 464 365 A 16 16 0 0 1 448 381 L 396 381 L 396 369 L 448 369 A 4 4 0 0 0 452 365 L 452 321 Z M 48 321 L 48 365 A 16 16 0 0 0 64 381 L 116 381 L 116 369 L 64 369 A 4 4 0 0 1 60 365 L 60 321 Z" style="fill: #ff0055; opacity: 0.9;" />
+                    <path class="glow-path-${layer} has-filter" d="M 116 131 L 64 131 A 16 16 0 0 0 48 147 L 48 191 L 60 191 L 60 147 A 4 4 0 0 1 64 143 L 116 143 Z M 396 131 L 448 131 A 16 16 0 0 1 464 147 L 464 191 L 452 191 L 452 147 A 4 4 0 0 0 448 143 L 396 143 Z M 464 321 L 464 365 A 16 16 0 0 1 448 381 L 396 381 L 396 369 L 448 369 A 4 4 0 0 0 452 365 L 452 321 Z M 48 321 L 48 365 A 16 16 0 0 0 64 381 L 116 381 L 116 369 L 64 369 A 4 4 0 0 1 60 365 L 60 321 Z" style="fill: #ff0055; filter: drop-shadow(0 0 15px #ff0055) blur(6px); opacity: 0.7;" />
+                    <path class="glow-path-${layer}" d="M 116 131 L 64 131 A 16 16 0 0 0 48 147 L 48 191 L 60 191 L 60 147 A 4 4 0 0 1 64 143 L 116 143 Z M 396 131 L 448 131 A 16 16 0 0 1 464 147 L 464 191 L 452 191 L 452 147 A 4 4 0 0 0 448 143 L 396 143 Z M 464 321 L 464 365 A 16 16 0 0 1 448 381 L 396 381 L 396 369 L 448 369 A 4 4 0 0 0 452 365 L 452 321 Z M 48 321 L 48 365 A 16 16 0 0 0 64 381 L 116 381 L 116 369 L 64 369 A 4 4 0 0 1 60 365 L 60 321 Z" style="fill: #ff0055; opacity: 0.9;" />
+                    <path d="M 116 131 L 64 131 A 16 16 0 0 0 48 147 L 48 191 L 60 191 L 60 147 A 4 4 0 0 1 64 143 L 116 143 Z M 396 131 L 448 131 A 16 16 0 0 1 464 147 L 464 191 L 452 191 L 452 147 A 4 4 0 0 0 448 143 L 396 143 Z M 464 321 L 464 365 A 16 16 0 0 1 448 381 L 396 381 L 396 369 L 448 369 A 4 4 0 0 0 452 365 L 452 321 Z M 48 321 L 48 365 A 16 16 0 0 0 64 381 L 116 381 L 116 369 L 64 369 A 4 4 0 0 1 60 365 L 60 321 Z" fill="#ffffff" stroke="none" />
                 </g>`
             },
             'preset_neon_retro': { 
                 name: '🎟️ Neon Retro Ticket', 
                 svg: (layer) => `<g>
-                    <path class="inner-shape-${layer}" d="M 48 155 A 24 24 0 0 0 72 131 L 440 131 A 24 24 0 0 0 464 155 L 464 357 A 24 24 0 0 0 440 381 L 72 381 A 24 24 0 0 0 48 357 Z" fill="#000000" fill-opacity="0.8" stroke="none" />
-                    <path class="glow-shape-${layer} has-filter" d="M 48 155 A 24 24 0 0 0 72 131 L 440 131 A 24 24 0 0 0 464 155 L 464 357 A 24 24 0 0 0 440 381 L 72 381 A 24 24 0 0 0 48 357 Z M 58 155 L 58 357 A 34 34 0 0 1 72 371 L 440 371 A 34 34 0 0 1 454 357 L 454 155 A 34 34 0 0 1 440 141 L 72 141 A 34 34 0 0 1 58 155 Z" style="fill: #ff0055; filter: drop-shadow(0 0 15px #ff0055) blur(6px); opacity: 0.7;" />
-                    <path class="glow-shape-${layer}" d="M 48 155 A 24 24 0 0 0 72 131 L 440 131 A 24 24 0 0 0 464 155 L 464 357 A 24 24 0 0 0 440 381 L 72 381 A 24 24 0 0 0 48 357 Z M 58 155 L 58 357 A 34 34 0 0 1 72 371 L 440 371 A 34 34 0 0 1 454 357 L 454 155 A 34 34 0 0 1 440 141 L 72 141 A 34 34 0 0 1 58 155 Z" style="fill: #ff0055; opacity: 0.9;" />
+                    <path class="glow-path-${layer} has-filter" d="M 48 155 A 24 24 0 0 0 72 131 L 440 131 A 24 24 0 0 0 464 155 L 464 357 A 24 24 0 0 0 440 381 L 72 381 A 24 24 0 0 0 48 357 Z M 58 155 L 58 357 A 34 34 0 0 1 72 371 L 440 371 A 34 34 0 0 1 454 357 L 454 155 A 34 34 0 0 1 440 141 L 72 141 A 34 34 0 0 1 58 155 Z" style="fill: #ff0055; filter: drop-shadow(0 0 15px #ff0055) blur(6px); opacity: 0.7;" />
+                    <path class="glow-path-${layer}" d="M 48 155 A 24 24 0 0 0 72 131 L 440 131 A 24 24 0 0 0 464 155 L 464 357 A 24 24 0 0 0 440 381 L 72 381 A 24 24 0 0 0 48 357 Z M 58 155 L 58 357 A 34 34 0 0 1 72 371 L 440 371 A 34 34 0 0 1 454 357 L 454 155 A 34 34 0 0 1 440 141 L 72 141 A 34 34 0 0 1 58 155 Z" style="fill: #ff0055; opacity: 0.9;" />
+                    <path d="M 48 155 A 24 24 0 0 0 72 131 L 440 131 A 24 24 0 0 0 464 155 L 464 357 A 24 24 0 0 0 440 381 L 72 381 A 24 24 0 0 0 48 357 Z M 58 155 L 58 357 A 34 34 0 0 1 72 371 L 440 371 A 34 34 0 0 1 454 357 L 454 155 A 34 34 0 0 1 440 141 L 72 141 A 34 34 0 0 1 58 155 Z" fill="#ffffff" stroke="none" />
                 </g>`
             }
         };
 
-        // 1. Intercept fetch API
+        // 1. Intercept fetch API (Supaya 6 Shape Terekstrak Sempurna ke app.js)
         const originalFetch = window.fetch;
         window.fetch = async function(...args) {
             const url = args[0];
@@ -1178,10 +1091,11 @@
             return originalFetch.apply(this, args);
         };
 
-        // 2. Injeksi Pilihan Shape ke Dropdown
+        // 2. Injeksi Pilihan Shape ke Dropdown Secara Otomatis
         function injectOptions(selectId, layerId) {
             const select = document.getElementById(selectId);
             if(!select) return;
+            
             const ensureOptions = () => {
                 Object.keys(PRESETS).forEach(key => {
                     const val = `${key}_${layerId}`;
@@ -1194,7 +1108,10 @@
                     }
                 });
             };
+            
             ensureOptions();
+            
+            // Jaga-jaga kalau app.js memuat ulang list selectnya
             const observer = new MutationObserver(() => {
                 observer.disconnect();
                 ensureOptions();
@@ -1208,7 +1125,7 @@
             injectOptions('bg2-shape', 'bg2');
         });
 
-        // 3. Konversi Warna & Injeksi Dinamis (Fast 100ms)
+        // 3. Konversi RGB ke HEX & Sistem Injeksi Warna AMAN Lottie
         function rgbToHex(rgbStr) {
             const match = rgbStr.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
             if (!match) return rgbStr; 
@@ -1220,83 +1137,28 @@
 
         setInterval(() => {
             ['bg', 'bg2'].forEach(layer => {
+                const btn = document.getElementById(`${layer}-color-btn`);
+                if (!btn) return;
                 
-                // --- A. LENGKUNGAN SUDUT & KETEBALAN GARIS ---
-                const radiusSlider = document.getElementById(`${layer}-radius`);
-                const radiusValDisplay = document.getElementById(`${layer}-radius-val`);
-                const strokeWSlider = document.getElementById(`${layer}-strokeW`);
-                
-                if (radiusSlider && radiusValDisplay) {
-                    if (radiusValDisplay.innerText !== `${radiusSlider.value}px`) {
-                        radiusValDisplay.innerText = `${radiusSlider.value}px`;
-                    }
-                    const rxValue = parseInt(radiusSlider.value);
+                // Ambil warna real-time dan konversi jadi Hex murni (#xxxxxx)
+                let color = btn.style.backgroundColor;
+                if (color) {
+                    color = rgbToHex(color);
                     
-                    document.querySelectorAll(`.inner-shape-${layer}, .glow-shape-${layer}`).forEach(el => {
-                        // Radius (Hanya berfungsi pada shape Default & Bubble yang sudah di-upgrade jadi <rect>)
-                        if (el.tagName.toLowerCase() === 'rect') {
-                            if(el.classList.contains('inner-line')) {
-                                el.setAttribute('rx', Math.max(0, rxValue - 16)); // Proporsi garis dalam (Bubble)
-                            } else {
-                                el.setAttribute('rx', rxValue);
-                            }
-                            // Ketebalan Garis (Stroke Width)
-                            if (strokeWSlider && el.classList.contains(`glow-shape-${layer}`)) {
-                                if(el.classList.contains('inner-line')) {
-                                    el.style.strokeWidth = Math.max(1, parseInt(strokeWSlider.value) / 2.5);
-                                } else {
-                                    el.style.strokeWidth = strokeWSlider.value;
-                                }
-                            }
+                    // Warnai path-path khusus tanpa menyentuh CSS Variable var()
+                    document.querySelectorAll(`.glow-path-${layer}`).forEach(el => {
+                        el.style.fill = color;
+                        if(el.classList.contains('has-filter')) {
+                            el.style.filter = `drop-shadow(0 0 15px ${color}) blur(6px)`;
                         }
                     });
                 }
-
-                // --- B. OPACITY & WARNA LATAR TENGAH ---
-                const innerSlider = document.getElementById(`${layer}-innerOpacity`);
-                const innerValDisplay = document.getElementById(`${layer}-innerOpacity-val`);
-                const innerColorBtn = document.getElementById(`${layer}-innerColor-btn`);
-
-                if (innerSlider && innerValDisplay && innerColorBtn) {
-                    const opacityValue = innerSlider.value / 100;
-                    if (innerValDisplay.innerText !== `${innerSlider.value}%`) {
-                        innerValDisplay.innerText = `${innerSlider.value}%`;
-                    }
-
-                    // Ambil warna dari inline style color picker HTML5 yang baru
-                    let innerColor = innerColorBtn.style.backgroundColor || 'rgb(0, 0, 0)';
-                    innerColor = rgbToHex(innerColor);
-
-                    document.querySelectorAll(`.inner-shape-${layer}`).forEach(el => {
-                        el.style.fill = innerColor;
-                        el.style.fillOpacity = opacityValue;
-                    });
-                }
-
-                // --- C. WARNA NEON / TEPI ---
-                const neonColorBtn = document.getElementById(`${layer}-color-btn`);
-                if (neonColorBtn) {
-                    let neonColor = neonColorBtn.style.backgroundColor;
-                    if (neonColor) {
-                        neonColor = rgbToHex(neonColor);
-                        document.querySelectorAll(`.glow-shape-${layer}`).forEach(el => {
-                            if (el.tagName.toLowerCase() === 'rect') {
-                                el.style.stroke = neonColor;
-                                el.style.fill = 'none';
-                            } else {
-                                el.style.fill = neonColor;
-                            }
-                            if(el.classList.contains('has-filter')) {
-                                el.style.filter = `drop-shadow(0 0 15px ${neonColor}) blur(6px)`;
-                            }
-                        });
-                    }
-                }
             });
-        }, 100);
+        }, 300);
     </script>
     
     <script src="app.js"></script>
 
 </body>
 </html>
+
