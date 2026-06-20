@@ -95,7 +95,8 @@
                 <button onclick="closeColorPicker()" class="text-gray-400 hover:text-white transition text-xl"><i class="fas fa-times"></i></button>
             </div>
             <div id="iro-picker-container" class="mb-6"></div>
-            <div class="w-full bg-gray-900 rounded-lg p-2 mb-4 text-center font-mono text-gray-300 tracking-widest uppercase border border-gray-700" id="color-hex-display">#FFFFFF</div>
+            <!-- Nilai default diubah dari #FFFFFF menjadi #000000 agar konsisten dengan fallback app.js -->
+            <div class="w-full bg-gray-900 rounded-lg p-2 mb-4 text-center font-mono text-gray-300 tracking-widest uppercase border border-gray-700" id="color-hex-display">#000000</div>
             <button onclick="closeColorPicker()" class="w-full bg-blue-600 hover:bg-blue-50 text-white font-bold rounded-lg py-3 shadow-md transition">TERAPKAN WARNA</button>
         </div>
     </div>
@@ -1177,4 +1178,3 @@
 
 </body>
 </html>
-

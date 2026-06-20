@@ -1113,10 +1113,20 @@ function initColorPicker() {
 }
 
 function openColorPicker(statePath, element) {
-    activeColorStatePath = statePath; activeColorBtnElement = element;
-    const path = statePath.split('.'); const hexColor = state[path[0]][path[1]];
-    colorPicker.color.hexString = hexColor;
-    document.getElementById('color-hex-display').innerText = hexColor;
+    activeColorStatePath = statePath; 
+    activeColorBtnElement = element;
+    const path = statePath.split('.'); 
+    
+    // FIX: Gunakan #000000 (hitam) jika warna tidak ditemukan/undefined
+    const hexColor = state[path[0]][path[1]] || "#000000";
+    
+    try {
+        colorPicker.color.hexString = hexColor;
+    } catch(e) {
+        colorPicker.color.hexString = "#000000";
+    }
+    
+    document.getElementById('color-hex-display').innerText = hexColor || "#000000";
     const modal = document.getElementById('color-picker-modal');
     modal.classList.remove('hidden'); modal.classList.add('flex');
 }
@@ -1314,8 +1324,13 @@ function getBgShape(bg, fillAttr) {
 
     let finalFill = outlineOnly ? 'none' : fillAttr;
     let finalFillOpacity = 1;
-    const finalStroke = outlineOnly ? fillAttr : 'none';
-    const finalStrokeW = outlineOnly ? (parseInt(strokeW) || 0) : 0; // Jika tidak outline, maka tidak ada border.
+    
+    // PERBAIKAN BUG SUDUT:
+    // Supaya stroke-linejoin (sudut melengkung/tumpul) tetap bekerja pada mode solid (outlineOnly = false),
+    // kita membuat garis tepi (stroke) menggunakan warna yang sama dengan isinya (fillAttr) 
+    // dan menggunakan nilai strokeW dari pengaturan agar efeknya menonjol keluar membentuk lengkungan.
+    const finalStroke = outlineOnly ? fillAttr : fillAttr;
+    const finalStrokeW = outlineOnly ? (parseInt(strokeW) || 0) : (parseInt(strokeW) || 0);
 
     // Aktifkan inner fill saat mode Outline/Border jika fitur centang dihidupkan
     if (outlineOnly && fillActive) {
