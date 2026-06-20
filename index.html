@@ -230,6 +230,14 @@
                                 <label class="block text-[11px] font-bold text-gray-600 mb-1">Ketebalan Garis Luar</label>
                                 <input type="range" id="bg-strokeW" min="1" max="30" value="8" class="w-full accent-blue-600">
                             </div>
+                            <!-- SLIDER OPACITY TENGAH (BENTUK 1) -->
+                            <div class="mb-1 mt-3">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="block text-[11px] font-bold text-gray-600">Opacity Latar Tengah (Khusus Neon)</label>
+                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="bg-innerOpacity-val">80%</span>
+                                </div>
+                                <input type="range" id="bg-innerOpacity" min="0" max="100" value="80" class="w-full accent-blue-600">
+                            </div>
                         </div>
                         <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
                             <label class="block text-[11px] font-bold text-gray-800 mb-1">Tipe Pewarnaan</label>
@@ -315,6 +323,14 @@
                             <div class="mb-3">
                                 <label class="block text-[11px] font-bold text-gray-600 mb-1">Ketebalan Garis Luar</label>
                                 <input type="range" id="bg2-strokeW" min="1" max="30" value="8" class="w-full accent-blue-600">
+                            </div>
+                            <!-- SLIDER OPACITY TENGAH (BENTUK 2) -->
+                            <div class="mb-1 mt-3">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="block text-[11px] font-bold text-gray-600">Opacity Latar Tengah (Khusus Neon)</label>
+                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" id="bg2-innerOpacity-val">80%</span>
+                                </div>
+                                <input type="range" id="bg2-innerOpacity" min="0" max="100" value="80" class="w-full accent-blue-600">
                             </div>
                         </div>
                         <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 transition-colors">
@@ -1015,52 +1031,63 @@
     <!-- SCRIPT INJEKSI 6 PRESET NEON HD AMAN DARI BUG (TANPA MENGGANGGU APP.JS) -->
     <script>
         const PRESETS = {
+            'preset_neon_bubble': { 
+                name: '💬 Neon Bubble Border', 
+                svg: (layer) => `<g>
+                    <!-- Area Hitam Dalam -->
+                    <path class="inner-path-${layer}" d="M 120 131 L 392 131 A 50 50 0 0 1 442 181 L 442 331 A 50 50 0 0 1 392 381 L 120 381 A 50 50 0 0 1 70 331 L 70 181 A 50 50 0 0 1 120 131 Z" fill="#000000" fill-opacity="0.8" stroke="none" />
+                    <!-- Garis Glowing -->
+                    <path class="glow-path-${layer} has-filter" d="M 120 131 L 392 131 A 50 50 0 0 1 442 181 L 442 331 A 50 50 0 0 1 392 381 L 120 381 A 50 50 0 0 1 70 331 L 70 181 A 50 50 0 0 1 120 131 Z M 120 135 A 46 46 0 0 0 74 181 L 74 331 A 46 46 0 0 0 120 377 L 392 377 A 46 46 0 0 0 438 331 L 438 181 A 46 46 0 0 0 392 135 Z M 120 143 L 392 143 A 38 38 0 0 1 430 181 L 430 331 A 38 38 0 0 1 392 369 L 120 369 A 38 38 0 0 1 82 331 L 82 181 A 38 38 0 0 1 120 143 Z M 120 147 A 34 34 0 0 0 86 181 L 86 331 A 34 34 0 0 0 120 365 L 392 365 A 34 34 0 0 0 426 331 L 426 181 A 34 34 0 0 0 392 147 Z" style="fill: #ff0055; filter: drop-shadow(0 0 15px #ff0055) blur(6px); opacity: 0.7;" />
+                    <!-- Garis Solid -->
+                    <path class="glow-path-${layer}" d="M 120 131 L 392 131 A 50 50 0 0 1 442 181 L 442 331 A 50 50 0 0 1 392 381 L 120 381 A 50 50 0 0 1 70 331 L 70 181 A 50 50 0 0 1 120 131 Z M 120 135 A 46 46 0 0 0 74 181 L 74 331 A 46 46 0 0 0 120 377 L 392 377 A 46 46 0 0 0 438 331 L 438 181 A 46 46 0 0 0 392 135 Z M 120 143 L 392 143 A 38 38 0 0 1 430 181 L 430 331 A 38 38 0 0 1 392 369 L 120 369 A 38 38 0 0 1 82 331 L 82 181 A 38 38 0 0 1 120 143 Z M 120 147 A 34 34 0 0 0 86 181 L 86 331 A 34 34 0 0 0 120 365 L 392 365 A 34 34 0 0 0 426 331 L 426 181 A 34 34 0 0 0 392 147 Z" style="fill: #ff0055; opacity: 0.9;" />
+                </g>`
+            },
             'preset_neon_default': { 
                 name: '🌟 Neon Default', 
                 svg: (layer) => `<g>
+                    <path class="inner-path-${layer}" d="M 64 131 L 448 131 A 16 16 0 0 1 464 147 L 464 365 A 16 16 0 0 1 448 381 L 64 381 A 16 16 0 0 1 48 365 L 48 147 A 16 16 0 0 1 64 131 Z" fill="#ffffff" fill-opacity="0.8" stroke="none" />
                     <path class="glow-path-${layer} has-filter" d="M 64 131 L 448 131 A 16 16 0 0 1 464 147 L 464 365 A 16 16 0 0 1 448 381 L 64 381 A 16 16 0 0 1 48 365 L 48 147 A 16 16 0 0 1 64 131 Z M 64 143 A 4 4 0 0 0 60 147 L 60 365 A 4 4 0 0 0 64 369 L 448 369 A 4 4 0 0 0 452 365 L 452 147 A 4 4 0 0 0 448 143 Z" style="fill: #ff0055; filter: drop-shadow(0 0 15px #ff0055) blur(6px); opacity: 0.7;" />
                     <path class="glow-path-${layer}" d="M 64 131 L 448 131 A 16 16 0 0 1 464 147 L 464 365 A 16 16 0 0 1 448 381 L 64 381 A 16 16 0 0 1 48 365 L 48 147 A 16 16 0 0 1 64 131 Z M 64 143 A 4 4 0 0 0 60 147 L 60 365 A 4 4 0 0 0 64 369 L 448 369 A 4 4 0 0 0 452 365 L 452 147 A 4 4 0 0 0 448 143 Z" style="fill: #ff0055; opacity: 0.9;" />
-                    <path d="M 64 131 L 448 131 A 16 16 0 0 1 464 147 L 464 365 A 16 16 0 0 1 448 381 L 64 381 A 16 16 0 0 1 48 365 L 48 147 A 16 16 0 0 1 64 131 Z M 64 143 A 4 4 0 0 0 60 147 L 60 365 A 4 4 0 0 0 64 369 L 448 369 A 4 4 0 0 0 452 365 L 452 147 A 4 4 0 0 0 448 143 Z" fill="#ffffff" stroke="none" />
                 </g>`
             },
             'preset_neon_cyber': { 
                 name: '🤖 Neon Cyber Edge', 
                 svg: (layer) => `<g>
+                    <path class="inner-path-${layer}" d="M 116 131 L 396 131 L 466 201 L 466 311 L 396 381 L 116 381 L 46 311 L 46 201 Z" fill="#ffffff" fill-opacity="0.8" stroke="none" />
                     <path class="glow-path-${layer} has-filter" d="M 116 131 L 396 131 L 466 201 L 466 311 L 396 381 L 116 381 L 46 311 L 46 201 Z M 121 143 L 58 206 L 58 306 L 121 369 L 391 369 L 454 306 L 454 206 L 391 143 Z" style="fill: #ff0055; filter: drop-shadow(0 0 15px #ff0055) blur(6px); opacity: 0.7;" />
                     <path class="glow-path-${layer}" d="M 116 131 L 396 131 L 466 201 L 466 311 L 396 381 L 116 381 L 46 311 L 46 201 Z M 121 143 L 58 206 L 58 306 L 121 369 L 391 369 L 454 306 L 454 206 L 391 143 Z" style="fill: #ff0055; opacity: 0.9;" />
-                    <path d="M 116 131 L 396 131 L 466 201 L 466 311 L 396 381 L 116 381 L 46 311 L 46 201 Z M 121 143 L 58 206 L 58 306 L 121 369 L 391 369 L 454 306 L 454 206 L 391 143 Z" fill="#ffffff" stroke="none" />
                 </g>`
             },
             'preset_neon_capsule': { 
                 name: '💊 Neon Capsule', 
                 svg: (layer) => `<g>
+                    <path class="inner-path-${layer}" d="M 176 131 L 336 131 A 125 125 0 0 1 336 381 L 176 381 A 125 125 0 0 1 176 131 Z" fill="#ffffff" fill-opacity="0.8" stroke="none" />
                     <path class="glow-path-${layer} has-filter" d="M 176 131 L 336 131 A 125 125 0 0 1 336 381 L 176 381 A 125 125 0 0 1 176 131 Z M 176 143 A 113 113 0 0 0 176 369 L 336 369 A 113 113 0 0 0 336 143 Z" style="fill: #ff0055; filter: drop-shadow(0 0 15px #ff0055) blur(6px); opacity: 0.7;" />
                     <path class="glow-path-${layer}" d="M 176 131 L 336 131 A 125 125 0 0 1 336 381 L 176 381 A 125 125 0 0 1 176 131 Z M 176 143 A 113 113 0 0 0 176 369 L 336 369 A 113 113 0 0 0 336 143 Z" style="fill: #ff0055; opacity: 0.9;" />
-                    <path d="M 176 131 L 336 131 A 125 125 0 0 1 336 381 L 176 381 A 125 125 0 0 1 176 131 Z M 176 143 A 113 113 0 0 0 176 369 L 336 369 A 113 113 0 0 0 336 143 Z" fill="#ffffff" stroke="none" />
                 </g>`
             },
             'preset_neon_twin': { 
                 name: '🪟 Neon Twin Lines', 
                 svg: (layer) => `<g>
+                    <path class="inner-path-${layer}" d="M 64 131 L 448 131 A 16 16 0 0 1 464 147 L 464 365 A 16 16 0 0 1 448 381 L 64 381 A 16 16 0 0 1 48 365 L 48 147 A 16 16 0 0 1 64 131 Z" fill="#ffffff" fill-opacity="0.8" stroke="none" />
                     <path class="glow-path-${layer} has-filter" d="M 64 131 L 448 131 A 16 16 0 0 1 464 147 L 464 365 A 16 16 0 0 1 448 381 L 64 381 A 16 16 0 0 1 48 365 L 48 147 A 16 16 0 0 1 64 131 Z M 64 137 A 10 10 0 0 0 54 147 L 54 365 A 10 10 0 0 0 64 375 L 448 375 A 10 10 0 0 0 458 365 L 458 147 A 10 10 0 0 0 448 137 Z M 76 151 L 436 151 A 8 8 0 0 1 444 159 L 444 353 A 8 8 0 0 1 436 361 L 76 361 A 8 8 0 0 1 68 353 L 68 159 A 8 8 0 0 1 76 151 Z M 76 155 A 4 4 0 0 0 72 159 L 72 353 A 4 4 0 0 0 76 357 L 436 357 A 4 4 0 0 0 440 353 L 440 159 A 4 4 0 0 0 436 155 Z" style="fill: #ff0055; filter: drop-shadow(0 0 15px #ff0055) blur(6px); opacity: 0.7;" />
                     <path class="glow-path-${layer}" d="M 64 131 L 448 131 A 16 16 0 0 1 464 147 L 464 365 A 16 16 0 0 1 448 381 L 64 381 A 16 16 0 0 1 48 365 L 48 147 A 16 16 0 0 1 64 131 Z M 64 137 A 10 10 0 0 0 54 147 L 54 365 A 10 10 0 0 0 64 375 L 448 375 A 10 10 0 0 0 458 365 L 458 147 A 10 10 0 0 0 448 137 Z M 76 151 L 436 151 A 8 8 0 0 1 444 159 L 444 353 A 8 8 0 0 1 436 361 L 76 361 A 8 8 0 0 1 68 353 L 68 159 A 8 8 0 0 1 76 151 Z M 76 155 A 4 4 0 0 0 72 159 L 72 353 A 4 4 0 0 0 76 357 L 436 357 A 4 4 0 0 0 440 353 L 440 159 A 4 4 0 0 0 436 155 Z" style="fill: #ff0055; opacity: 0.9;" />
-                    <path d="M 64 131 L 448 131 A 16 16 0 0 1 464 147 L 464 365 A 16 16 0 0 1 448 381 L 64 381 A 16 16 0 0 1 48 365 L 48 147 A 16 16 0 0 1 64 131 Z M 64 137 A 10 10 0 0 0 54 147 L 54 365 A 10 10 0 0 0 64 375 L 448 375 A 10 10 0 0 0 458 365 L 458 147 A 10 10 0 0 0 448 137 Z M 76 151 L 436 151 A 8 8 0 0 1 444 159 L 444 353 A 8 8 0 0 1 436 361 L 76 361 A 8 8 0 0 1 68 353 L 68 159 A 8 8 0 0 1 76 151 Z M 76 155 A 4 4 0 0 0 72 159 L 72 353 A 4 4 0 0 0 76 357 L 436 357 A 4 4 0 0 0 440 353 L 440 159 A 4 4 0 0 0 436 155 Z" fill="#ffffff" stroke="none" />
                 </g>`
             },
             'preset_neon_focus': { 
                 name: '💠 Neon Focus Bracket', 
                 svg: (layer) => `<g>
+                    <path class="inner-path-${layer}" d="M 116 131 L 64 131 A 16 16 0 0 0 48 147 L 48 191 L 60 191 L 60 147 A 4 4 0 0 1 64 143 L 116 143 Z M 396 131 L 448 131 A 16 16 0 0 1 464 147 L 464 191 L 452 191 L 452 147 A 4 4 0 0 0 448 143 L 396 143 Z M 464 321 L 464 365 A 16 16 0 0 1 448 381 L 396 381 L 396 369 L 448 369 A 4 4 0 0 0 452 365 L 452 321 Z M 48 321 L 48 365 A 16 16 0 0 0 64 381 L 116 381 L 116 369 L 64 369 A 4 4 0 0 1 60 365 L 60 321 Z" fill="#ffffff" fill-opacity="0.8" stroke="none" />
                     <path class="glow-path-${layer} has-filter" d="M 116 131 L 64 131 A 16 16 0 0 0 48 147 L 48 191 L 60 191 L 60 147 A 4 4 0 0 1 64 143 L 116 143 Z M 396 131 L 448 131 A 16 16 0 0 1 464 147 L 464 191 L 452 191 L 452 147 A 4 4 0 0 0 448 143 L 396 143 Z M 464 321 L 464 365 A 16 16 0 0 1 448 381 L 396 381 L 396 369 L 448 369 A 4 4 0 0 0 452 365 L 452 321 Z M 48 321 L 48 365 A 16 16 0 0 0 64 381 L 116 381 L 116 369 L 64 369 A 4 4 0 0 1 60 365 L 60 321 Z" style="fill: #ff0055; filter: drop-shadow(0 0 15px #ff0055) blur(6px); opacity: 0.7;" />
                     <path class="glow-path-${layer}" d="M 116 131 L 64 131 A 16 16 0 0 0 48 147 L 48 191 L 60 191 L 60 147 A 4 4 0 0 1 64 143 L 116 143 Z M 396 131 L 448 131 A 16 16 0 0 1 464 147 L 464 191 L 452 191 L 452 147 A 4 4 0 0 0 448 143 L 396 143 Z M 464 321 L 464 365 A 16 16 0 0 1 448 381 L 396 381 L 396 369 L 448 369 A 4 4 0 0 0 452 365 L 452 321 Z M 48 321 L 48 365 A 16 16 0 0 0 64 381 L 116 381 L 116 369 L 64 369 A 4 4 0 0 1 60 365 L 60 321 Z" style="fill: #ff0055; opacity: 0.9;" />
-                    <path d="M 116 131 L 64 131 A 16 16 0 0 0 48 147 L 48 191 L 60 191 L 60 147 A 4 4 0 0 1 64 143 L 116 143 Z M 396 131 L 448 131 A 16 16 0 0 1 464 147 L 464 191 L 452 191 L 452 147 A 4 4 0 0 0 448 143 L 396 143 Z M 464 321 L 464 365 A 16 16 0 0 1 448 381 L 396 381 L 396 369 L 448 369 A 4 4 0 0 0 452 365 L 452 321 Z M 48 321 L 48 365 A 16 16 0 0 0 64 381 L 116 381 L 116 369 L 64 369 A 4 4 0 0 1 60 365 L 60 321 Z" fill="#ffffff" stroke="none" />
                 </g>`
             },
             'preset_neon_retro': { 
                 name: '🎟️ Neon Retro Ticket', 
                 svg: (layer) => `<g>
+                    <path class="inner-path-${layer}" d="M 48 155 A 24 24 0 0 0 72 131 L 440 131 A 24 24 0 0 0 464 155 L 464 357 A 24 24 0 0 0 440 381 L 72 381 A 24 24 0 0 0 48 357 Z" fill="#ffffff" fill-opacity="0.8" stroke="none" />
                     <path class="glow-path-${layer} has-filter" d="M 48 155 A 24 24 0 0 0 72 131 L 440 131 A 24 24 0 0 0 464 155 L 464 357 A 24 24 0 0 0 440 381 L 72 381 A 24 24 0 0 0 48 357 Z M 58 155 L 58 357 A 34 34 0 0 1 72 371 L 440 371 A 34 34 0 0 1 454 357 L 454 155 A 34 34 0 0 1 440 141 L 72 141 A 34 34 0 0 1 58 155 Z" style="fill: #ff0055; filter: drop-shadow(0 0 15px #ff0055) blur(6px); opacity: 0.7;" />
                     <path class="glow-path-${layer}" d="M 48 155 A 24 24 0 0 0 72 131 L 440 131 A 24 24 0 0 0 464 155 L 464 357 A 24 24 0 0 0 440 381 L 72 381 A 24 24 0 0 0 48 357 Z M 58 155 L 58 357 A 34 34 0 0 1 72 371 L 440 371 A 34 34 0 0 1 454 357 L 454 155 A 34 34 0 0 1 440 141 L 72 141 A 34 34 0 0 1 58 155 Z" style="fill: #ff0055; opacity: 0.9;" />
-                    <path d="M 48 155 A 24 24 0 0 0 72 131 L 440 131 A 24 24 0 0 0 464 155 L 464 357 A 24 24 0 0 0 440 381 L 72 381 A 24 24 0 0 0 48 357 Z M 58 155 L 58 357 A 34 34 0 0 1 72 371 L 440 371 A 34 34 0 0 1 454 357 L 454 155 A 34 34 0 0 1 440 141 L 72 141 A 34 34 0 0 1 58 155 Z" fill="#ffffff" stroke="none" />
                 </g>`
             }
         };
@@ -1138,6 +1165,21 @@
         setInterval(() => {
             ['bg', 'bg2'].forEach(layer => {
                 const btn = document.getElementById(`${layer}-color-btn`);
+                const innerSlider = document.getElementById(`${layer}-innerOpacity`);
+                const innerValDisplay = document.getElementById(`${layer}-innerOpacity-val`);
+
+                // 4. Update Opacity Real-time (Sesuai Slider Baru)
+                if (innerSlider && innerValDisplay) {
+                    const opacityValue = innerSlider.value / 100;
+                    if (innerValDisplay.innerText !== `${innerSlider.value}%`) {
+                        innerValDisplay.innerText = `${innerSlider.value}%`;
+                    }
+                    
+                    document.querySelectorAll(`.inner-path-${layer}`).forEach(el => {
+                        el.style.fillOpacity = opacityValue;
+                    });
+                }
+
                 if (!btn) return;
                 
                 // Ambil warna real-time dan konversi jadi Hex murni (#xxxxxx)
@@ -1161,4 +1203,3 @@
 
 </body>
 </html>
-
