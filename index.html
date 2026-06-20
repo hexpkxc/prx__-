@@ -1074,35 +1074,45 @@
         const PRESETS = {
             'preset_neon_default': { 
                 name: '🌟 Kotak Standar (Box)', 
-                svg: (layer) => `<g><path d="M 48 131 L 464 131 L 464 381 L 48 381 Z" fill="#ffffff" stroke="none" /></g>`
+                svg: (layer) => `<g>
+                    <path class="isi-dalam" d="M 48 131 L 464 131 L 464 381 L 48 381 Z" fill="#000000" fill-opacity="0" />
+                    <path class="garis-pembatas" d="M 40 123 L 472 123 L 472 389 L 40 389 Z M 48 131 L 48 381 L 464 381 L 464 131 Z" fill="#ffffff" fill-rule="evenodd" stroke="none" />
+                </g>`
             },
             'preset_neon_cyber': { 
                 name: '🤖 Cyber Edge', 
-                svg: (layer) => `<g><path d="M 116 131 L 396 131 L 466 201 L 466 311 L 396 381 L 116 381 L 46 311 L 46 201 Z" fill="#ffffff" stroke="none" /></g>`
+                svg: (layer) => `<g>
+                    <path class="isi-dalam" d="M 120 139 L 392 139 L 458 205 L 458 307 L 392 373 L 120 373 L 54 307 L 54 205 Z" fill="#000000" fill-opacity="0" />
+                    <path class="garis-pembatas" d="M 112 123 L 400 123 L 474 197 L 474 315 L 400 389 L 112 389 L 38 315 L 38 197 Z M 120 139 L 54 205 L 54 307 L 120 373 L 392 373 L 458 307 L 458 205 L 392 139 Z" fill="#ffffff" fill-rule="evenodd" stroke="none" />
+                </g>`
             },
             'preset_neon_capsule': { 
                 name: '💊 Bentuk Kapsul', 
-                svg: (layer) => `<g><path d="M 176 131 L 336 131 A 125 125 0 0 1 336 381 L 176 381 A 125 125 0 0 1 176 131 Z" fill="#ffffff" stroke="none" /></g>`
+                svg: (layer) => `<g>
+                    <path class="isi-dalam" d="M 176 139 L 336 139 A 117 117 0 0 1 336 373 L 176 373 A 117 117 0 0 1 176 139 Z" fill="#000000" fill-opacity="0" />
+                    <path class="garis-pembatas" d="M 176 123 L 336 123 A 133 133 0 0 1 336 389 L 176 389 A 133 133 0 0 1 176 123 Z M 176 139 L 176 373 A 117 117 0 0 0 336 373 L 336 139 A 117 117 0 0 0 176 139 Z" fill="#ffffff" fill-rule="evenodd" stroke="none" />
+                </g>`
             },
             'preset_neon_twin': { 
                 name: '🪟 Garis Ganda (Twin)', 
                 svg: (layer) => `<g>
-                    <path d="M 48 131 L 464 131 L 464 381 L 48 381 Z" fill="#ffffff" stroke="none" />
-                    <path d="M 68 151 L 444 151 L 444 361 L 68 361 Z" fill="#ffffff" stroke="none" />
+                    <path class="isi-dalam" d="M 68 151 L 444 151 L 444 361 L 68 361 Z" fill="#000000" fill-opacity="0" />
+                    <path class="garis-pembatas" d="M 40 123 L 472 123 L 472 389 L 40 389 Z M 48 131 L 48 381 L 464 381 L 464 131 Z M 60 143 L 452 143 L 452 369 L 60 369 Z M 68 151 L 68 361 L 444 361 L 444 151 Z" fill="#ffffff" fill-rule="evenodd" stroke="none" />
                 </g>`
             },
             'preset_neon_focus': { 
                 name: '💠 Kurung Fokus', 
                 svg: (layer) => `<g>
-                    <path d="M 116 131 L 48 131 L 48 191" fill="none" stroke="#ffffff" />
-                    <path d="M 396 131 L 464 131 L 464 191" fill="none" stroke="#ffffff" />
-                    <path d="M 464 321 L 464 381 L 396 381" fill="none" stroke="#ffffff" />
-                    <path d="M 48 321 L 48 381 L 116 381" fill="none" stroke="#ffffff" />
+                    <path class="isi-dalam" d="M 48 131 L 464 131 L 464 381 L 48 381 Z" fill="#000000" fill-opacity="0" />
+                    <path class="garis-pembatas" d="M 116 123 L 40 123 L 40 191 L 48 191 L 48 131 L 116 131 Z M 396 123 L 472 123 L 472 191 L 464 191 L 464 131 L 396 131 Z M 472 321 L 472 389 L 396 389 L 396 381 L 464 381 L 464 321 Z M 40 321 L 40 389 L 116 389 L 116 381 L 48 381 L 48 321 Z" fill="#ffffff" stroke="none" />
                 </g>`
             },
             'preset_neon_retro': { 
                 name: '🎟️ Tiket Retro', 
-                svg: (layer) => `<g><path d="M 48 155 A 24 24 0 0 0 72 131 L 440 131 A 24 24 0 0 0 464 155 L 464 357 A 24 24 0 0 0 440 381 L 72 381 A 24 24 0 0 0 48 357 Z" fill="#ffffff" stroke="none" /></g>`
+                svg: (layer) => `<g>
+                    <path class="isi-dalam" d="M 56 155 A 16 16 0 0 0 72 139 L 440 139 A 16 16 0 0 0 456 155 L 456 357 A 16 16 0 0 0 440 373 L 72 373 A 16 16 0 0 0 56 357 Z" fill="#000000" fill-opacity="0" />
+                    <path class="garis-pembatas" d="M 40 155 A 32 32 0 0 0 72 123 L 440 123 A 32 32 0 0 0 472 155 L 472 357 A 32 32 0 0 0 440 389 L 72 389 A 32 32 0 0 0 40 357 Z M 56 155 L 56 357 A 16 16 0 0 1 72 373 L 440 373 A 16 16 0 0 1 456 357 L 456 155 A 16 16 0 0 1 440 139 L 72 139 A 16 16 0 0 1 56 155 Z" fill="#ffffff" fill-rule="evenodd" stroke="none" />
+                </g>`
             }
         };
 
